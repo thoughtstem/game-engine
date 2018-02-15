@@ -146,7 +146,8 @@
     (sub-div (tile 7 2))) i))
 
 (define (ms pattern)
-  (match pattern
+  (define res
+    (match pattern
     ;Grass on three sides
     ['((g g)
        (g S)) (grass-stone-tiles 0)]    
@@ -177,7 +178,7 @@
     ['((S s)
        (g g)) (grass-stone-tiles 22)]
     ['((S g)
-       (s g)) (grass-stone-tiles 16)]
+       (s g)) (grass-stone-tiles 15)]
     ['((S g)
        (g s)) (grass-stone-tiles 3)]
 
@@ -187,7 +188,7 @@
     ['((s S)
        (g g)) (grass-stone-tiles 22)]
     ['((g S)
-       (s g)) (grass-stone-tiles 3)]
+       (s g)) (grass-stone-tiles 2)]
 
     ;Grass on one side
     ['((s g)
@@ -213,6 +214,14 @@
     ['((S g)
        (s s)) (grass-stone-tiles 15)]
 
+    ;Grass on one side (rotation 3)
+    ['((g S)
+       (s s)) (grass-stone-tiles 5)]
+    ['((s S)
+       (g s)) (grass-stone-tiles 9)]
+    ['((s S)
+       (s g)) (grass-stone-tiles 15)]
+
     ;Grass on no side
     ['((s s)
        (s S)) (grass-stone-tiles 20)]
@@ -235,6 +244,11 @@
 
     [else (square 16 "solid" "green")]
     ))
+  #;(overlay
+   (debug-quad pattern)
+   res)
+  res
+  )
 
 (define/contract (grid-get g r c)
   (-> (listof list?) number? number? any/c)
@@ -258,7 +272,7 @@
   (grid-get-adj g r c 0 -1))
 
 (define (tr-neighbor g r c)
-  (grid-get-adj g r c 1 0))
+  (grid-get-adj g r c -1 1))
 
 (define (r-neighbor g r c)
   (grid-get-adj g r c 0 1))
@@ -305,10 +319,30 @@
     (ms (grid->quad g r c 'bl))
     (ms (grid->quad g r c 'br)))))
 
+(define (debug-sym s)
+  (text (symbol->string s) 12 "red"))
+
+(define (debug-quad l)
+  (define l2 (grid-map debug-sym l))
+  (above
+   (beside (grid-get l2 0 0) (grid-get l2 0 1))
+   (beside (grid-get l2 1 0) (grid-get l2 1 1))))
+
+(define (debug-quads g r c)
+ (list
+   (debug-quad (grid->quad g r c 'tl))
+   (debug-quad (grid->quad g r c 'tr))
+   (debug-quad (grid->quad g r c 'bl))
+   (debug-quad (grid->quad g r c 'br))))
+
 (define (render2 g)
   (for/list ([r (range (length g))])
     (for/list ([c (range (length (first g)))])
-      (render2-tile g r c))))
+      (render2-tile g r c)
+      #;(apply beside
+             (append
+              (debug-quads g r c)
+              (list (render2-tile g r c)))))))
 
 (define small-ground
   '((g g g g)
