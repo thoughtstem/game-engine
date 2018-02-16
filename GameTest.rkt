@@ -58,7 +58,7 @@
       b))
 
 (define (add-noise sym g)
-  (grid-map (curry choose-between 0.25 sym) g))
+  (grid-map (curry choose-between 0.05 sym) g))
 
 
 
@@ -208,19 +208,19 @@
 
     ;Grass on one side (rotation 2)
     ['((S s)
-       (g s)) (grass-stone-tiles 5)]
+       (g s)) (grass-stone-tiles 22)]
     ['((S s)
-       (s g)) (grass-stone-tiles 9)]
+       (s g)) (grass-stone-tiles 7)]
     ['((S g)
        (s s)) (grass-stone-tiles 15)]
 
     ;Grass on one side (rotation 3)
     ['((g S)
-       (s s)) (grass-stone-tiles 5)]
+       (s s)) (grass-stone-tiles 10)]
     ['((s S)
-       (g s)) (grass-stone-tiles 9)]
+       (g s)) (grass-stone-tiles 6)]
     ['((s S)
-       (s g)) (grass-stone-tiles 15)]
+       (s g)) (grass-stone-tiles 22)]
 
     ;Grass on no side
     ['((s s)
@@ -233,14 +233,14 @@
        (s s)) (grass-stone-tiles 6)]
 
     ;Grass on all sides
-    ['((g G)
-       (g g)) (square 16 "solid" "green")]
-    ['((g g)
-       (g G)) (square 16 "solid" "green")]
-    ['((g g)
-       (G g)) (square 16 "solid" "green")]
-    ['((G g)
-       (g g)) (square 16 "solid" "green")]
+    [`((,a G)
+       (,b ,c)) (third (sub-div grass-tile))]
+    [`((,a ,b)
+       (,c G)) (first (sub-div grass-tile))]
+    [`((,a ,b)
+       (G ,c)) (second (sub-div grass-tile))]
+    [`((G ,a)
+       (,b ,c)) (fourth (sub-div grass-tile))]
 
     [else (square 16 "solid" "green")]
     ))
@@ -257,6 +257,12 @@
   (define r3 (min r2 (- (length g) 1)))
   (define c3 (min c2 (- (length (first g)) 1)))
   (list-ref (list-ref g r3) c3))
+
+(define/contract (grid-set g r c v)
+  (-> (listof list?) number? number? any/c (listof list?))
+  (define row (list-ref g r))
+  (define new-row (list-set row c v))
+  (list-set g r new-row))
 
 (define/contract (grid-get-adj g r c rd cd)
   (-> (listof list?) number? number? number? number? any/c)
@@ -284,7 +290,7 @@
   (grid-get-adj g r c 1 0))
 
 (define (bl-neighbor g r c)
-  (grid-get-adj g r c -1 1))
+  (grid-get-adj g r c 1 -1))
 
 (define (capitalize sym)
   (string->symbol (string-upcase (symbol->string sym))))
@@ -350,6 +356,9 @@
     (g s s s)
     (g g g g)))
 
+(define (merge-tiles g)
+  (apply above
+         (map (curry apply beside) g)))
 
 (append
     (sub-div (tile 6 0))
@@ -359,37 +368,55 @@
     (sub-div (tile 6 2))
     (sub-div (tile 7 2)))
 
-grass-stone-sheet
 
-small-ground
+
+;small-ground
 
 ;(add-grid-indexes small-ground)
 
-(render2 small-ground)
+;(render2 small-ground)
 
 (define big-ground (ground))
+
+
 (render-ground big-ground)
+grass-stone-sheet
+(merge-tiles (render2 big-ground))
 
-(render2 big-ground)
 
-#;(above
- (beside
-  (render2-tile small-ground 0 0)
-  (render2-tile small-ground 0 1)
-  (render2-tile small-ground 0 2)
-  (render2-tile small-ground 0 3))
- (beside
-  (render2-tile small-ground 1 0)
-  (render2-tile small-ground 1 1)
-  (render2-tile small-ground 1 2)
-  (render2-tile small-ground 1 3))
- (beside
-  (render2-tile small-ground 2 0)
-  (render2-tile small-ground 2 1)
-  (render2-tile small-ground 2 2)
-  (render2-tile small-ground 2 3))
- (beside
-  (render2-tile small-ground 3 0)
-  (render2-tile small-ground 3 1)
-  (render2-tile small-ground 3 2)
-  (render2-tile small-ground 3 3)))
+
+
+(require 2htdp/universe)
+
+
+
+(define (paint s x y event)
+  (if (string=? event "button-down")
+      (grid-set s
+                (floor (/ y GROUND_TILE_SIZE))
+                (floor (/ x GROUND_TILE_SIZE)) 's)
+      s))
+
+(define (draw g)
+  (merge-tiles (render2 g)))
+
+(merge-tiles
+ (render2
+  (big-bang big-ground
+            (to-draw draw)
+            (on-mouse paint))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
