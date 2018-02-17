@@ -1,0 +1,28 @@
+#lang racket
+
+(require 2htdp/image)
+
+(struct sheet (image tiles))
+
+(define (make-sheet img tile-size)
+  (sheet img (image->tile-grid img tile-size)))
+
+(define (image->tile-grid img tile-size)
+  (for/list ([x (floor (/ (image-width img) tile-size))])
+    (for/list ([y (floor (/ (image-height img) tile-size))])
+      (tile x y img tile-size)
+      )))
+
+
+
+(define (tile x y img tile-size)
+  (crop (* x tile-size)
+        (* y tile-size)
+        tile-size
+        tile-size
+        img))
+
+
+(define example (make-sheet (bitmap "./ground-tiles.png") 32))
+
+

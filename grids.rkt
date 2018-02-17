@@ -6,7 +6,12 @@
          grid-map-with-index
          grid-get
          grid-set
-         grid->quad)
+         grid->quad
+         list-getter)
+
+(define (list-getter l)
+  (lambda (x)
+    (list-ref l x)))
 
 (define (list-of t n)
   (map (thunk* t) (range n)))
@@ -74,7 +79,7 @@
 
 
 (define/contract (grid->quad g r c dir f)
-  (-> (listof list?) number? number? symbol? (listof list?) (-> symbol? symbol?))
+  (-> (listof list?) number? number? symbol? (-> symbol? symbol?) (listof list?) )
   (match dir
     ['tl
      (list

@@ -1,7 +1,10 @@
 #lang racket
 
 (provide add-noise
-         render-ground)
+         render-ground
+         show-corners
+         merge-tiles
+         render2)
 
 (require 2htdp/image)
 (require 2htdp/universe)
@@ -10,20 +13,6 @@
 
 (require "./grids.rkt")
 (require "./sheets.rkt")
-
-
-(define grass-tile (tile 6 3))
-(define grass-sym  'g)
-
-(define stone-tile (tile 6 0))
-(define stone-sym  's)
-
-
-
-(define (ground-data)
-  (grid-of 's WIDTH HEIGHT))
-
-
 
 (define (choose-between prob a b)
   (if (< (random) prob)
@@ -34,52 +23,14 @@
   (grid-map (curry choose-between prob sym) g))
 
 
-
-;TODO: Make into macro
-(define (mapping sym)
-  (cond 
-    [(eq? sym stone-sym) stone-tile]
-    [(eq? sym grass-sym) grass-tile]))
-
-(define (render-ground g)
+(define (render-ground g mapping)
   (define row->tiles (curry map mapping))
   (define tile-grid (map row->tiles g))
   (define render-row (curry apply beside))
   (apply above (map render-row tile-grid)))
 
-(define (solid-ground sym)
-  (render-ground
-   (grid-of sym WIDTH HEIGHT)))
 
 
-(define (half-width i)
-  (/ (image-width i) 2))
-
-(define (corner x y i)
-  (define hw (half-width i))
-  (crop (* x hw) (* y hw) 
-        hw
-        hw
-        i))
-
-(define (tl-corner i)
-  (corner 0 0 i))
-
-(define (tr-corner i)
-  (corner 1 0 i))
-
-(define (bl-corner i)
-  (corner 0 1 i))
-
-(define (br-corner i)
-  (corner 1 1 i))
-
-;Marching squares:
-(define (sub-div i)
-  (list (tl-corner i)
-        (tr-corner i)
-        (bl-corner i)
-        (br-corner i)))
 
 (define (f i)
   (overlay
@@ -99,112 +50,112 @@
    (beside (f bl) (f br))))
 
 
-(define (grass-stone-tiles i)
+(define (ab-tiles getter i)
   (list-ref
    (append
-    (sub-div (tile 6 0))
-    (sub-div (tile 7 0))
-    (sub-div (tile 6 1))
-    (sub-div (tile 7 1))
-    (sub-div (tile 6 2))
-    (sub-div (tile 7 2))) i))
+    (sub-div (getter 0 0))
+    (sub-div (getter 1 0))
+    (sub-div (getter 0 1))
+    (sub-div (getter 1 1))
+    (sub-div (getter 0 2))
+    (sub-div (getter 1 2))) i))
 
-(define (ms pattern)
+(define (ms pattern combined-tiles base-tile)
   (define res
     (match pattern
     ;Grass on three sides
     ['((g g)
-       (g S)) (grass-stone-tiles 0)]    
+       (g S)) (combined-tiles 0)]    
     ['((g g)
-       (S g)) (grass-stone-tiles 1)]
+       (S g)) (combined-tiles 1)]
     ['((S g)
-       (g g)) (grass-stone-tiles 3)]
+       (g g)) (combined-tiles 3)]
     ['((g S)
-       (g g)) (grass-stone-tiles 2)]
+       (g g)) (combined-tiles 2)]
 
     ;Grass on two sides
     ['((g g)
-       (s S)) (grass-stone-tiles 12)]
+       (s S)) (combined-tiles 12)]
     ['((g s)
-       (g S)) (grass-stone-tiles 16)]
+       (g S)) (combined-tiles 16)]
     ['((s g)
-       (g S)) (grass-stone-tiles 0)]
+       (g S)) (combined-tiles 0)]
 
     ;Grass on two sides (rotation 1)
     ['((s g)
-       (S g)) (grass-stone-tiles 21)]
+       (S g)) (combined-tiles 21)]
     ['((g g)
-       (S s)) (grass-stone-tiles 9)]
+       (S s)) (combined-tiles 9)]
     ['((g s)
-       (S g)) (grass-stone-tiles 1)]
+       (S g)) (combined-tiles 1)]
 
     ;Grass on two sides (rotation 2)
     ['((S s)
-       (g g)) (grass-stone-tiles 22)]
+       (g g)) (combined-tiles 22)]
     ['((S g)
-       (s g)) (grass-stone-tiles 15)]
+       (s g)) (combined-tiles 15)]
     ['((S g)
-       (g s)) (grass-stone-tiles 3)]
+       (g s)) (combined-tiles 3)]
 
     ;Grass on two sides (rotation 3)
     ['((g S)
-       (g s)) (grass-stone-tiles 10)]
+       (g s)) (combined-tiles 10)]
     ['((s S)
-       (g g)) (grass-stone-tiles 22)]
+       (g g)) (combined-tiles 22)]
     ['((g S)
-       (s g)) (grass-stone-tiles 2)]
+       (s g)) (combined-tiles 2)]
 
     ;Grass on one side
     ['((s g)
-       (s S)) (grass-stone-tiles 12)]
+       (s S)) (combined-tiles 12)]
     ['((g s)
-       (s S)) (grass-stone-tiles 4)]
+       (s S)) (combined-tiles 4)]
     ['((s s)
-       (g S)) (grass-stone-tiles 10)]
+       (g S)) (combined-tiles 10)]
 
     ;Grass on one side (rotation 1)
     ['((s s)
-       (S g)) (grass-stone-tiles 15)]
+       (S g)) (combined-tiles 15)]
     ['((s g)
-       (S s)) (grass-stone-tiles 5)]
+       (S s)) (combined-tiles 5)]
     ['((g s)
-       (S s)) (grass-stone-tiles 9)]
+       (S s)) (combined-tiles 9)]
 
     ;Grass on one side (rotation 2)
     ['((S s)
-       (g s)) (grass-stone-tiles 22)]
+       (g s)) (combined-tiles 22)]
     ['((S s)
-       (s g)) (grass-stone-tiles 7)]
+       (s g)) (combined-tiles 7)]
     ['((S g)
-       (s s)) (grass-stone-tiles 15)]
+       (s s)) (combined-tiles 15)]
 
     ;Grass on one side (rotation 3)
     ['((g S)
-       (s s)) (grass-stone-tiles 10)]
+       (s s)) (combined-tiles 10)]
     ['((s S)
-       (g s)) (grass-stone-tiles 6)]
+       (g s)) (combined-tiles 6)]
     ['((s S)
-       (s g)) (grass-stone-tiles 22)]
+       (s g)) (combined-tiles 22)]
 
     ;Grass on no side
     ['((s s)
-       (s S)) (grass-stone-tiles 20)]
+       (s S)) (combined-tiles 20)]
     ['((s s)
-       (S s)) (grass-stone-tiles 17)]
+       (S s)) (combined-tiles 17)]
     ['((S s)
-       (s s)) (grass-stone-tiles 11)]
+       (s s)) (combined-tiles 11)]
     ['((s S)
-       (s s)) (grass-stone-tiles 6)]
+       (s s)) (combined-tiles 14)]
 
     ;Grass on all sides
     [`((,a G)
-       (,b ,c)) (third (sub-div grass-tile))]
+       (,b ,c)) (third (sub-div base-tile))]
     [`((,a ,b)
-       (,c G)) (first (sub-div grass-tile))]
+       (,c G)) (first (sub-div base-tile))]
     [`((,a ,b)
-       (G ,c)) (second (sub-div grass-tile))]
+       (G ,c)) (second (sub-div base-tile))]
     [`((G ,a)
-       (,b ,c)) (fourth (sub-div grass-tile))]
+       (,b ,c)) (fourth (sub-div base-tile))]
 
     [else (square 16 "solid" "green")]
     ))
@@ -217,15 +168,15 @@
 (define (capitalize sym)
   (string->symbol (string-upcase (symbol->string sym))))
 
-(define/contract (render2-tile g r c)
-  (-> (listof list?) number? number? image?)
+(define/contract (render2-tile g r c combined-tiles base-tile)
+  (-> (listof list?) number? number? (-> number? image?) image? image?)
   (above
    (beside
-    (ms (grid->quad g r c 'tl capitalize))
-    (ms (grid->quad g r c 'tr capitalize)))
+    (ms (grid->quad g r c 'tl capitalize) combined-tiles base-tile)
+    (ms (grid->quad g r c 'tr capitalize) combined-tiles base-tile))
    (beside
-    (ms (grid->quad g r c 'bl capitalize))
-    (ms (grid->quad g r c 'br capitalize)))))
+    (ms (grid->quad g r c 'bl capitalize) combined-tiles base-tile)
+    (ms (grid->quad g r c 'br capitalize) combined-tiles base-tile))))
 
 (define (debug-sym s)
   (text (symbol->string s) 12 "red"))
@@ -243,10 +194,10 @@
    (debug-quad (grid->quad g r c 'bl capitalize))
    (debug-quad (grid->quad g r c 'br capitalize))))
   
-(define (render2 g)
+(define (render2 g combined-tiles base-tile)
   (for/list ([r (range (length g))])
     (for/list ([c (range (length (first g)))])
-      (render2-tile g r c)
+      (render2-tile g r c combined-tiles base-tile)
       #;(apply beside
              (append
               (debug-quads g r c)
@@ -259,18 +210,6 @@
          (map (curry apply beside) g)))
 
 
-
-(define small-ground
-  '((g g g g)
-    (g s g g)
-    (g s s s)
-    (g g g g)))
-
-(define grass-stone-sheet
-  (above
-   (beside (show-corners (tile 6 0)) (show-corners (tile 7 0)))
-   (beside (show-corners (tile 6 1)) (show-corners (tile 7 1)))
-   (beside (show-corners (tile 6 2)) (show-corners (tile 7 2)))))
 
 
 
