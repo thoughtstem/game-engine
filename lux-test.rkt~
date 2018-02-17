@@ -1,14 +1,15 @@
-#lang racket
+#lang racket/base
+(require racket/match
+         racket/fixnum
+         racket/gui/base
+         racket/class
+         (prefix-in pict: pict)
+         (prefix-in image: 2htdp/image)
+         lux
+         lux/chaos/gui
+         lux/chaos/gui/val
+         lux/chaos/gui/key)
 
-;Optimize! 20x20 is too slow
-;Clear up code more
-;Better abstractions.  Different types of ground.  Procedurally generate combiner tiles?
-;Collidable tiles
-;Controllable character
-;Multiplayer
-
-(require 2htdp/image)
-(require 2htdp/universe)
 
 
 (require "grids.rkt")
@@ -61,24 +62,31 @@
   (list (add1 (first s))
         (second s)))
 
+(struct demo
+  (g/v mode)
+  #:methods gen:word
+  [(define (word-fps w)
+     60.0)
+   (define (word-label s ft)
+     (lux-standard-label "Values" ft))
+   (define (word-output w)
+     (match-define (demo g/v mode-n) w)
+     (g/v (draw '((g g)
+                  (g g)))))
+   (define (word-event w e)
+     (match-define (demo g/v mode-n) w)
+     (define closed? #f)
+     (cond
+      [(eq? e 'close)
+       #f]
+      [else
+       (demo g/v mode-n)]))
+   (define (word-tick w)
+     w)])
 
-(merge-tiles (render2 big-ground (list-getter grass-stone-sheet) grass-tile ))
-
-(merge-tiles
- (render2
-  (second (big-bang (list 0 big-ground)
-                    (on-tick tick)
-                    (to-draw draw)
-                    (on-mouse paint)))
-  (list-getter grass-stone-sheet) grass-tile))
-
-
-
-
-
-
-
-
-
+(module+ main
+  (call-with-chaos
+   (make-gui)
+   (λ () (fiat-lux (demo (make-gui/val) 0)))))
 
 
