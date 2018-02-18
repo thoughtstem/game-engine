@@ -60,27 +60,28 @@
       s))
 
 (define (cache-render s)
-  (define i (draw s))
-  (define il (image:image->color-list i))
-  (define i2 (image:color-list->bitmap il (image:image-width i) (image:image-height i))) ;Making it a bitmap makes rendering much faster...
+  (define is (map (curry draw s) '(0 1 2)))
+  (define ils (map image:image->color-list is))
+  (define f (lambda (il) (image:color-list->bitmap il (image:image-width (first is)) (image:image-height (first is)))))
+  (define i2s (map f ils)) ;Making it a bitmap makes rendering much faster...
   (list (first s)
         (second s)
-        i2))
+        i2s))
 
 (define (current-frame time)
   (* 2 (remainder time 3)))
 
-(define (draw s)
+(define (draw s (extra 0))
   (define g (second s))
-  (merge-tiles (render2 g (list-getter (sheet->combiner-tiles (current-frame (first s)) 0)) grass-tile )))
+  (merge-tiles (render2 g (list-getter (sheet->combiner-tiles (+ 8 (current-frame (+ extra (first s)))) 0)) grass-tile )))
 
-(struct demo
+(struct demo 
   (g/v state)
   #:methods gen:word
   [(define (word-output w)
      (match-define (demo g/v state) w)
      (match-define (list time ground img) state)
-     (g/v img))
+     (g/v (list-ref img (remainder (floor (/ time 10)) 3))))
    (define (word-event w e)
      (match-define (demo g/v state) w)
      (match-define (list time g img) state)
