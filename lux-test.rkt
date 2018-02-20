@@ -4,6 +4,7 @@
 ;And the interactions are more full-featured than 2htdp.
 ;But my code is getting messy.
 ;Also, need to bring back water animations (enhance the cache-render baking process...)
+;Need to support multiple ground types (not just two).  Some way of declaring symbol->tile mappings
 
 (require racket/match
          racket/fixnum
@@ -17,102 +18,106 @@
          lux/chaos/gui/mouse)
 
 (require "grids.rkt")
+(require "terrain-data.rkt")
 (require "sheets.rkt")
 (require "marching-squares.rkt")
+(require "animated-sprites.rkt")
 
 (define WIDTH  10)
 (define HEIGHT 10)
 (define GROUND_TILE_SIZE 32)
 
 (define base (image:bitmap "./ground-tiles.png"))
-(define example (make-sheet base GROUND_TILE_SIZE))
+(define terrain-sheet (make-sheet base GROUND_TILE_SIZE))
+(define grass-tile ((sheet-get terrain-sheet) 6 3))
 
-(define grass-tile ((sheet-get example) 6 3))
-(define grass-sym  'g)
+(define (ground) (ground-gen-uniform2 WIDTH HEIGHT 'g 's 0.25))
 
-(define (ground-data)
-  (grid-of 's WIDTH HEIGHT))
+(struct game
+  (terrain-data
+   terrain-sprite)
+  #:transparent)
 
-(define (ground)
-  (define ret (add-noise 's 0.25
-                         (grid-of 'g WIDTH HEIGHT)))
-  ret)
+(define (draw-ground g n)
+  (bake
+   (merge-tiles
+    (render2 g (list-getter (sheet->combiner-tiles terrain-sheet (* 2 n) 0)) grass-tile ))))
 
-(define (sheet->combiner-tiles off-x off-y)
-  (flatten (list
-            (list (sub-div ((sheet-get example) off-x off-y))       (sub-div ((sheet-get example) (+ 1 off-x) off-y)))
-            (list (sub-div ((sheet-get example) off-x (+ 1 off-y))) (sub-div ((sheet-get example) (+ 1 off-x) (+ 1 off-y))))
-            (list (sub-div ((sheet-get example) off-x (+ 2 off-y))) (sub-div ((sheet-get example) (+ 1 off-x) (+ 2 off-y)))))))
 
-(define grass-stone-sheet (sheet->combiner-tiles 0 0))
-
-(define big-ground (ground))
-
-(define (paint s x y event)
-  (displayln (list x y event))
-  (define g (second s))
-  (if (string=? event "button-down")
-      (list (first s)
-            (grid-set g
-                (floor (/ y GROUND_TILE_SIZE))
-                (floor (/ x GROUND_TILE_SIZE)) 's)
-            #f)
-      s))
-
-(define (cache-render s)
-  (define i (draw s))
+(define (bake i)
   (define il (image:image->color-list i))
   (define i2 (image:color-list->bitmap il (image:image-width i) (image:image-height i))) ;Making it a bitmap makes rendering much faster...
-  (list (first s)
-        (second s)
-        i2))
+  i2)
+
+(define (ground->sprite data)
+  (new-sprite
+          (map (curry draw-ground data) '(0 1 2))
+          7))
+
+(define (initial)
+  (define initial-ground
+    (ground))
+  (game initial-ground
+        (ground->sprite initial-ground)))
+
+
+
+(define (paint s x y)
+  (match-define (game data sprite) s)
+  (define new-ground (grid-set data
+                               (floor (/ y GROUND_TILE_SIZE))
+                               (floor (/ x GROUND_TILE_SIZE)) 's))
+  (game
+       new-ground
+       (ground->sprite new-ground)))
 
 (define (current-frame time)
   (* 2 (remainder time 3)))
 
 (define (draw s)
-  (define g (second s))
-  (merge-tiles (render2 g (list-getter (sheet->combiner-tiles (current-frame (first s)) 0)) grass-tile )))
+  (render (game-terrain-sprite s)))
 
 (struct demo
   (g/v state)
   #:methods gen:word
   [(define (word-output w)
      (match-define (demo g/v state) w)
-     (match-define (list time ground img) state)
-     (g/v img))
+     (g/v (draw state)))
+
+   ;Handle events
    (define (word-event w e)
      (match-define (demo g/v state) w)
-     (match-define (list time g img) state)
+     (match-define (game g sprite) state)
      (define closed? #f)
      (cond
-       [(eq? e 'close)
-        #f]
+       [(eq? e 'close) #f]
+       
+       ;If any key is pressed, generate a new terrain
        [(and (key-event? e)
              (not (eq? 'release (send e get-key-code))))
         (let [(new-ground (ground))]
-          (demo g/v (cache-render (list 0 new-ground #f))))]
+          (demo g/v (initial)))]
+
+       ;On click, draw a new stone/water/whatever
        [(and (mouse-event? e) (send e button-down?))
         (let-values [((x y) (mouse-event-xy e))]
-          (let [(new-state (paint state x y "button-down"))]
-            (demo g/v (cache-render new-state))))]
+          (let [(new-state (paint state x y))]
+            (demo g/v new-state)))]
+       
        [else
         (demo g/v state)]))
+
+   
    (define (word-tick w)
      (match-define (demo g/v state) w)
-     (match-define (list time data img) state)
-     (demo g/v (list (add1 time) data img)))])
+     (match-define (game data sprite) state)
+     (demo g/v (game data (next-frame sprite))))])
 
-(define initial
-  (list 0 big-ground #f))
 
-(define initial-cached
-  (cache-render initial))
 
 (module+ main
   (call-with-chaos
-   (make-gui #:width (* GROUND_TILE_SIZE WIDTH)	 	 	 	 
+   (make-gui #:width  (* GROUND_TILE_SIZE WIDTH)	 	 	 	 
              #:height (* GROUND_TILE_SIZE HEIGHT))
-   (λ () (fiat-lux (demo (make-gui/val) (cache-render initial))))))
-
+   (λ () (fiat-lux (demo (make-gui/val) (initial))))))
 

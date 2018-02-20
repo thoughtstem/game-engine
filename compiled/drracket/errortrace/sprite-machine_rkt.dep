@@ -1,0 +1,1 @@
+("6.9" ("f9ef3c4fb1f2b195829dddc5dbe1ac8a65e9958f" . "afe5b642fe7abb1f140799dc38eac4045fdcfb47") #"/Users/thoughtstem/RacketGameEngine/animated-sprites.rkt" (collects #"errortrace" #"errortrace-key.rkt") (collects #"lens" #"data" #"list.rkt") (collects #"lens" #"main.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))

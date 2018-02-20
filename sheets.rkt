@@ -5,7 +5,8 @@
 
 (provide (struct-out sheet))
 (provide make-sheet
-         sub-div)
+         sub-div
+         sheet->combiner-tiles)
 
 (struct sheet (image tiles get) #:transparent)
 
@@ -59,3 +60,11 @@
         (tr-corner i)
         (bl-corner i)
         (br-corner i)))
+
+(define (sheet->combiner-tiles s off-x off-y)
+  (flatten (list
+            (list (sub-div ((sheet-get s) off-x off-y))       (sub-div ((sheet-get s) (+ 1 off-x) off-y)))
+            (list (sub-div ((sheet-get s) off-x (+ 1 off-y))) (sub-div ((sheet-get s) (+ 1 off-x) (+ 1 off-y))))
+            (list (sub-div ((sheet-get s) off-x (+ 2 off-y))) (sub-div ((sheet-get s) (+ 1 off-x) (+ 2 off-y)))))))
+
+

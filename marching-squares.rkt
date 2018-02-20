@@ -1,6 +1,6 @@
 #lang racket
 
-(provide add-noise
+(provide 
          render-ground
          show-corners
          merge-tiles
@@ -13,14 +13,6 @@
 
 (require "./grids.rkt")
 (require "./sheets.rkt")
-
-(define (choose-between prob a b)
-  (if (< (random) prob)
-      a
-      b))
-
-(define (add-noise sym prob g)
-  (grid-map (curry choose-between prob sym) g))
 
 
 (define (render-ground g mapping)
