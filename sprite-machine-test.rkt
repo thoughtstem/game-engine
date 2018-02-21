@@ -79,7 +79,7 @@
   (game new-sm new-input)                       ;Otherwise, why are we even storing input in the state when it's in the machine already?
   )
 
-(big-bang (game sm2 'left)
+(big-bang (game sm 'left)
           (on-tick tick)
           (on-key  key)
           (to-draw (lambda (x) (render (current-sprite (game-sm x))))))

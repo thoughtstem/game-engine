@@ -18,7 +18,8 @@
          ticks            ;How many ticks have passed since last frame change (integer)
          ) #:transparent)
 
-(define (new-sprite costumes rate)
+(define/contract (new-sprite costumes rate)
+  (-> (listof image?) number? animated-sprite?)
   (animated-sprite
     costumes
     0

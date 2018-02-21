@@ -86,6 +86,7 @@
   [(define (word-output w)
      (match-define (demo g/v state) w)
      (g/v (draw state)))
+
    (define (word-event w e)
      (match-define (demo g/v state) w)
      (match-define (game g sprite) state)
@@ -108,7 +109,6 @@
        [else
         (demo g/v state)]))
 
-   
    (define (word-tick w)
      (match-define (demo g/v state) w)
      (match-define (game data sprite) state)
