@@ -4,10 +4,13 @@
          (struct-out entity-name)
          entity-animation
          sprite->entity
+         sprite->bb
          update-entity
          get-component
          add-component
+         add-components
          get-name
+         basic-entity
 
          colliding-with
 
@@ -71,12 +74,29 @@
   (match-define (entity components) e)
   (entity (cons c components)))
 
+(define (add-components e . cs)
+  (if (empty? cs)
+      e
+      (apply (curry add-components (add-component e (first cs)))
+             (rest cs))))
 
-
-(define (sprite->entity s)
-  (entity (list (posn 0 0)
+(define (basic-entity p s)
+  (entity (list p
                 (image->bb (render s))
                 s)))
+
+(define (sprite->entity sprite #:position p
+                               #:name     n
+                               #:components (c #f)
+                               . cs)
+  (define all-cs (filter identity (cons
+                                   (entity-name n)
+                                   (cons c cs))))
+  (apply (curry add-components (basic-entity p sprite) )
+         all-cs))
+
+(define (sprite->bb s)
+  (image->bb (render s)))
 
 (define (image->bb i)
   (bb
@@ -103,7 +123,7 @@
       #t
       #f))
 
-(struct on-collide (func))
+(struct on-collide (name func))
 
 
 ;Input
@@ -199,6 +219,11 @@
 (define (is-colliding? e g)
   (findf (curry member e) (game-collisions g)))
 
+(define (is-colliding-with? name g me)
+  (define names (map get-name (colliding-with me g)))
+  (member name names))
+
+
 (define (extract-out e l)
   (define (not-eq? e o)
     (not (eq? e o)))
@@ -214,7 +239,7 @@
     [(key-movement? c)              (update-key-movement g e c)]
     [(animated-sprite? c)           (update-animated-sprite g e c)]
     [(and (on-collide? c)
-          (is-colliding? e g))      ((on-collide-func c) g e)]
+          (is-colliding-with? (on-collide-name c) g e))      ((on-collide-func c) g e)]
     [else e]))
 
 (define (tick-entity g e)
@@ -243,7 +268,7 @@
   (struct-copy game g
                [collisions (current-collisions g)]))
 
-(define (start-game initial-world)
+(define (start-game . initial-world)
   (define larger-state (game initial-world
                              (button-states #f #f #f #f)
                              '()))

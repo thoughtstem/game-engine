@@ -6,9 +6,24 @@
          sheet->costume-list
          animation-finished?
          reset-animation
-         (struct-out animated-sprite))
+         (struct-out animated-sprite)
+         sheet->sprite)
 
 (require 2htdp/image)
+(require threading)
+
+;Convenience methods for going from sheets to sprites
+
+(define (sheet->sprite sheet #:rows    r
+                             #:columns c
+                             #:row-number  n
+                             #:speed   s)
+  (~> sheet
+      (sheet->costume-list _ c r (* r c))
+      (drop _ (* (- n 1) c))
+      (take _ c)
+      (new-sprite _ s)))
+
 
 (struct animated-sprite
         (
