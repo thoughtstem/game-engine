@@ -25,8 +25,12 @@
          button-states-up
          button-states-down
          key-movement
+         key-animator
          
          start-game
+         test-sprite
+         test-character
+         
          set-game-state
 
          draw)
@@ -129,6 +133,7 @@
 ;Input
 
 (struct key-movement (speed))
+(struct key-animator (current animation))
 
 (struct button-states [left right up down])
 
@@ -213,6 +218,25 @@
                         (velocity-from-buttons (game-input g)
                                                (key-movement-speed c)))))
 
+(define (update-key-animator g e c)
+  (define pdir (velocity-from-buttons (game-input g)
+                                     5))
+  (define new-dir (cond
+                    [(= 0 (posn-x pdir) (posn-y pdir)) 'none]
+                    [(> (posn-x pdir) 0) 'right]
+                    [(< (posn-x pdir) 0) 'left]
+                    [(< (posn-y pdir) 0) 'up]
+                    [(> (posn-y pdir) 0) 'down]))
+
+  (define current-dir (key-animator-current c))
+  (if (equal? new-dir current-dir)
+      e
+      (~> e
+          (update-entity _ key-animator?
+                         (key-animator new-dir (key-animator-animation c)))
+          (update-entity _ animated-sprite?
+                         ((key-animator-animation c) new-dir)))))
+
 (define (update-animated-sprite g e c)
   (update-entity e animated-sprite? next-frame))
 
@@ -237,6 +261,7 @@
 (define (tick-component g e c)
   (cond
     [(key-movement? c)              (update-key-movement g e c)]
+    [(key-animator? c)              (update-key-animator g e c)]
     [(animated-sprite? c)           (update-animated-sprite g e c)]
     [(and (on-collide? c)
           (is-colliding-with? (on-collide-name c) g e))      ((on-collide-func c) g e)]
@@ -268,14 +293,49 @@
   (struct-copy game g
                [collisions (current-collisions g)]))
 
+
+(define (sample-bg w)
+  (define bg-sprite
+          (sheet->sprite (square w "solid" "black")
+                 #:rows        1
+                 #:columns     1
+                 #:row-number  1
+                 #:speed       1))
+  (sprite->entity bg-sprite
+                  #:position   (posn 0 0)
+                  #:name       "bg"))
+
+
+(define (test-character c)
+  (define s  (c 'none))
+  (define ff (render s))
+  
+  (define e
+    (sprite->entity s
+                  #:position   (posn (image-width ff)
+                                     (image-width ff))
+                  #:name       "test"
+                  #:components (key-animator 'none c)))
+  
+  (start-game e (sample-bg (* 2 (image-width ff)))))
+
+(define (test-sprite s)
+  (define ff (render s))
+  
+  (define e
+    (sprite->entity s
+                  #:position   (posn (image-width ff) (image-width ff))
+                  #:name       "test"))
+  
+  (start-game e (sample-bg (* 2 (image-width ff)))))
+
 (define (start-game . initial-world)
   (define larger-state (game initial-world
                              (button-states #f #f #f #f)
                              '()))
   
-  (big-bang larger-state                         ; <-- initial state
-            (on-tick    tick)                    ; <-- motion and collision detection happens here
-            (to-draw    draw)                    ; <-- redraws the world
-            (on-key     handle-key-down)         ; <-- process the event of key release
-            (on-release handle-key-up)))         ; <-- process the event of key release
-
+  (big-bang larger-state                        
+            (on-tick    tick)                    
+            (to-draw    draw)                    
+            (on-key     handle-key-down)         
+            (on-release handle-key-up)))         

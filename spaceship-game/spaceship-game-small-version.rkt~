@@ -1,7 +1,6 @@
 #lang racket
 
-(require "../game-engine.rkt"
-         "./assets/space-bg-generator.rkt")
+(require "../game-engine.rkt")
 
 (define WIDTH  640)
 (define HEIGHT 480)

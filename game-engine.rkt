@@ -9,7 +9,7 @@
  (all-from-out "game-entities.rkt")
  (all-from-out "animated-sprites.rkt")
  (all-from-out "sprite-machine.rkt")
- (all-from-out "space-bg-generator.rkt")
+
 
  #%module-begin)
 
@@ -21,5 +21,5 @@
 (require "game-entities.rkt")
 (require "animated-sprites.rkt")
 (require "sprite-machine.rkt")
-(require "space-bg-generator.rkt")
+
 

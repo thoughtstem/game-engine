@@ -2,8 +2,7 @@
 
 (provide space-bg-sprite)
 
-(require "animated-sprites.rkt")
-(require 2htdp/image)
+(require "../../game-engine.rkt")
 
 (define (space-bg-sprite w h n)
   (define ps (map list (map (thunk* (random w)) (range n))

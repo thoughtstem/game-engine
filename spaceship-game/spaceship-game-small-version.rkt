@@ -1,35 +1,15 @@
 #lang racket
 
 (require "../game-engine.rkt"
+         "./assets/spaceship-sprite.rkt"
+         "./assets/ore-sprite.rkt"
          "./assets/space-bg-generator.rkt")
 
 (define WIDTH  640)
 (define HEIGHT 480)
 
-;ASSETS
-
-(define spaceship-sheet (bitmap/url "http://i.imgur.com/8zY5sBR.png"))
-(define ore-sheet (bitmap/url "http://twicetwo.com/gallery/cgi/powerups.png"))
-(define bg-sprite (space-bg-sprite WIDTH HEIGHT 100))
-
-(define spaceship-sprite
-  (sheet->sprite spaceship-sheet
-                 #:rows        4
-                 #:columns     3
-                 #:row-number  3
-                 #:speed       1))
-
-(define (ore-sprite i)
-  (sheet->sprite ore-sheet
-                 #:rows        20
-                 #:columns     8
-                 #:row-number  (+ 1 i)
-                 #:speed       1))
-
-;ENTITIES
-
 (define bg-entity
-  (sprite->entity bg-sprite
+  (sprite->entity (space-bg-sprite WIDTH HEIGHT 100)
                   #:position (posn 0 0)
                   #:name     "bg"))
 
@@ -37,7 +17,9 @@
   (sprite->entity spaceship-sprite
                   #:position   p
                   #:name       "ship"
-                  #:components (key-movement 5)))
+                  #:components (key-movement 5)
+                               ;(key-animator 'none spaceship-animator)
+                               ))
 
 (define (ore-entity p)
   (sprite->entity (ore-sprite (random 10))
@@ -49,9 +31,8 @@
   (ore-entity (posn (random WIDTH)
                     (random HEIGHT))))
 
-;GAME
-
 (start-game (spaceship-entity (posn 100 400))
             (ore-entity       (posn 200 400))
             bg-entity)
 
+  
