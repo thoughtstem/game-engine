@@ -26,6 +26,7 @@
          button-states-down
          key-movement
          key-animator
+         physical-collider
          
          start-game
          test-sprite
@@ -129,6 +130,7 @@
 
 (struct on-collide (name func))
 
+(struct physical-collider ())
 
 ;Input
 
@@ -247,6 +249,12 @@
   (define names (map get-name (colliding-with me g)))
   (member name names))
 
+(define (colliding-with-other-physical-colliders? g e)
+  (and (get-component e physical-collider?)
+       (not
+        (empty?
+         (filter identity
+                 (map (curryr get-component physical-collider?) (colliding-with e g)))))))
 
 (define (extract-out e l)
   (define (not-eq? e o)
@@ -258,7 +266,8 @@
    (map (curry extract-out e)
         (filter (curry member e) (game-collisions g)))))
 
-(define (tick-component g e c)
+
+(define (main-tick-component g e c)
   (cond
     [(key-movement? c)              (update-key-movement g e c)]
     [(key-animator? c)              (update-key-animator g e c)]
@@ -267,12 +276,32 @@
           (is-colliding-with? (on-collide-name c) g e))      ((on-collide-func c) g e)]
     [else e]))
 
-(define (tick-entity g e)
+(define (tick-component g e c)
+  (define next-entity-state (main-tick-component g e c))
+  next-entity-state)
+
+(define (main-tick-entity g e)
   (foldl
    (lambda (c e2)
      (tick-component g e2 c))
    e
    (entity-components e)))
+
+(define (tick-entity g e)
+  ;Naive physics:
+  ;If there's a physical collider on e,
+  ; And we were previously not colliding,
+  ; And we are colliding on the next state,
+  ; Then set the entity's position back to the previous position
+  (define previous-posn (get-component e posn?))
+  
+  (define next-entity-state (main-tick-entity g e))
+
+  (define predicted-g (update-collisions (game-replace-entity g next-entity-state)))
+  
+  (if (colliding-with-other-physical-colliders? predicted-g next-entity-state)
+      (update-entity next-entity-state posn? previous-posn)
+      next-entity-state))
 
 (define (tick-entities g)
   (define es (game-entities g))
@@ -284,6 +313,16 @@
     (~> g
         update-collisions
         tick-entities)))
+
+(define (game-replace-entity g e)
+  (define (replace-entity e1)
+    (lambda (e2)
+      (if (equal? (get-name e1)
+                  (get-name e2))
+          e1
+          e2)))
+  (struct-copy game g
+               [entities (map (replace-entity e) (game-entities g))]))
 
 (define (current-collisions g)
   (filter (curry apply touching?)

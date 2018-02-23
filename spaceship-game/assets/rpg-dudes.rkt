@@ -26,5 +26,5 @@
       ['down 1]))
   (rpg-sprite-row r))
 
-;(test-character rpg-animator)
+(test-character rpg-animator)
 

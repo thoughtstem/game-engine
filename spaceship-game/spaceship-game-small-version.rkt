@@ -18,14 +18,24 @@
                   #:position   p
                   #:name       "ship"
                   #:components (key-movement 5)
+                               (physical-collider)
                                ;(key-animator 'none spaceship-animator)
                                ))
+
+(define (enemy-entity p)
+  (sprite->entity (spaceship-animator 'left)
+                  #:position   p
+                  #:name       "enemy"
+                  #:components  (physical-collider)
+                  ))
 
 (define (ore-entity p)
   (sprite->entity (ore-sprite (random 10))
                   #:position   p
                   #:name       "ore"
-                  #:components (on-collide "ship" randomly-relocate-me)))
+                  #:components ;(key-movement 1)
+                               (on-collide "ship" randomly-relocate-me)
+                                ))
 
 (define (randomly-relocate-me g e)
   (ore-entity (posn (random WIDTH)
@@ -33,6 +43,7 @@
 
 (start-game (spaceship-entity (posn 100 400))
             (ore-entity       (posn 200 400))
+            (enemy-entity     (posn 300 300))
             bg-entity)
 
   
