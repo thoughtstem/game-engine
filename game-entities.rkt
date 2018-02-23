@@ -120,13 +120,27 @@
 
   (match-define (posn e1-x e1-y) (get-component e1 posn? ))
   (match-define (posn e2-x e2-y) (get-component e2 posn? ))
-  
+
+
+;The following assumes images are positioned by the center point
+;#|
+  (if (and (>= (- e1-x e2-x) (- (+ (+ (/ e1-w 2) (/ e2-w 2)) 10)))
+           (<= (- e1-x e2-x)    (- (+ (/ e1-w 2) (/ e2-w 2)) 10))
+           (>= (- e1-y e2-y) (- (+ (+ (/ e1-h 2) (/ e2-h 2)) 10)))
+           (<= (- e1-y e2-y)    (- (+ (/ e1-h 2) (/ e2-h 2)) 10)))
+      #t
+      #f))
+;|#
+
+;; The following assumes images are positioned by the top left corner
+#|
   (if (and (>= (- e1-x e2-x) (+ (- e1-w) 10))
            (<= (- e1-x e2-x) (- e2-w     10))
            (>= (- e1-y e2-y) (+ (- e1-h) 10))
            (<= (- e1-y e2-y) (- e2-h     10)))
       #t
       #f))
+|#
 
 (struct on-collide (name func))
 
