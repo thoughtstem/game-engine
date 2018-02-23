@@ -26,8 +26,7 @@
   (sprite->entity (spaceship-animator 'left)
                   #:position   p
                   #:name       "enemy"
-                  #:components  (physical-collider)
-                  ))
+                  #:components  (physical-collider)))
 
 (define (ore-entity p)
   (sprite->entity (ore-sprite (random 10))
