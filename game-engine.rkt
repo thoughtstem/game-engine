@@ -8,7 +8,7 @@
  (all-from-out posn)
  (all-from-out "game-entities.rkt")
  (all-from-out "animated-sprites.rkt")
- (all-from-out "sprite-machine.rkt")
+ (all-from-out "ai.rkt")
 
 
  #%module-begin)
@@ -20,6 +20,6 @@
 (require posn)
 (require "game-entities.rkt")
 (require "animated-sprites.rkt")
-(require "sprite-machine.rkt")
+(require "ai.rkt")
 
 

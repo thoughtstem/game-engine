@@ -2,19 +2,30 @@
 
 (provide (struct-out entity)
          (struct-out entity-name)
+         (struct-out every-tick)
+         (struct-out spawner)
+         (struct-out health)
+         (struct-out key-movement)
+         (struct-out hidden)
+         
+         (struct-out game)
+         
          entity-animation
          sprite->entity
          sprite->bb
          update-entity
          get-component
          add-component
+         remove-component
          add-components
          get-name
          basic-entity
+         dead
+         die
 
          colliding-with
 
-         (struct-out game)
+         
          image->bb
          touching?
          on-collide
@@ -24,7 +35,7 @@
          button-states-right
          button-states-up
          button-states-down
-         key-movement
+         
          key-animator
          physical-collider
          
@@ -33,6 +44,8 @@
          test-character
          
          set-game-state
+
+         after-time
 
          draw)
 
@@ -63,21 +76,30 @@
 
 (define (update-component components component-pred f)
   (define ci (index-where components component-pred))
-  (define old-component (list-ref components ci))
-  (if (procedure? f)
-      (list-set components ci (f old-component))
-      (list-set components ci f)))
+  (if ci
+      (let [(old-component (list-ref components ci))]
+        (if old-component
+            (if (procedure? f)
+                (list-set components ci (f old-component))
+                (list-set components ci f))
+            components))
+      components))
 
 (define (update-entity e component-pred f)
   (match-define (entity components) e)
   (entity (update-component components component-pred f)))
 
-(define (get-component e component-pred)
+(define/contract (get-component e component-pred)
+  (-> entity? any/c any/c)
   (findf component-pred (entity-components e)))
 
 (define (add-component e c)
   (match-define (entity components) e)
   (entity (cons c components)))
+
+(define (remove-component e c?)
+  (match-define (entity components) e)
+  (entity (filter (lambda (c) (not (c? c))) components)))
 
 (define (add-components e . cs)
   (if (empty? cs)
@@ -145,6 +167,8 @@
 (struct on-collide (name func))
 
 (struct physical-collider ())
+
+(struct every-tick (func))
 
 ;Input
 
@@ -217,7 +241,6 @@
       (let* ([p (get-component (first es) posn?)]
              [x (posn-x p)]
              [y (posn-y p)])
-        ;(displayln (first es))
         (place-image (draw-entity (first es))
                      x y
                      (draw-entities (rest es))))))
@@ -225,7 +248,8 @@
 
 (define/contract (draw g)
   (-> game? image?)
-  (define entities (game-entities g))
+  (define (not-hidden e) (not (get-component e hidden?)))
+  (define entities (filter not-hidden (game-entities g)))
   (draw-entities entities))
 
 (define (update-key-movement g e c)
@@ -283,6 +307,10 @@
 
 (define (main-tick-component g e c)
   (cond
+    [(after-time? c)                (update-after-time g e c)]
+    [(health?     c)                (update-health     g e c)]
+    [(every-tick? c)                ((every-tick-func c) g e)]
+    [(spawner?    c)                (update-spawner g e c)]
     [(key-movement? c)              (update-key-movement g e c)]
     [(key-animator? c)              (update-key-animator g e c)]
     [(animated-sprite? c)           (update-animated-sprite g e c)]
@@ -326,7 +354,16 @@
   (lambda (g)
     (~> g
         update-collisions
-        tick-entities)))
+        tick-entities
+        handle-dead
+        handle-spawns
+        )))
+
+(define (handle-dead g)
+  (define is-alive? (lambda (e) (not (get-component e dead?))))
+  (struct-copy game g
+               [entities (filter is-alive? (game-entities g))]))
+
 
 (define (game-replace-entity g e)
   (define (replace-entity e1)
@@ -346,6 +383,109 @@
   (struct-copy game g
                [collisions (current-collisions g)]))
 
+;SPAWNERS
+
+(struct spawner (spawn speed accum next) #:transparent)
+
+(define (spawner-ready? s)
+  (>= (spawner-accum s)
+      (spawner-speed s)))
+
+(define (spawner-reset s)
+  (struct-copy spawner s
+               [accum 0]
+               [next #f]))
+
+(define (spawner-do-spawn e) 
+  (lambda (s)
+    (define new-entity (update-entity (spawner-spawn s) posn? (get-component e posn?)))
+    (struct-copy spawner s
+                 [next new-entity])))
+
+(define (spawner-inc s)
+  (struct-copy spawner s
+               [accum (add1 (spawner-accum s))]))
+
+(define (update-spawner g e c)
+  (define new-c (spawner-inc c))
+  
+  (if (spawner-ready? new-c)
+      (update-entity e spawner? ((spawner-do-spawn e) new-c))
+      (update-entity e spawner? new-c)))
+
+(define/contract (collect-spawns es)
+  (-> (listof entity?) (listof entity?))
+  (define spawners (filter identity (map (λ(x) (get-component x spawner?)) es)))
+  (filter identity (map spawner-next spawners)))
+
+(define (reset-spawners es)
+  (define maybe-spawner-reset (lambda (x) (if (spawner-ready? x)
+                                              (spawner-reset x)
+                                              x)))
+  (map (λ(x) (update-entity x spawner? maybe-spawner-reset)) es))
+
+(define (handle-spawns g)
+  (define es     (game-entities g))
+  (define new-es (collect-spawns es))
+  (define all    (append new-es (reset-spawners es)))
+  
+  (struct-copy game g
+               [entities all]))
+
+;END SPAWNERS
+
+
+;DEAD ENTITIES
+
+(struct dead ())
+
+(define (die g e)
+  (add-component e (dead)))
+
+;END DEAD ENTITIES
+
+
+;AFTER TIME
+
+(struct after-time (accum speed func))
+
+(define (reset-after-time a)
+  (struct-copy after-time a
+               [accum 0]))
+
+(define (inc-after-time a)
+  (struct-copy after-time a
+               [accum (add1 (after-time-accum a))]))
+
+(define (after-time-ready? a)
+  (>= (after-time-accum a)
+      (after-time-speed a)))
+
+(define (update-after-time g e c)
+  (if (after-time-ready? c)
+      (update-entity ((after-time-func c) g e) after-time? reset-after-time)
+      (update-entity e                     after-time? inc-after-time)))
+
+;END AFTER TIME
+
+
+;START HEALTH
+
+(struct health (amount))
+
+(define (update-health     g e c)
+  (if (= 0 (health-amount c))
+      (die g e)
+      e))
+
+;END HEALTH
+
+;HIDDEN
+
+(struct hidden ())
+
+;END HIDDEN
+
 
 (define (sample-bg w)
   (define bg-sprite
@@ -357,7 +497,6 @@
   (sprite->entity bg-sprite
                   #:position   (posn 0 0)
                   #:name       "bg"))
-
 
 (define (test-character c)
   (define s  (c 'none))
@@ -386,7 +525,6 @@
   (define larger-state (game initial-world
                              (button-states #f #f #f #f)
                              '()))
-  
   (big-bang larger-state                        
             (on-tick    tick)                    
             (to-draw    draw)                    
