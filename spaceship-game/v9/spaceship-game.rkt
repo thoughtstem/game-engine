@@ -40,10 +40,10 @@
                                 (spawner bullet 20)))
 
 (define bullet
-  (sprite->entity (new-sprite (list (circle 5 "solid" "red")
-                                    (circle 5 "solid" "orange")
-                                    (circle 5 "solid" "yellow")
-                                    (circle 5 "solid" "orange")) 1)
+  (sprite->entity (new-sprite (list (circle 20 "solid" "red")
+                                    (circle 20 "solid" "orange")
+                                    (circle 20 "solid" "yellow")
+                                    (circle 20 "solid" "orange")) 1)
                   #:position   (posn 100 100)
                   #:name       "bullet"
                   #:components (every-tick (move-left #:min   0

@@ -23,9 +23,19 @@
                [accum 0]
                [next #f]))
 
+
+(define (next-spawn s)
+  (define s2 (spawner-spawn s))
+  (if (procedure? s2)
+      (s2)
+      s2))
+
 (define (spawner-do-spawn e) 
   (lambda (s)
-    (define new-entity (update-entity (spawner-spawn s) posn? (get-component e posn?)))
+    (define to-spawn (next-spawn s))
+    
+    (define new-entity (update-entity to-spawn posn? (get-component e posn?)))
+    
     (struct-copy spawner s
                  [next new-entity])))
 

@@ -60,7 +60,8 @@
 
 (start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
             (game-over-screen won? lost?)
-            (ore-entity (posn 400 400))
             (spaceship-entity)
+            (ore-entity (posn 400 400))
             (enemy-entity (posn 300 300))
+            (enemy-entity (posn 400 200))
             bg-entity)

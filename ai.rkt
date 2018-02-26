@@ -2,10 +2,13 @@
 
 (provide move-up-and-down
          move-left
-         move-random)
+         move-random
+         spin)
 
 (require posn)
 (require "./game-entities.rkt")
+(require 2htdp/image)
+(require "./components/animated-sprite.rkt")
 
 ;A Lot of these could be implemented better (less stateful?)
 ;  Or go full state machine?
@@ -36,13 +39,19 @@
 
 
 (define (move-random #:speed s)
+  (define rx (* s (random -1 2)))
+  (define ry (* s (random -1 2)))
   (lambda (g e)
-    (define rx (* s (random -10 10)))
-    (define ry (* s (random -10 10)))
     (define current-pos-y (posn-y (get-component e posn?)))
     (define current-pos-x (posn-x (get-component e posn?)))
     (update-entity e posn? (posn (+ rx current-pos-x)
                                  (+ ry current-pos-y)))))
+
+
+(define (spin #:speed s)
+  (lambda (g e)
+    (define f (λ(i) (rotate s i)))
+    (update-entity e animated-sprite? (curry sprite-map f))))
 
 
 

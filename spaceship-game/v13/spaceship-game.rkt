@@ -7,8 +7,8 @@
          "../assets/spaceship-sprite.rkt"
          "../assets/space-bg-generator.rkt")
 
-(define WIDTH  640)
-(define HEIGHT 480)
+(define WIDTH  800)
+(define HEIGHT 800)
 
 (define bg-entity
   (sprite->entity (space-bg-sprite WIDTH HEIGHT 100)
@@ -60,7 +60,9 @@
 
 (start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
             (game-over-screen won? lost?)
-            (ore-entity (posn 400 400))
             (spaceship-entity)
-            (enemy-entity (posn 300 300))
+            (ore-entity (posn 400 400))
+            (enemy-entity (posn 500 300))
+            (enemy-entity (posn 600 200))
+            (enemy-entity (posn 700 100))
             bg-entity)

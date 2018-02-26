@@ -39,17 +39,27 @@
                                                               #:speed 10))
                                 (spawner bullet 20)))
 
+(define (bullet2)
+  (sprite->entity (new-sprite (list (circle 2 "solid" "red")
+                                    (circle 2 "solid" "orange")
+                                    (circle 2 "solid" "yellow")
+                                    (circle 2 "solid" "orange")) 1)
+                  #:position   (posn 100 100)
+                  #:name       "bullet"
+                  #:components (every-tick (move-random #:speed 8))
+                               (after-time 10     die)  
+                               (on-collide "ship" die)))
+
 (define bullet
-  (sprite->entity (new-sprite (list (circle 5 "solid" "red")
-                                    (circle 5 "solid" "orange")
-                                    (circle 5 "solid" "yellow")
-                                    (circle 5 "solid" "orange")) 1)
+  (sprite->entity (sprite-map (lambda (i)
+                                (scale 0.35 i)) (spaceship-animator 'left))
                   #:position   (posn 100 100)
                   #:name       "bullet"
                   #:components (every-tick (move-left #:min   0
-                                                      #:speed 5))
-                               (after-time 50     die)  
-                               (on-collide "ship" die)))
+                                                      #:speed 3))
+                               (after-time 75     die)  
+                               (on-collide "ship" die)
+                               (spawner (thunk* (bullet2)) 10)))
 
 (define (lost? g e)
   (not (get-entity "ship" g)))
@@ -60,7 +70,7 @@
 
 (start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
             (game-over-screen won? lost?)
-            (ore-entity (posn 400 400))
             (spaceship-entity)
-            (enemy-entity (posn 300 300))
+            (ore-entity (posn 400 400))
+            (enemy-entity (posn 500 300))
             bg-entity)

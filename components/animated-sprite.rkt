@@ -7,7 +7,8 @@
          animation-finished?
          reset-animation
          (struct-out animated-sprite)
-         sheet->sprite)
+         sheet->sprite
+         sprite-map)
 
 
 (require 2htdp/image)
@@ -33,6 +34,10 @@
          rate             ;How many ticks before switching frames (integer)
          ticks            ;How many ticks have passed since last frame change (integer)
          ) #:transparent)
+
+(define (sprite-map f s)
+  (struct-copy animated-sprite s
+               [frames (map f (animated-sprite-frames s))]))
 
 (define/contract (new-sprite costumes (rate 1))
   (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
