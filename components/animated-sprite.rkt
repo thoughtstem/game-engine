@@ -9,6 +9,7 @@
          (struct-out animated-sprite)
          sheet->sprite)
 
+
 (require 2htdp/image)
 (require threading)
 
@@ -22,7 +23,7 @@
       (sheet->costume-list _ c r (* r c))
       (drop _ (* (- n 1) c))
       (take _ c)
-      (new-sprite _ s)))
+      (new-sprite _ s)))  
 
 
 (struct animated-sprite
@@ -33,10 +34,13 @@
          ticks            ;How many ticks have passed since last frame change (integer)
          ) #:transparent)
 
-(define/contract (new-sprite costumes rate)
-  (-> (listof image?) number? animated-sprite?)
+(define/contract (new-sprite costumes (rate 1))
+  (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
+  (define list-costumes (if (list? costumes)
+                            costumes
+                            (list costumes)))
   (animated-sprite
-    costumes
+    list-costumes
     0
     rate
     0))
@@ -100,7 +104,6 @@
 (define (sheet->costume-list sheet tiles-across tiles-down total)
   (take (flatten (sheet->costume-grid sheet tiles-across tiles-down))
         total))
-
 
 
 

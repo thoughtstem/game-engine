@@ -7,7 +7,11 @@
  (all-from-out threading)
  (all-from-out posn)
  (all-from-out "game-entities.rkt")
- (all-from-out "animated-sprites.rkt")
+ (all-from-out "components/key-movement.rkt")
+ (all-from-out "components/after-time.rkt")
+ (all-from-out "components/animated-sprite.rkt")
+ (all-from-out "components/health.rkt")
+ (all-from-out "components/on-collide.rkt")
  (all-from-out "ai.rkt")
 
 
@@ -19,7 +23,11 @@
 (require threading)
 (require posn)
 (require "game-entities.rkt")
-(require "animated-sprites.rkt")
+(require "components/key-movement.rkt")
+(require "components/after-time.rkt")
+(require "components/animated-sprite.rkt")
+(require "components/health.rkt")
+(require "components/on-collide.rkt")
 (require "ai.rkt")
 
 

@@ -1,11 +1,11 @@
 #lang racket
 
-(provide (struct-out entity)
+(provide new-component
+         (struct-out entity)
          (struct-out entity-name)
          (struct-out every-tick)
          (struct-out spawner)
-         (struct-out health)
-         (struct-out key-movement)
+         
          (struct-out hidden)
          
          (struct-out game)
@@ -24,11 +24,11 @@
          die
 
          colliding-with
+         is-colliding-with?
 
          
          image->bb
          touching?
-         on-collide
          button-states
          button-states?
          button-states-left
@@ -45,14 +45,14 @@
          
          set-game-state
 
-         after-time
-
-         draw)
+         draw
+         game-width
+         game-height)
 
 (require posn)
 (require 2htdp/image)
 (require 2htdp/universe)
-(require "animated-sprites.rkt")
+(require "./components/animated-sprite.rkt")
 
 (require threading)
 
@@ -60,6 +60,30 @@
 (struct entity [components] #:transparent)
 
 (struct entity-name (string))
+
+(define component-handlers (hash))
+
+(define (new-component struct? update)
+  (set! component-handlers
+        (hash-set component-handlers struct? update)))
+
+(define (get-handler-for-component c)
+  (define types    (hash-keys component-handlers))
+  (define has-type (lambda (c t) (t c)))
+  (define type     (findf (curry has-type c) types))
+  (hash-ref component-handlers type #f))
+
+
+;Animated sprites are components, but we'll handle them specially
+; at least until we can untangle them bettter...
+(define (update-animated-sprite g e c)
+  (update-entity e animated-sprite? next-frame))
+
+(new-component animated-sprite?
+               update-animated-sprite)
+
+
+
 
 (define (get-name e)
   (define n (get-component e entity-name?))
@@ -112,13 +136,16 @@
                 (image->bb (render s))
                 s)))
 
-(define (sprite->entity sprite #:position p
+(define (sprite->entity sprite-or-image #:position p
                                #:name     n
                                #:components (c #f)
                                . cs)
   (define all-cs (filter identity (cons
                                    (entity-name n)
                                    (cons c cs))))
+  (define sprite (if (animated-sprite? sprite-or-image)
+                     sprite-or-image
+                     (new-sprite sprite-or-image)))
   (apply (curry add-components (basic-entity p sprite) )
          all-cs))
 
@@ -143,28 +170,13 @@
   (match-define (posn e1-x e1-y) (get-component e1 posn? ))
   (match-define (posn e2-x e2-y) (get-component e2 posn? ))
 
-
-;The following assumes images are positioned by the center point
-;#|
   (if (and (>= (- e1-x e2-x) (- (+ (+ (/ e1-w 2) (/ e2-w 2)) 10)))
            (<= (- e1-x e2-x)    (- (+ (/ e1-w 2) (/ e2-w 2)) 10))
            (>= (- e1-y e2-y) (- (+ (+ (/ e1-h 2) (/ e2-h 2)) 10)))
            (<= (- e1-y e2-y)    (- (+ (/ e1-h 2) (/ e2-h 2)) 10)))
       #t
       #f))
-;|#
 
-;; The following assumes images are positioned by the top left corner
-#|
-  (if (and (>= (- e1-x e2-x) (+ (- e1-w) 10))
-           (<= (- e1-x e2-x) (- e2-w     10))
-           (>= (- e1-y e2-y) (+ (- e1-h) 10))
-           (<= (- e1-y e2-y) (- e2-h     10)))
-      #t
-      #f))
-|#
-
-(struct on-collide (name func))
 
 (struct physical-collider ())
 
@@ -172,7 +184,6 @@
 
 ;Input
 
-(struct key-movement (speed))
 (struct key-animator (current animation))
 
 (struct button-states [left right up down])
@@ -188,7 +199,6 @@
 
 (define (button-states-set-down btn-states down)
   (struct-copy button-states btn-states [down down]))
-
 
 (struct game (entities input collisions) #:transparent)
 
@@ -221,14 +231,7 @@
                   [else btn-states])]))
 
 
-(define/contract (velocity-from-buttons btn-states speed)
-  (-> button-states? number? posn?)
-  (define leftVel  (if (button-states-left btn-states) (- speed) 0))
-  (define rightVel (if (button-states-right btn-states)   speed  0))
-  (define upVel    (if (button-states-up btn-states) (- speed) 0))
-  (define downVel  (if (button-states-down btn-states)   speed  0))
-  (posn (+ leftVel rightVel)
-        (+ upVel downVel)))
+
 
 
 
@@ -252,11 +255,15 @@
   (define entities (filter not-hidden (game-entities g)))
   (draw-entities entities))
 
-(define (update-key-movement g e c)
-  (update-entity e posn?
-                 (curry posn-add
-                        (velocity-from-buttons (game-input g)
-                                               (key-movement-speed c)))))
+
+(define/contract (velocity-from-buttons btn-states speed)
+  (-> button-states? number? posn?)
+  (define leftVel  (if (button-states-left btn-states) (- speed) 0))
+  (define rightVel (if (button-states-right btn-states)   speed  0))
+  (define upVel    (if (button-states-up btn-states) (- speed) 0))
+  (define downVel  (if (button-states-down btn-states)   speed  0))
+  (posn (+ leftVel rightVel)
+        (+ upVel downVel)))
 
 (define (update-key-animator g e c)
   (define pdir (velocity-from-buttons (game-input g)
@@ -277,9 +284,7 @@
           (update-entity _ animated-sprite?
                          ((key-animator-animation c) new-dir)))))
 
-(define (update-animated-sprite g e c)
-  (update-entity e animated-sprite? next-frame))
-
+ 
 (define (is-colliding? e g)
   (findf (curry member e) (game-collisions g)))
 
@@ -306,17 +311,14 @@
 
 
 (define (main-tick-component g e c)
-  (cond
-    [(after-time? c)                (update-after-time g e c)]
-    [(health?     c)                (update-health     g e c)]
-    [(every-tick? c)                ((every-tick-func c) g e)]
-    [(spawner?    c)                (update-spawner g e c)]
-    [(key-movement? c)              (update-key-movement g e c)]
-    [(key-animator? c)              (update-key-animator g e c)]
-    [(animated-sprite? c)           (update-animated-sprite g e c)]
-    [(and (on-collide? c)
-          (is-colliding-with? (on-collide-name c) g e))      ((on-collide-func c) g e)]
-    [else e]))
+  (define handler (get-handler-for-component c))
+  (if handler
+      (handler g e c)
+      (cond
+        [(every-tick? c)                ((every-tick-func c) g e)]
+        [(spawner?    c)                (update-spawner g e c)]
+        [(key-animator? c)              (update-key-animator g e c)]
+        [else e])))
 
 (define (tick-component g e c)
   (define next-entity-state (main-tick-component g e c))
@@ -445,40 +447,8 @@
 ;END DEAD ENTITIES
 
 
-;AFTER TIME
-
-(struct after-time (accum speed func))
-
-(define (reset-after-time a)
-  (struct-copy after-time a
-               [accum 0]))
-
-(define (inc-after-time a)
-  (struct-copy after-time a
-               [accum (add1 (after-time-accum a))]))
-
-(define (after-time-ready? a)
-  (>= (after-time-accum a)
-      (after-time-speed a)))
-
-(define (update-after-time g e c)
-  (if (after-time-ready? c)
-      (update-entity ((after-time-func c) g e) after-time? reset-after-time)
-      (update-entity e                     after-time? inc-after-time)))
-
-;END AFTER TIME
 
 
-;START HEALTH
-
-(struct health (amount))
-
-(define (update-health     g e c)
-  (if (= 0 (health-amount c))
-      (die g e)
-      e))
-
-;END HEALTH
 
 ;HIDDEN
 
@@ -486,6 +456,12 @@
 
 ;END HIDDEN
 
+(define (game-width g)
+  (image-width (draw g)))
+
+
+(define (game-height g)
+  (image-height (draw g)))
 
 (define (sample-bg w)
   (define bg-sprite
