@@ -14,4 +14,4 @@
                   #:position   (posn (/ w 2)
                                      (/ h 2))
                   #:name       "ui"
-                  #:components (after-time 0 50 die)))
+                  #:components (after-time 50 die)))

@@ -1,10 +1,9 @@
 #lang racket
 
 (provide new-component
+         new-game-function
          (struct-out entity)
          (struct-out entity-name)
-         (struct-out every-tick)
-         (struct-out spawner)
          
          (struct-out hidden)
          
@@ -22,6 +21,7 @@
          basic-entity
          dead
          die
+         get-entity
 
          colliding-with
          is-colliding-with?
@@ -36,13 +36,11 @@
          button-states-up
          button-states-down
          
-         key-animator
+         
          physical-collider
          
          start-game
-         test-sprite
-         test-character
-         
+
          set-game-state
 
          draw
@@ -72,6 +70,13 @@
   (define has-type (lambda (c t) (t c)))
   (define type     (findf (curry has-type c) types))
   (hash-ref component-handlers type #f))
+
+
+(define game-functions (list))
+
+(define (new-game-function update)
+  (set! game-functions
+        (append game-functions (list update))))
 
 
 ;Animated sprites are components, but we'll handle them specially
@@ -136,6 +141,11 @@
                 (image->bb (render s))
                 s)))
 
+(define (get-entity name g)
+  (define (has-name n e)
+    (string=? n (get-name e)))
+  (findf (curry has-name name) (game-entities g)))
+
 (define (sprite->entity sprite-or-image #:position p
                                #:name     n
                                #:components (c #f)
@@ -180,11 +190,8 @@
 
 (struct physical-collider ())
 
-(struct every-tick (func))
-
 ;Input
 
-(struct key-animator (current animation))
 
 (struct button-states [left right up down])
 
@@ -256,33 +263,6 @@
   (draw-entities entities))
 
 
-(define/contract (velocity-from-buttons btn-states speed)
-  (-> button-states? number? posn?)
-  (define leftVel  (if (button-states-left btn-states) (- speed) 0))
-  (define rightVel (if (button-states-right btn-states)   speed  0))
-  (define upVel    (if (button-states-up btn-states) (- speed) 0))
-  (define downVel  (if (button-states-down btn-states)   speed  0))
-  (posn (+ leftVel rightVel)
-        (+ upVel downVel)))
-
-(define (update-key-animator g e c)
-  (define pdir (velocity-from-buttons (game-input g)
-                                     5))
-  (define new-dir (cond
-                    [(= 0 (posn-x pdir) (posn-y pdir)) 'none]
-                    [(> (posn-x pdir) 0) 'right]
-                    [(< (posn-x pdir) 0) 'left]
-                    [(< (posn-y pdir) 0) 'up]
-                    [(> (posn-y pdir) 0) 'down]))
-
-  (define current-dir (key-animator-current c))
-  (if (equal? new-dir current-dir)
-      e
-      (~> e
-          (update-entity _ key-animator?
-                         (key-animator new-dir (key-animator-animation c)))
-          (update-entity _ animated-sprite?
-                         ((key-animator-animation c) new-dir)))))
 
  
 (define (is-colliding? e g)
@@ -309,16 +289,11 @@
    (map (curry extract-out e)
         (filter (curry member e) (game-collisions g)))))
 
-
 (define (main-tick-component g e c)
   (define handler (get-handler-for-component c))
   (if handler
       (handler g e c)
-      (cond
-        [(every-tick? c)                ((every-tick-func c) g e)]
-        [(spawner?    c)                (update-spawner g e c)]
-        [(key-animator? c)              (update-key-animator g e c)]
-        [else e])))
+      e))
 
 (define (tick-component g e c)
   (define next-entity-state (main-tick-component g e c))
@@ -352,13 +327,19 @@
   (struct-copy game g
                [entities (map (curry tick-entity g) es)]))
 
+
+(define (do-game-functions g)
+  (define pipeline (lambda (a-fun a-game)
+                     (a-fun a-game)))
+  (foldl pipeline g game-functions))
+
 (define tick
   (lambda (g)
     (~> g
         update-collisions
         tick-entities
         handle-dead
-        handle-spawns
+        do-game-functions
         )))
 
 (define (handle-dead g)
@@ -385,57 +366,6 @@
   (struct-copy game g
                [collisions (current-collisions g)]))
 
-;SPAWNERS
-
-(struct spawner (spawn speed accum next) #:transparent)
-
-(define (spawner-ready? s)
-  (>= (spawner-accum s)
-      (spawner-speed s)))
-
-(define (spawner-reset s)
-  (struct-copy spawner s
-               [accum 0]
-               [next #f]))
-
-(define (spawner-do-spawn e) 
-  (lambda (s)
-    (define new-entity (update-entity (spawner-spawn s) posn? (get-component e posn?)))
-    (struct-copy spawner s
-                 [next new-entity])))
-
-(define (spawner-inc s)
-  (struct-copy spawner s
-               [accum (add1 (spawner-accum s))]))
-
-(define (update-spawner g e c)
-  (define new-c (spawner-inc c))
-  
-  (if (spawner-ready? new-c)
-      (update-entity e spawner? ((spawner-do-spawn e) new-c))
-      (update-entity e spawner? new-c)))
-
-(define/contract (collect-spawns es)
-  (-> (listof entity?) (listof entity?))
-  (define spawners (filter identity (map (λ(x) (get-component x spawner?)) es)))
-  (filter identity (map spawner-next spawners)))
-
-(define (reset-spawners es)
-  (define maybe-spawner-reset (lambda (x) (if (spawner-ready? x)
-                                              (spawner-reset x)
-                                              x)))
-  (map (λ(x) (update-entity x spawner? maybe-spawner-reset)) es))
-
-(define (handle-spawns g)
-  (define es     (game-entities g))
-  (define new-es (collect-spawns es))
-  (define all    (append new-es (reset-spawners es)))
-  
-  (struct-copy game g
-               [entities all]))
-
-;END SPAWNERS
-
 
 ;DEAD ENTITIES
 
@@ -445,10 +375,6 @@
   (add-component e (dead)))
 
 ;END DEAD ENTITIES
-
-
-
-
 
 ;HIDDEN
 
@@ -474,28 +400,7 @@
                   #:position   (posn 0 0)
                   #:name       "bg"))
 
-(define (test-character c)
-  (define s  (c 'none))
-  (define ff (render s))
-  
-  (define e
-    (sprite->entity s
-                  #:position   (posn (image-width ff)
-                                     (image-width ff))
-                  #:name       "test"
-                  #:components (key-animator 'none c)))
-  
-  (start-game e (sample-bg (* 2 (image-width ff)))))
 
-(define (test-sprite s)
-  (define ff (render s))
-  
-  (define e
-    (sprite->entity s
-                  #:position   (posn (image-width ff) (image-width ff))
-                  #:name       "test"))
-  
-  (start-game e (sample-bg (* 2 (image-width ff)))))
 
 (define (start-game . initial-world)
   (define larger-state (game initial-world

@@ -20,7 +20,7 @@
                   #:name       "ship"
                   #:position   (posn 100 100)
                   #:components (key-movement 5)
-                               (on-collide "ore" (change-speed-by 1)))) 
+                               (on-collide "ore" (increase-speed-by 1))))
 
 (define (ore-entity p)
   (sprite->entity (ore-sprite (random 10))
@@ -29,11 +29,15 @@
                   #:components (on-collide "ship" (randomly-relocate-me 0 WIDTH 0 HEIGHT))))
 
 (define (lost? g e)
-  (not (get-entity "ship" g)))
+  (define names (map get-name (game-entities g)))
+  (not (member "ship" names))) ;Nope this is NOT CLEAR
 
-(define (won? g e) 
-  (define speed (get-speed (get-entity "ship" g)))
+(define (won? g e) ;Nor is this...
+  (define              (name-is s e) (string=? s (get-name e)))
+  (define ship         (findf (curry name-is "ship") (game-entities g)))
+  (define speed        (key-movement-speed (get-component ship key-movement?)))
   (>= speed 10))
+
 
 (start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
             (game-over-screen won? lost?)
@@ -41,3 +45,4 @@
             (spaceship-entity)
             bg-entity)
  
+  
