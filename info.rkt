@@ -5,5 +5,8 @@
 
 
 (define deps '("threading"
-               "posn"))
+               "drracket"
+               "htdp-lib"
+               "jack-posn"
+               "base"))
 
