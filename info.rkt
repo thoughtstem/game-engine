@@ -7,6 +7,6 @@
 (define deps '("threading"
                "drracket"
                "htdp-lib"
-               "https://github.com/jackfirth/racket-posn.git"
+               ;"https://github.com/jackfirth/racket-posn.git"
                "base"))
 
