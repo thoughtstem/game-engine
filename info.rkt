@@ -3,12 +3,12 @@
 ;(define collection 'multi)
 
 (define version "0.0.1")
-(define scribblings '(("manual.scrbl" ())))
+(define scribblings '(("scribblings/manual.scrbl" ())))
 
 
 (define deps '("threading"
                "drracket"
                "htdp-lib"
-               ;"https://github.com/jackfirth/racket-posn.git"
+               "jack-posn"
                "base"))
 
