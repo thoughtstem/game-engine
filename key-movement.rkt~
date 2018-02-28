@@ -1,9 +1,0 @@
-#lang racket
-
-
-(struct key-movement (speed))
-(define (update-key-movement g e c)
-  (update-entity e posn?
-                 (curry posn-add
-                        (velocity-from-buttons (game-input g)
-                                               (key-movement-speed c)))))
