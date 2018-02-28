@@ -1,11 +1,11 @@
 #lang racket
 
-(require "../../game-engine.rkt"
-         "../common/instructions.rkt"
-         "../common/game-over-screen.rkt"
-         "../assets/ore-sprite.rkt"
-         "../assets/spaceship-sprite.rkt"
-         "../assets/space-bg-generator.rkt")
+(require game-engine/main
+         game-engine/spaceship-game/common/instructions
+         game-engine/spaceship-game/common/game-over-screen
+         game-engine/spaceship-game/assets/ore-sprite
+         game-engine/spaceship-game/assets/spaceship-sprite
+         game-engine/spaceship-game/assets/space-bg-generator)
 
 (define WIDTH  640)
 (define HEIGHT 480)

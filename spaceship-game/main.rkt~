@@ -1,0 +1,19 @@
+(require "./v1/spaceship-game.rkt")
+(require "./v2/spaceship-game.rkt")
+(require "./v3/spaceship-game.rkt")
+(require "./v4/spaceship-game.rkt")
+
+(require "./v5/spaceship-game.rkt")
+(require "./v6/spaceship-game.rkt")
+(require "./v7/spaceship-game.rkt")
+(require "./v8/spaceship-game.rkt")
+
+(require "./v9/spaceship-game.rkt")
+(require "./v10/spaceship-game.rkt")
+(require "./v11/spaceship-game.rkt")
+(require "./v12/spaceship-game.rkt")
+
+(require "./v13/spaceship-game.rkt")
+(require "./v14/spaceship-game.rkt")
+(require "./v15/spaceship-game.rkt")
+(require "./v16/spaceship-game.rkt")

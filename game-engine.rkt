@@ -1,7 +1,6 @@
 #lang racket
 
 (provide
-          
  (all-from-out racket)
  (all-from-out 2htdp/image)
  (all-from-out threading)
@@ -37,5 +36,4 @@
 (require "components/key-animator.rkt")
 (require "entity-helpers/movement-util.rkt")
 (require "ai.rkt")
-
 

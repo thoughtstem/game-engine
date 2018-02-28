@@ -1,7 +1,7 @@
 #lang racket
 
-(require "../../game-engine.rkt"
-         "../common/instructions.rkt")
+(require game-engine/main
+         game-engine/spaceship-game/common/instructions)
 
 (define WIDTH  640)
 (define HEIGHT 480)
@@ -22,8 +22,8 @@
                   #:position   (posn 100 100)
                   #:components (key-movement 5)))
 
+
 (start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
             spaceship-entity
             bg-entity)
- 
   

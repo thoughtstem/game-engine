@@ -1,11 +1,11 @@
 #lang racket
 
-(require "../../game-engine.rkt"
-         "../common/instructions.rkt"
-         "../common/game-over-screen.rkt"
-         "../assets/ore-sprite.rkt"
-         "../assets/spaceship-sprite.rkt"
-         "../assets/space-bg-generator.rkt")
+(require game-engine/main
+         game-engine/spaceship-game/common/instructions
+         game-engine/spaceship-game/common/game-over-screen
+         game-engine/spaceship-game/assets/ore-sprite
+         game-engine/spaceship-game/assets/spaceship-sprite
+         game-engine/spaceship-game/assets/space-bg-generator)
 
 (define WIDTH  640)
 (define HEIGHT 480)
@@ -67,13 +67,24 @@
   (>= speed 10))
 
 (start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
+
+            ;A good use for the "children".  Make a wall consisting of many tiles.  Move them together...
             (wall-tile (posn 200 200))
             (wall-tile (posn 232 200))
             (wall-tile (posn 264 200))
             (wall-tile (posn 264 168))
             (wall-tile (posn 264 136))
+
+            (wall-tile (posn 328 400))
+            (wall-tile (posn 296 400))
+            (wall-tile (posn 264 400))
+            (wall-tile (posn 264 368))
+            (wall-tile (posn 264 336))
+            
             (game-over-screen won? lost?)
             (spaceship-entity)
-            (ore-entity (posn 400 400))
+            (ore-entity (posn 320 350))
             (enemy-entity (posn 400 150))
+            (enemy-entity (posn 400 250))
+            
             bg-entity)

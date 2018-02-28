@@ -389,19 +389,6 @@
 (define (game-height g)
   (image-height (draw g)))
 
-(define (sample-bg w)
-  (define bg-sprite
-          (sheet->sprite (square w "solid" "black")
-                 #:rows        1
-                 #:columns     1
-                 #:row-number  1
-                 #:speed       1))
-  (sprite->entity bg-sprite
-                  #:position   (posn 0 0)
-                  #:name       "bg"))
-
-
-
 (define (start-game . initial-world)
   (define larger-state (game initial-world
                              (button-states #f #f #f #f)
