@@ -5,4 +5,5 @@
 
 
 (define deps '("threading"
-               "jack-posn"))
+               "posn"))
+
