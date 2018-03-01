@@ -46,11 +46,19 @@
                             costumes
                             (list costumes)))
   (animated-sprite
-    (list->vector list-costumes)
+    (list->vector (map bake list-costumes))
     (length list-costumes)
     0
     rate
     0))
+
+(define (bake i)
+  (define w (image-width i))
+  (define h (image-height i))
+  (color-list->bitmap
+   (image->color-list i)
+   w
+   h))
 
 (define/contract (animation-finished? s)
   (-> animated-sprite? boolean?)
