@@ -38,7 +38,7 @@
 
 (define (sprite-map f s)
   (struct-copy animated-sprite s
-               [frames (map f (animated-sprite-frames s))]))
+               [frames (vector-map f (animated-sprite-frames s))]))
 
 (define/contract (new-sprite costumes (rate 1))
   (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
