@@ -30,6 +30,7 @@
 (struct animated-sprite
         (
          frames           ;List of images
+         total-frames
          current-frame    ;Frame to show currently (integer)
          rate             ;How many ticks before switching frames (integer)
          ticks            ;How many ticks have passed since last frame change (integer)
@@ -45,14 +46,15 @@
                             costumes
                             (list costumes)))
   (animated-sprite
-    list-costumes
+    (list->vector list-costumes)
+    (length list-costumes)
     0
     rate
     0))
 
 (define/contract (animation-finished? s)
   (-> animated-sprite? boolean?)
-  (= (sub1 (length (animated-sprite-frames s))) (animated-sprite-current-frame s)))
+  (= (sub1 (animated-sprite-total-frames s)) (animated-sprite-current-frame s)))
 
 (define/contract (render s)
   (-> animated-sprite? image?)
@@ -61,7 +63,7 @@
 
 (define/contract (pick-frame s i)
   (-> animated-sprite? integer? image?)
-  (list-ref (animated-sprite-frames s) i))
+  (vector-ref (animated-sprite-frames s) i))
 
 (define/contract (reset-animation s)
   (-> animated-sprite? animated-sprite?)
@@ -85,7 +87,7 @@
   (struct-copy animated-sprite s
                [current-frame
                 (inc-wrap (animated-sprite-current-frame s)
-                          (length (animated-sprite-frames s)))]
+                          (animated-sprite-total-frames s))]
                [ticks 0]))
 
 (define (inc-wrap n max)

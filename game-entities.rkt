@@ -397,8 +397,67 @@
   (define larger-state (game initial-world
                              (button-states #f #f #f #f)
                              '()))
+  (lux-start larger-state))
+
+(define (big-bang-start larger-state)
   (big-bang larger-state                        
             (on-tick    tick)                    
             (to-draw    draw)                    
             (on-key     handle-key-down)         
-            (on-release handle-key-up)))         
+            (on-release handle-key-up)))
+
+
+
+
+;In parallel, I'm doing the controller stuff with Lux.
+;  We might switch to that later (instead of 2htdp/universe)
+
+(require racket/match
+         racket/fixnum         
+         lux
+         lux/chaos/gui
+         lux/chaos/gui/val
+         (prefix-in lux: lux/chaos/gui/key)
+         (prefix-in lux: lux/chaos/gui/mouse))
+
+(struct demo
+  (g/v state)
+  #:methods gen:word
+  [(define (word-fps w)
+     60.0)
+   
+   (define (word-label s ft)
+     (lux-standard-label "Values" ft))
+   
+   (define (word-output w)
+     (match-define (demo g/v state) w)
+     (g/v (draw state)))
+   
+   (define (word-event w e)
+     (match-define (demo g/v state) w)
+     (define closed? #f)
+     (cond
+      [(eq? e 'close)
+       #f]
+      [(lux:key-event? e)
+
+       (if (not (eq? 'release (send e get-key-code)))
+           (demo g/v (handle-key-down state (format "~a" (send e get-key-code))))
+           (demo g/v (handle-key-up state (format "~a" (send e get-key-release-code)))))
+         
+       ]
+      [else
+       (demo g/v state)]))
+   
+   (define (word-tick w)
+     (match-define (demo g/v state) w)
+     (demo g/v (tick state)))])
+
+(define (lux-start larger-state)
+  (call-with-chaos
+   (make-gui)
+   (λ () (fiat-lux (demo (make-gui/val) larger-state)))))
+
+
+
+

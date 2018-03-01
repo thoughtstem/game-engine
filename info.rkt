@@ -9,6 +9,7 @@
 (define deps '("threading"
                "drracket"
                "htdp-lib"
+               "lux"
                "jack-posn"
                "base"))
 
