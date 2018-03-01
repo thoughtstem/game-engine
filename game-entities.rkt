@@ -72,6 +72,10 @@
   (hash-ref component-handlers type #f))
 
 
+(define (component? x)
+  (get-handler-for-component x))
+
+
 (define game-functions (list))
 
 (define (new-game-function update)
