@@ -3,6 +3,7 @@
 (require "../game-entities.rkt")
 (require posn)
 
+#;(
 (provide (struct-out on-collide))
 
 (struct on-collide (name func))
@@ -13,4 +14,6 @@
       e))
 
 (new-component on-collide?
-               update-on-collide) 
+               update-on-collide)
+
+)

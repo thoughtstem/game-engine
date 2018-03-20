@@ -194,24 +194,52 @@
 
 (struct physical-collider ())
 
+(provide (struct-out on-collide))
+
+(struct on-collide (name func))
+
+(define (update-on-collide g e c)
+  (if (is-colliding-with? (on-collide-name c) g e)
+      ((on-collide-func c) g e)
+      e))
+
+(new-component on-collide?
+               update-on-collide)
+
+
+
+(provide (struct-out static))
+
+(struct static ())
+
+(define (handler-identity g e c)
+  e)
+
+(new-component static?
+               handler-identity) 
+
 ;Input
 
 
-(struct button-states [left right up down])
+(struct button-states [left right up down] #:mutable)
 
 (define (button-states-set-left btn-states left)
-  (struct-copy button-states btn-states [left left]))
+  (set-button-states-left! btn-states left)
+  btn-states)
 
 (define (button-states-set-right btn-states right)
-  (struct-copy button-states btn-states [right right]))
+  (set-button-states-right! btn-states right)
+  btn-states)
 
 (define (button-states-set-up btn-states up)
-  (struct-copy button-states btn-states [up up]))
+  (set-button-states-up! btn-states up)
+  btn-states)
 
 (define (button-states-set-down btn-states down)
-  (struct-copy button-states btn-states [down down]))
+  (set-button-states-down! btn-states down)
+  btn-states)
 
-(struct game (entities input collisions) #:transparent)
+(struct game (entities [input #:mutable] [collisions #:mutable]) #:transparent)
 
 (define (set-game-state g s)
   (game s
@@ -220,26 +248,26 @@
 ;Consumes a world, handles a single key PRESS by setting button state to true and returning the world
 (define (handle-key-down larger-state a-key)
   (define btn-states (game-input larger-state))
-  (struct-copy game larger-state
-               [input
-                (cond
-                  [(key=? a-key "left")  (button-states-set-left btn-states #t)]
-                  [(key=? a-key "right") (button-states-set-right btn-states #t)]
-                  [(key=? a-key "up")    (button-states-set-up btn-states #t)]
-                  [(key=? a-key "down")  (button-states-set-down btn-states #t)]
-                  [else btn-states])]))
+  (set-game-input! larger-state
+                   (cond
+                     [(key=? a-key "left")  (button-states-set-left btn-states #t)]
+                     [(key=? a-key "right") (button-states-set-right btn-states #t)]
+                     [(key=? a-key "up")    (button-states-set-up btn-states #t)]
+                     [(key=? a-key "down")  (button-states-set-down btn-states #t)]
+                     [else btn-states]))
+  larger-state)
 
 ;Consumes a world, handles a single key RELEASE by setting button state to false and returning the world
 (define (handle-key-up larger-state a-key)
   (define btn-states (game-input larger-state))
-  (struct-copy game larger-state
-               [input
-                (cond
-                  [(key=? a-key "left")  (button-states-set-left btn-states #f)]
-                  [(key=? a-key "right") (button-states-set-right btn-states #f)]
-                  [(key=? a-key "up")    (button-states-set-up btn-states #f)]
-                  [(key=? a-key "down")  (button-states-set-down btn-states #f)]
-                  [else btn-states])]))
+  (set-game-input! larger-state
+                   (cond
+                     [(key=? a-key "left")  (button-states-set-left btn-states #f)]
+                     [(key=? a-key "right") (button-states-set-right btn-states #f)]
+                     [(key=? a-key "up")    (button-states-set-up btn-states #f)]
+                     [(key=? a-key "down")  (button-states-set-down btn-states #f)]
+                     [else btn-states]))
+  larger-state)
 
 
 
@@ -316,11 +344,17 @@
   ; And we were previously not colliding,
   ; And we are colliding on the next state,
   ; Then set the entity's position back to the previous position
+
+  
   (define previous-posn (get-component e posn?))
   
   (define next-entity-state (main-tick-entity g e))
 
+ 
+ 
+  
   (define predicted-g (update-collisions (game-replace-entity g next-entity-state)))
+
   
   (if (colliding-with-other-physical-colliders? predicted-g next-entity-state)
       (update-entity next-entity-state posn? previous-posn)
@@ -362,13 +396,33 @@
   (struct-copy game g
                [entities (map (replace-entity e) (game-entities g))]))
 
+
+(define (is-static? e)
+  (get-component e static?))
+
+(define (non-static? e)
+  (not (is-static? e)))
+
+(define (not-both-static e-pair)
+  (not (and (is-static? (first e-pair))
+            (is-static? (second e-pair)))))
+
+(define (collidable-pairs g)
+  (define normal (filter non-static? (game-entities g)))
+  (define static (filter is-static? (game-entities g)))
+  (define normal-pairs (combinations normal 2))
+
+  (define off-pairs (cartesian-product normal static))
+
+  (append off-pairs normal-pairs))
+
 (define (current-collisions g)
   (filter (curry apply touching?)
-          (combinations (game-entities g) 2)))
+          (collidable-pairs g)))
 
 (define (update-collisions g)
-  (struct-copy game g
-               [collisions (current-collisions g)]))
+  (set-game-collisions! g (current-collisions g))
+  g)
 
 
 ;DEAD ENTITIES
