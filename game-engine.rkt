@@ -14,6 +14,9 @@
  (all-from-out "components/every-tick.rkt")
  (all-from-out "components/spawner.rkt")
  (all-from-out "components/key-animator.rkt")
+ (all-from-out "components/direction.rkt")
+ (all-from-out "components/counter.rkt")
+ (all-from-out "component-util.rkt")
  (all-from-out "entity-helpers/movement-util.rkt")
  (all-from-out "ai.rkt")
 
@@ -34,6 +37,9 @@
 (require "components/every-tick.rkt")
 (require "components/spawner.rkt")
 (require "components/key-animator.rkt")
+(require "components/direction.rkt")
+(require "components/counter.rkt")
+(require "component-util.rkt")
 (require "entity-helpers/movement-util.rkt")
 (require "ai.rkt")
 

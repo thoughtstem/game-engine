@@ -28,7 +28,7 @@
 (define (change-speed-by n)
   (lambda (g e)
     (define increase (lambda (k)
-                       (key-movement (add1 (key-movement-speed k)))))
+                       (key-movement (+ (key-movement-speed k) n))))
     (update-entity e key-movement? increase)))
 
 (define (get-speed e)

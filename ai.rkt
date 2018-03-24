@@ -2,7 +2,11 @@
 
 (provide move-up-and-down
          move-left
+         move-right
+         move-up
+         move-down
          move-random
+         move
          spin)
 
 (require posn)
@@ -30,13 +34,33 @@
     (update-entity e posn? (posn current-pos-x
                                  (f current-pos-y)))))
 
-(define (move-left #:min min #:speed s)
+(define (move-left #:speed s)
   (lambda (g e)
     (define current-pos-y (posn-y (get-component e posn?)))
     (define current-pos-x (posn-x (get-component e posn?)))
     (update-entity e posn? (posn (- current-pos-x s)
                                  current-pos-y))))
 
+(define (move-right #:speed s)
+  (lambda (g e)
+    (define current-pos-y (posn-y (get-component e posn?)))
+    (define current-pos-x (posn-x (get-component e posn?)))
+    (update-entity e posn? (posn (+ current-pos-x s)
+                                 current-pos-y))))
+
+(define (move-up #:speed s)
+  (lambda (g e)
+    (define current-pos-y (posn-y (get-component e posn?)))
+    (define current-pos-x (posn-x (get-component e posn?)))
+    (update-entity e posn? (posn current-pos-x
+                                 (- current-pos-y s)))))
+
+(define (move-down #:speed s)
+  (lambda (g e)
+    (define current-pos-y (posn-y (get-component e posn?)))
+    (define current-pos-x (posn-x (get-component e posn?)))
+    (update-entity e posn? (posn current-pos-x
+                                 (+ current-pos-y s)))))
 
 (define (move-random #:speed s)
   (define rx (* s (random -1 2)))
@@ -47,6 +71,14 @@
     (update-entity e posn? (posn (+ rx current-pos-x)
                                  (+ ry current-pos-y)))))
 
+(define (move #:dir d #:speed s)
+  (lambda (g e)
+    (define current-pos-y (posn-y (get-component e posn?)))
+    (define current-pos-x (posn-x (get-component e posn?)))
+    (define x-vel (* (cos (degrees->radians d)) s))
+    (define y-vel (* (sin (degrees->radians d)) s))
+    (update-entity e posn? (posn (+ current-pos-x x-vel)
+                                 (+ current-pos-y y-vel)))))
 
 (define (spin #:speed s)
   (lambda (g e)
