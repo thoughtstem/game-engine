@@ -5,6 +5,7 @@
 (provide go-to)
 ;(provide random-size)
 ;(provide random-size-sprite)
+(provide respawn)
 (provide move-with-speed)
 (provide move-random-speed)
 
