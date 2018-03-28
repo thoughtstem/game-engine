@@ -91,9 +91,6 @@
 (new-component animated-sprite?
                update-animated-sprite)
 
-
-
-
 (define (get-name e)
   (define n (get-component e entity-name?))
   (if n
