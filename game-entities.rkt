@@ -8,6 +8,7 @@
          (struct-out hidden)
          
          (struct-out game)
+         (struct-out bb)
          
          entity-animation
          sprite->entity
