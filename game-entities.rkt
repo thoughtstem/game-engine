@@ -51,6 +51,7 @@
 (require 2htdp/image)
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
+(require "./collision-helper.rkt")
 
 (require threading)
 
@@ -123,7 +124,7 @@
   (entity (update-component components component-pred f)))
 
 (define/contract (get-component e component-pred)
-  (-> entity? any/c any/c)
+  (-> entity? any/c component?)
   (findf component-pred (entity-components e)))
 
 (define (add-component e c)
@@ -172,6 +173,8 @@
    (image-height i)))
 
 (define (touching? e1 e2)
+
+  
   (match-define (entity components1)
                 e1)
 
