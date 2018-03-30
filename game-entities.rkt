@@ -124,7 +124,7 @@
   (entity (update-component components component-pred f)))
 
 (define/contract (get-component e component-pred)
-  (-> entity? any/c component?)
+  (-> entity? any/c any/c)
   (findf component-pred (entity-components e)))
 
 (define (add-component e c)
@@ -173,8 +173,6 @@
    (image-height i)))
 
 (define (touching? e1 e2)
-
-  
   (match-define (entity components1)
                 e1)
 
@@ -183,25 +181,7 @@
 
   (match-define (bb e1-w e1-h) (get-component e1 bb? ))
   (match-define (bb e2-w e2-h) (get-component e2 bb? ))
-
-  (match-define (posn e1-x e1-y) (get-component e1 posn? ))
-  (match-define (posn e2-x e2-y) (get-component e2 posn? ))
-
-  (define overlap 4)
-  
-  (define pad (if (and (<= overlap (/ e1-w 2))
-                       (<= overlap (/ e1-h 2))
-                       (<= overlap (/ e2-w 2))
-                       (<= overlap (/ e2-h 2)))
-                  overlap
-                  0))
-
-  (if (and (>= (- e1-x e2-x) (- (- (+ (/ e1-w 2) (/ e2-w 2)) pad)))
-           (<= (- e1-x e2-x)    (- (+ (/ e1-w 2) (/ e2-w 2)) pad))
-           (>= (- e1-y e2-y) (- (- (+ (/ e1-h 2) (/ e2-h 2)) pad)))
-           (<= (- e1-y e2-y)    (- (+ (/ e1-h 2) (/ e2-h 2)) pad)))
-      #t
-      #f))
+  (rect-hits-rect? (get-component e1 posn?) e1-w e1-h (get-component e2 posn?) e2-w e2-h))
 
 
 (struct physical-collider ())

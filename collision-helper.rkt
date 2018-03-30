@@ -88,13 +88,8 @@
       #t
       #f))
 
-
-(circle-hits-rect?
-   (posn .29 .29) 1
-   (posn 1 1)
-   (posn 3 1)
-   (posn 3 3)
-   (posn 1 3))
+(provide rect-hits-rect?
+         circle-hits-rect?)
 
  ;(circle-hits-line? (posn 0 0) 1 (posn 1 1) (posn 3 1))
 
