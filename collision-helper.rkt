@@ -51,6 +51,10 @@
   (posn (- (posn-x point-a) (posn-x point-b))
         (- (posn-y point-a) (posn-y point-b))))
 
+(define (posn-add point-a point-b)
+  (posn (+ (posn-x point-a) (posn-x point-b))
+        (+ (posn-y point-a) (posn-y point-b))))
+
 (define (circle-hits-line? circle-p circle-radius point-a point-b)
   (define perp-point (perpendicular-point point-a point-b circle-p))
   (or (> circle-radius (mag (posn-diff circle-p point-a)))
@@ -61,6 +65,7 @@
   
 
 (define (circle-hits-rect? circle-p circle-radius point-a point-b point-c point-d)
+  ;(displayln "circle hits rect?\n")
   (or (posn-in-rect? circle-p point-a point-c)
       (circle-hits-line? circle-p circle-radius point-a point-b)
       (circle-hits-line? circle-p circle-radius point-b point-c)
@@ -69,8 +74,9 @@
 
 
 (define (rect-hits-rect? r1-p r1-w r1-h r2-p r2-w r2-h)
-  (match-define (posn e1-x e1-y) (r1-p))
-  (match-define (posn e2-x e2-y) (r2-p))
+  ;(displayln "rect hits rect?\n")
+  (match-define (posn e1-x e1-y) r1-p)
+  (match-define (posn e2-x e2-y) r2-p)
 
   (define overlap 4)
   
@@ -88,8 +94,16 @@
       #t
       #f))
 
+
+(define (circle-hits-circle? circle-p circle-radius circle-p2 circle-radius2)
+  ;(displayln "circle hits circle?\n")
+  (define directions (posn-diff circle-p circle-p2))
+  (define proximity-max (+ circle-radius circle-radius2))
+  (< (sqr-mag directions) (* proximity-max proximity-max)))
+
 (provide rect-hits-rect?
-         circle-hits-rect?)
+         circle-hits-rect?
+         circle-hits-circle?)
 
  ;(circle-hits-line? (posn 0 0) 1 (posn 1 1) (posn 3 1))
 

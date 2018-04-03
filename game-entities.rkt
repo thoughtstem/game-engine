@@ -37,7 +37,7 @@
          button-states-up
          button-states-down
          
-         
+         add-circle-collider
          physical-collider
          
          start-game
@@ -57,6 +57,7 @@
 (require threading)
 
 (struct bb [w h])
+(struct cc [r]) ;<- Circle Collider
 (struct entity [components] #:transparent)
 
 (struct entity-name (string))
@@ -160,7 +161,8 @@
                      sprite-or-image
                      (new-sprite sprite-or-image)))
   (apply (curry add-components (basic-entity p sprite) )
-         all-cs))
+         all-cs)
+  )
 
 (define (sprite->bb s)
   (image->bb (render s)))
@@ -170,6 +172,21 @@
    (image-width i)
    (image-height i)))
 
+
+(define (add-circle-collider e r)
+  (add-component (remove-component e bb?) (cc r)))
+
+
+(define (bb->points bounding-box p)
+  (match-define (bb w h) bounding-box)
+  (match-define (posn x y) p)
+
+  (list (posn (- x (/ w 2)) (- y (/ h 2)))
+   (posn (+ x (/ w 2)) (- y (/ h 2)))
+   (posn (+ x (/ w 2)) (+ y (/ h 2)))
+   (posn (- x (/ w 2)) (+ y (/ h 2))))
+  )
+
 (define (touching? e1 e2)
   (match-define (entity components1)
                 e1)
@@ -177,9 +194,32 @@
   (match-define (entity components2)
                 e2)
 
-  (match-define (bb e1-w e1-h) (get-component e1 bb? ))
-  (match-define (bb e2-w e2-h) (get-component e2 bb? ))
-  (rect-hits-rect? (get-component e1 posn?) e1-w e1-h (get-component e2 posn?) e2-w e2-h))
+  (define (rect-case)
+    (match-define (bb e1-w e1-h) (get-component e1 bb? ))
+    (match-define (bb e2-w e2-h) (get-component e2 bb? ))
+    (rect-hits-rect? (get-component e1 posn?) e1-w e1-h
+                          (get-component e2 posn?) e2-w e2-h))
+  
+
+  (define (circle-rect-case-1)
+    (define rect-points (bb->points (get-component e2 bb?) (get-component e2 posn?)))
+    (apply (curry circle-hits-rect? (get-component e1 posn?) (cc-r (get-component e1 cc?))) rect-points))
+
+  (define (circle-rect-case-2)
+    (define rect-points (bb->points (get-component e1 bb?) (get-component e1 posn?)))
+    (apply (curry circle-hits-rect? (get-component e2 posn?) (cc-r (get-component e2 cc?))) rect-points))
+  
+ 
+ 
+  (cond [(and (get-component e1 bb?) (get-component e2 bb?))
+         (rect-case)]
+         [(and (get-component e1 cc?) (get-component e2 bb?))
+          (circle-rect-case-1)]
+         [(and (get-component e2 cc?) (get-component e1 bb?))
+          (circle-rect-case-2)]
+         [(and (get-component e2 cc?) (get-component e1 cc?))
+          (circle-hits-circle? (get-component e2 posn?) (cc-r (get-component e2 cc?)) (get-component e1 posn?) (cc-r (get-component e1 cc?)))])
+)
 
 
 (struct physical-collider ())
