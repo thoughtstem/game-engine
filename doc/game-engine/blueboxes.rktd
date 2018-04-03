@@ -32,6 +32,9 @@ procedure
   name : string?
   fun : (-> game? entity? component? entity?)
 procedure
+(circle-collider radius) -> component?
+  radius : number?
+procedure
 (health amount) -> component?
   amount : integer?
 procedure

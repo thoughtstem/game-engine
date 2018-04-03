@@ -185,6 +185,24 @@ fundamental building blocks for your game.
   ] 
 }
 
+@defproc[(circle-collider [radius number?])
+         component?]{
+ 
+  Changes out the default rect-collider for a circle collider with the specified radius
+
+  Example (make an entity have circular collision detection with a radius of 2):
+
+  @racketblock[
+    (define spaceship-entity
+      (sprite->entity spaceship-sprite
+                      #:name       "ship"
+                      #:position   (posn 100 100)
+                      #:components (key-movement 5)
+                                   (on-collide "ore"    (change-speed-by 1))
+                                   (circle-collider 2)))
+  ] 
+}
+
 @defproc[(health     [amount integer?])
          component?]{
  
