@@ -6,6 +6,7 @@
 (provide (struct-out direction)
          set-direction
          get-direction
+         change-direction-by
          random-direction
          bounce-back)
 
@@ -19,6 +20,11 @@
 
 (define (get-direction e)
   (direction-dir (get-component e direction?)))
+
+(define (change-direction-by inc)
+  (lambda (g e)
+    (define d (get-direction e))
+    (update-entity e direction? (direction (+ d inc)))))
 
 (define (random-direction min max)
   (lambda (g e)

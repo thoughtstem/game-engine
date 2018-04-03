@@ -6,6 +6,7 @@
 (provide (struct-out speed)
          set-speed
          get-ai-speed
+         change-ai-speed-by
          random-speed)
 
 (struct speed (spd))
@@ -18,6 +19,11 @@
 
 (define (get-ai-speed e)
   (speed-spd (get-component e speed?)))
+
+(define (change-ai-speed-by inc)
+  (lambda (g e)
+    (define s (get-ai-speed e))
+    (update-entity e speed? (speed (+ s inc)))))
 
 (define (random-speed min max)
   (lambda (g e)
