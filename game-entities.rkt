@@ -26,6 +26,7 @@
 
          colliding-with
          is-colliding-with?
+         is-colliding-by-name?
 
          
          image->bb
@@ -333,6 +334,11 @@
 (define (is-colliding-with? name g me)
   (define names (map get-name (colliding-with me g)))
   (member name names))
+
+(define (is-colliding-by-name? name1 name2 g)
+  (define names (map (curry map get-name) (game-collisions g)))
+  (or (member (list name1 name2) names)
+      (member (list name2 name1) names)))
 
 (define (colliding-with-other-physical-colliders? g e)
   (and (get-component e physical-collider?)

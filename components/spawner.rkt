@@ -33,8 +33,15 @@
 (define (spawner-do-spawn e) 
   (lambda (s)
     (define to-spawn (next-spawn s))
+
+    (define pos (get-component e posn?))
+    (define offset (get-component to-spawn posn?))
+    (define new-x (+ (posn-x pos) (posn-x offset)))
+    (define new-y (+ (posn-y pos) (posn-y offset)))
     
-    (define new-entity (update-entity to-spawn posn? (get-component e posn?)))
+    (define new-entity (update-entity to-spawn posn?
+                                      (posn new-x new-y)
+                                      #;(get-component e posn?)))
     
     (struct-copy spawner s
                  [next new-entity])))

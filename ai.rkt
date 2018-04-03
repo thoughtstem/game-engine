@@ -6,6 +6,7 @@
          move-up
          move-down
          move-random
+         move-dir-spd
          move
          spin)
 
@@ -13,6 +14,8 @@
 (require "./game-entities.rkt")
 (require 2htdp/image)
 (require "./components/animated-sprite.rkt")
+(require "./components/direction.rkt")
+(require "./components/speed.rkt")
 
 ;A Lot of these could be implemented better (less stateful?)
 ;  Or go full state machine?
@@ -71,8 +74,18 @@
     (update-entity e posn? (posn (+ rx current-pos-x)
                                  (+ ry current-pos-y)))))
 
-(define (move #:dir d #:speed s)
+(define (move-dir-spd #:dir d #:speed s)
   (lambda (g e)
+    (define current-pos-y (posn-y (get-component e posn?)))
+    (define current-pos-x (posn-x (get-component e posn?)))
+    (define x-vel (* (cos (degrees->radians d)) s))
+    (define y-vel (* (sin (degrees->radians d)) s))
+    (update-entity e posn? (posn (+ current-pos-x x-vel)
+                                 (+ current-pos-y y-vel)))))
+(define (move)
+  (lambda (g e)
+    (define d (get-direction e))
+    (define s (get-ai-speed e))
     (define current-pos-y (posn-y (get-component e posn?)))
     (define current-pos-x (posn-x (get-component e posn?)))
     (define x-vel (* (cos (degrees->radians d)) s))

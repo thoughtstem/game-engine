@@ -5,8 +5,6 @@
 (provide go-to)
 (provide go-to-pos)
 (provide go-to-pos-inside)
-;(provide random-size)
-;(provide random-size-sprite)
 (provide respawn)
 (provide move-with-speed)
 (provide move-random-speed)
@@ -94,10 +92,10 @@
   (lambda (g e)
     (define dir (get-direction e))
     (update-entity e every-tick?
-                     (every-tick (move #:dir dir #:speed spd)))))
+                     (every-tick (move-dir-spd #:dir dir #:speed spd)))))
 
 (define (move-random-speed min max)
   (lambda (g e)
     (define dir (get-direction e))
     (update-entity e every-tick?
-                     (every-tick (move #:dir dir #:speed (random min (add1 max)))))))
+                     (every-tick (move-dir-spd #:dir dir #:speed (random min (add1 max)))))))
