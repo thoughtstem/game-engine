@@ -22,6 +22,7 @@
  (all-from-out "components/counter.rkt")
  (all-from-out "component-util.rkt")
  (all-from-out "entity-helpers/movement-util.rkt")
+ (all-from-out "entity-helpers/sprite-util.rkt")
  (all-from-out "ai.rkt")
 
 
@@ -49,5 +50,6 @@
 (require "components/speed.rkt")
 (require "component-util.rkt")
 (require "entity-helpers/movement-util.rkt")
+(require "entity-helpers/sprite-util.rkt")
 (require "ai.rkt")
 

@@ -85,7 +85,8 @@
       [(eq? edge 'left)   (go-to 0 (random 0 HEIGHT))]
       [(eq? edge 'right)  (go-to WIDTH (random 0 HEIGHT))]
       [(eq? edge 'top)    (go-to (random 0 WIDTH) 0)]
-      [(eq? edge 'bottom) (go-to (random 0 WIDTH) HEIGHT)])
+      [(eq? edge 'bottom)  (go-to (random 0 WIDTH) HEIGHT)]
+      [(eq? edge 'anywhere) (go-to (random 0 WIDTH) (random 0 HEIGHT))])
       g e)))
 
 (define (move-with-speed spd)
