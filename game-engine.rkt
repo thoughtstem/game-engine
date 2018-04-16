@@ -8,6 +8,7 @@
  (all-from-out "game-entities.rkt")
  (all-from-out "components/key-movement.rkt")
  (all-from-out "components/after-time.rkt")
+ (all-from-out "components/do-every.rkt")
  (all-from-out "components/animated-sprite.rkt")
  (all-from-out "components/health.rkt")
  (all-from-out "components/on-collide.rkt")
@@ -23,6 +24,7 @@
  (all-from-out "component-util.rkt")
  (all-from-out "entity-helpers/movement-util.rkt")
  (all-from-out "entity-helpers/sprite-util.rkt")
+ (all-from-out "entity-helpers/rgb-hsb.rkt")
  (all-from-out "ai.rkt")
 
 
@@ -36,6 +38,7 @@
 (require "game-entities.rkt")
 (require "components/key-movement.rkt")
 (require "components/after-time.rkt")
+(require "components/do-every.rkt")
 (require "components/animated-sprite.rkt")
 (require "components/health.rkt")
 (require "components/on-collide.rkt")
@@ -51,5 +54,6 @@
 (require "component-util.rkt")
 (require "entity-helpers/movement-util.rkt")
 (require "entity-helpers/sprite-util.rkt")
+(require "entity-helpers/rgb-hsb.rkt")
 (require "ai.rkt")
 
