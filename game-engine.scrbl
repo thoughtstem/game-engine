@@ -1,18 +1,18 @@
 #lang scribble/manual
  
 @title{Game Engine}
- 
+
 This is a game engine built for rapid prototyping and education.
 
-In this engine, a game is a collection of entities. This means that ultimatley, you're
-going to create a game by running a command like this:
+In this engine, a game is a collection of entities. This means that ultimatley,
+you're going to create a game by running a command like this:
 
 @racketblock[(start-game entity1
                          entity2
                          entity3)]
 
-Naturally, you'll need to build (or import) those entities.  This package provides
-a DSL for specifying the components that define those entities.
+Naturally, you'll need to build (or import) those entities.  This package
+provides a DSL for specifying the components that define those entities.
 
 Here's a full example:
 
@@ -40,8 +40,8 @@ Here's a full example:
             bg-entity)
 ] 
 
-The @racket[sprite->entity] function is the powertool for converting from an image to an entity,
-allowing you to specify components in the process.
+The @racket[sprite->entity] function is the powertool for converting from an
+image to an entity, allowing you to specify components in the process.
 
 @defproc[(sprite->entity [imgs        (or/c image? (listof image?))]
                          [#:name       name       string?]
@@ -50,72 +50,76 @@ allowing you to specify components in the process.
 )
          entity?]{
  
-  Converts @racket[imgs] (which may be a single image or a list of images) into an entity.
-  You may also specify a name, position, and any number of components.
+  Converts @racket[imgs] (which may be a single image or a list of images) into
+  an entity. You may also specify a name, position, and any number of components
 }
 
 
-Conceptually speaking, I like to think of entities as a combination of two things: art and game logic.
-The art is specified by the sprite; the game logic is specified by the collection of components.
+Conceptually speaking, I like to think of entities as a combination of two
+things: art and game logic. The art is specified by the sprite; the game logic
+is specified by the collection of components.
 
 NOTE: Components can also be added, removed, and updated during runtime.  
 
-The next two sections look at 1) the various components that ship with this library, and 2) the 
-functions that allow "slicing" sprite sheets into lists of images (for animation).
+The next two sections look at 1) the various components that ship with this
+library, and 2) the functions that allow "slicing" sprite sheets into lists of
+images (for animation).
 
 @section{Components}
 
 @defproc[(component? [x any/c])
          boolean?]{
  
-  There is no data structure called "component".  A component is anything that has been previously registered
-  with the engine by calling @racket[new-component].
+  There is no data structure called "component".  A component is anything that
+  has been previously registered with the engine by calling @racket[new-component].
 
   Conceptually speaking, a component is 1) some struct, and 2) an update function.
 
-  If you're just now embarking on your journey to learn about game design, I would recommend sticking to the
-  components provided by others.  This engine is structured so that you don't need to worry too much about
-  how the components work or how to make new components.  
+  If you're just now embarking on your journey to learn about game design, I
+  would recommend sticking to the components provided by others. This engine is
+  structured so that you don't need to worry too much about how the components
+  work or how to make new components.  
 }
 
-That said, here's another function for creating new components (which you can also safely ignore if you're
-just beginning).
+That said, here's another function for creating new components (which you can
+also safely ignore if you're just beginning).
 
 @defproc[(new-component [struct? (-> any/c boolean?)]
                         [update  (-> game? entity? component? entity?)])
          void?]{
  
-  To register a new component, you must use this function.  You must provide two
-  functions.  1) a way of recognizing your component, 2) a handler function that
+  To register a new component, you must use this function. You must provide two
+  functions. 1) a way of recognizing your component, 2) a handler function that
   the engine will call on every tick, for every entity that has this component.
 
-  This handler function returns an entity, which will replace the entity that has
-  the component.  The handler function also receives the game as an input.  In effect,
-  this means your handler function has read-only access to the entire game state.
-  And it has "write" access to the entity possessing the component.  
+  This handler function returns an entity, which will replace the entity that
+  has the component. The handler function also receives the game as an input. In
+  effect, this means your handler function has read-only access to the entire
+  game state. And it has "write" access to the entity possessing the component.  
 
-  I would recommend looking at some of the existing components (i.e. @racket[key-movement])
-  if you're going to make new components of your own.
+  I would recommend looking at some of the existing components
+  (i.e. @racket[key-movement]) if you're going to make new components of your own.
 }
 
 @subsection{Pre-built Components}
 
-These components are design to allow you to add behaviour to entities with as little effort as possible.
-This engine is designed for rapid prototyping -- which means that you should be able to experiment with
-a lot of different game design ideas very quickly.  You do that by using pre-built components as the
+These components are design to allow you to add behaviour to entities with as
+little effort as possible. This engine is designed for rapid prototyping --
+which means that you should be able to experiment with a lot of different game
+design ideas very quickly.  You do that by using pre-built components as the
 fundamental building blocks for your game.
 
 
 @defproc[(key-movement [speed integer?])
          component?]{
  
-  An entity with this component will move when you press the arrow keys.  The speed parameter
-  changes how quickly the entity moves.
+  An entity with this component will move when you press the arrow keys.  The
+  speed parameter changes how quickly the entity moves.
 
-  Technically speaking, this component updates the entity's @racket[posn] component whenever
-  the arrow keys are pressed.
+  Technically speaking, this component updates the entity's @racket[posn]
+  component whenever the arrow keys are pressed.
 
-  Example usage:
+  Example:
 
    @racketblock[
     (define spaceship-entity
@@ -131,9 +135,9 @@ fundamental building blocks for your game.
                [y integer?])
          component?]{
  
-  Determines where the entity will render.  If you're using @racket[sprite->entity], then
-  you should specify this with the @racket[#:name] keyword, not the @racket[#:components]
-  keyword.
+  Determines where the entity will render.  If you're using
+  @racket[sprite->entity], then you should specify this with the @racket[#:name]
+  keyword, not the @racket[#:components] keyword
 
   Example:
 
@@ -150,7 +154,7 @@ fundamental building blocks for your game.
                      [fun (-> game? entity? component? entity?)])
          component?]{
  
-  Runs a one-time handler function after the specified number of ticks.
+  Runs a one-time handler function after the specified number of ticks
 
   Example:
 
@@ -159,14 +163,13 @@ fundamental building blocks for your game.
       (sprite->entity bullet-sprite 
                       #:position   (posn 100 100)
                       #:name       "bullet"
-                      #:components (every-tick (move-left #:min   0
-                                                          #:speed 5))
+                      #:components (every-tick (move-left #:speed 5))
                                    (after-time 50     die)))
   ] 
 }
 
 @defproc[(on-collide [name string?]
-                     [fun (-> game? entity? component? entity?)])
+                     [fun (-> game? entity? component?)])
          component?]{
  
   Runs a handler function when this entity touches the named entity
@@ -185,12 +188,29 @@ fundamental building blocks for your game.
   ] 
 }
 
+@defproc[(every-tick [func (-> game? entity? component?)])
+         component?]{
+                     
+  Runs a handler function every tick in game
+
+  Example:
+   @racketblock[
+    (define bullet
+      (sprite->entity bullet-sprite 
+                      #:position   (posn 100 100)
+                      #:name       "bullet"
+                      #:components (every-tick (move-left #:speed 5))
+                                   (after-time 50     die)))
+  ] 
+}
+
 @defproc[(circle-collider [radius number?])
          component?]{
  
-  Changes out the default rect-collider for a circle collider with the specified radius
+  Changes out the default rect-collider for a circle collider with the specified
+  radius
 
-  Example (make an entity have circular collision detection with a radius of 2):
+  Example:
 
   @racketblock[
     (define spaceship-entity
@@ -206,7 +226,7 @@ fundamental building blocks for your game.
 @defproc[(health     [amount integer?])
          component?]{
  
-  Kills this entity when (if) the health reaches 0.
+  Kills this entity when (if) the health reaches 0
 
   Example:
 
@@ -228,250 +248,103 @@ fundamental building blocks for your game.
 }
 
 
+@section{Functions}
 
-@section{Sprites}
+In addition to components, we also include various pre-built functions to allow
+for quick and easy prototyping.
 
-With sprites, we assume that you have a sprite "sheet" -- which is a single image that
-displays multiple frames of a sprite's animation.
+@defproc[(move)
+         func?]{
+  Should be used with components @racket[(speed)] and @racket[(direction)]. The
+  direction component determines where the entity moves and the speed component
+  determines how quickly the entity moves.
 
-We give a function called @racket[sheet->sprite] to ease the conversion of such a sheet
-into a sprite (which can then be turned into an entity).
-
-Example:
-
-@racketblock[
-  (define spaceship-sheet (bitmap/url "http://i.imgur.com/8zY5sBR.png"))
-  (define spaceship-sprite
-    (sheet->sprite spaceship-sheet
-                   #:rows        4
-                   #:columns     3
-                   #:row-number  3
-                   #:speed       1))
-]
-
-The basic workflow is: make/find a sheet, turn the sheet into a sprite, turn the sprite into
-an entity, add components to the entity.  And repeat.
-
-The game ends up being a collection of entities that interact with each other and the player
-according to their components.
+  Example:
+   @racketblock[
+    (define bullet
+      (sprite->entity bullet-sprite 
+                      #:position   (posn 100 100)
+                      #:name       "bullet"
+                      #:components (speed 5)
+                                   (direction 180)
+                                   (every-tick (move))
+                                   (after-time 50     die)))
+  ] 
+}
 
 
-@section{Examples}
-
-These are taken from the package @racket[spaceship-game-demo].  You can find more there.
-
-
-@subsection{Spaceship Demo 1}
-
-@racketblock[
-
-(require game-engine
-         game-engine-demos-common) 
-
-(define WIDTH  640)
-(define HEIGHT 480)
-
-(define bg-entity
-  (sprite->entity (space-bg-sprite WIDTH HEIGHT 100)
-                  #:name     "bg"
-                  #:position (posn 0 0)))
-
-(define (spaceship-entity)
-  (sprite->entity spaceship-sprite
-                  #:name       "ship"
-                  #:position   (posn 100 100)
-                  #:components (key-movement 5)
-                               (on-collide "ore"    (change-speed-by 1))
-                               (on-collide "enemy"  die)
-                               (on-collide "bullet" die)))
-
-(define (ore-entity p)
-  (sprite->entity (ore-sprite (random 10))
-                  #:position   p
-                  #:name       "ore"
-                  #:components (on-collide "ship" (randomly-relocate-me 0 WIDTH 0 HEIGHT))))
-
-(define (enemy-entity p)
-  (sprite->entity (spaceship-animator 'left)
-                  #:position    p
-                  #:name        "enemy"
-                  #:components  (every-tick (move-up-and-down #:min   0  
-                                                              #:max   HEIGHT
-                                                              #:speed 10))
-                                (spawner bullet 20)))
-
-(define bullet
-  (sprite->entity (new-sprite (list (circle 5 "solid" "red")
-                                    (circle 5 "solid" "orange")
-                                    (circle 5 "solid" "yellow")
-                                    (circle 5 "solid" "orange")) 1)
-                  #:position   (posn 100 100)
-                  #:name       "bullet"
-                  #:components (every-tick (move-left #:min   0
-                                                      #:speed 5))
-                               (after-time 50     die)  
-                               (on-collide "ship" die)))
-
-(define (lost? g e)
-  (not (get-entity "ship" g)))
-
-(define (won? g e) 
-  (define speed (get-speed (get-entity "ship" g)))
-  (>= speed 10))
-
-(start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
-            (game-over-screen won? lost?)
-            (spaceship-entity)
-            (ore-entity (posn 400 400))
-            (enemy-entity (posn 300 300))
-            (enemy-entity (posn 400 200))
-            bg-entity)
-]
-
-@subsection{Spaceship Demo 2}
-
-@racketblock[
-
-(require game-engine
-         game-engine-demos-common) 
-  
-(define WIDTH  800)
-(define HEIGHT 800)
-
-(define bg-entity
-  (sprite->entity (space-bg-sprite WIDTH HEIGHT 100)
-                  #:name     "bg"
-                  #:position (posn 0 0)))
-
-(define (spaceship-entity)
-  (sprite->entity spaceship-sprite
-                  #:name       "ship"
-                  #:position   (posn 100 100)
-                  #:components (key-movement 5)
-                               (on-collide "ore"    (change-speed-by 1))
-                               (on-collide "enemy"  die)
-                               (on-collide "bullet" die)))
-
-(define (ore-entity p)
-  (sprite->entity (ore-sprite (random 10))
-                  #:position   p
-                  #:name       "ore"
-                  #:components (on-collide "ship" (randomly-relocate-me 0 WIDTH 0 HEIGHT))))
-
-(define (enemy-entity p)
-  (sprite->entity (spaceship-animator 'left)
-                  #:position    p
-                  #:name        "enemy"
-                  #:components  (every-tick (move-up-and-down #:min   0  
-                                                              #:max   HEIGHT
-                                                              #:speed 10))
-                                (spawner bullet 20)))
-
-(define bullet
-  (sprite->entity (new-sprite (list (circle 5 "solid" "red")
-                                    (circle 5 "solid" "orange")
-                                    (circle 5 "solid" "yellow")
-                                    (circle 5 "solid" "orange")) 1)
-                  #:position   (posn 100 100)
-                  #:name       "bullet"
-                  #:components (every-tick (move-left #:min   0
-                                                      #:speed 5))
-                               (after-time 50     die)  
-                               (on-collide "ship" die)))
-
-(define (lost? g e)
-  (not (get-entity "ship" g)))
-
-(define (won? g e) 
-  (define speed (get-speed (get-entity "ship" g)))
-  (>= speed 10))
-
-(start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
-            (game-over-screen won? lost?)
-            (spaceship-entity)
-            (ore-entity (posn 400 400))
-            (enemy-entity (posn 300 300))
-            (enemy-entity (posn 400 200))
-            (enemy-entity (posn 500 100))
-            bg-entity)
-]
+@defproc[(move-dir-spd [#:dir dir integer?]
+                       [#:speed speed integer?])
+         func?]{
+  Moves the entity in a fixed manner of motion. dir determines in which
+  direction the entity moves, where 0 is to the right and 180 is to the left.
+  spd determines how fast the entity moves. (move-dir-spd) is different from
+  (move) because the direction and speed parameters will be permanent, so that
+  the speed or direction of motion cannot be changed.
+}
 
 
-@subsection{Spaceship Demo 3}
+@defproc*[([(move-right [#:speed spd integer?]) func?]
+           [(move-down  [#:speed spd integer?]) func?]
+           [(move-left  [#:speed spd integer?]) func?]
+           [(move-up    [#:speed spd integer?]) func?])]{
+  Same as @racket[(move-dir-spd)] with a direction component of 0, 90, 180, 270
+  respectively
+}
 
-@racketblock[
+@defproc[(move-random  [#:speed spd integer?])
+          func?]{
+  Will randomly call move-left, move-right, move-up, or move-down and pass in
+  the speed parameter to the chosen function call
+}
 
-(require game-engine
-         game-engine-demos-common) 
+@defproc[(move-up-and-down [#:min small integer?]
+                           [#:max large integer?]
+                           [#:speed spd integer?])
+         func?]{
+  Moves the entity up and down within a boundary set by small and large. The
+  speed parameter determines how fast the entity moves
+}
 
-(define WIDTH  640)
-(define HEIGHT 480)
+@defproc[(spin [#:speed spd integer?])
+        func?]{
+  Will rotate the entity, and spd will determine how quickly the entity spins
+}
 
-(define bg-entity
-  (sprite->entity (space-bg-sprite WIDTH HEIGHT 100)
-                  #:name     "bg"
-                  #:position (posn 0 0)))
+@defproc[(go-to [x integer?]
+                [y integer?])
+         func?]{
+  Will change posn of entity to (posn x y)
+}
 
-(define (spaceship-entity)
-  (sprite->entity spaceship-sprite
-                  #:name       "ship"
-                  #:position   (posn 100 100)
-                  #:components (key-movement 5)
-                               (on-collide "ore"    (change-speed-by 1))
-                               (on-collide "enemy"  die)
-                               (on-collide "bullet" die)))
+@defproc[(go-to-random [min-x integer?]
+                       [max-x integer?]
+                       [min-y integer?]
+                       [max-y integer?])
+         func?]{
+  Will change posn of entity to a random posn, with the bounds for the
+  x-coordinate being min-x to max-y, and the bounds for the y-coordinate being
+  min-y to max-y
+}
 
-(define (ore-entity p)
-  (sprite->entity (ore-sprite (random 10))
-                  #:position   p
-                  #:name       "ore"
-                  #:components (on-collide "ship" (randomly-relocate-me 0 WIDTH 0 HEIGHT))))
+@defproc*[([(go-to-pos [pos something?]) func?]
+           [(go-to-pos-inside [pos something?]) func?])]{
+  Will move the entity to somewhere along the edge of the screen.
+  Values for pos: 'left, 'right, 'top, 'bottom, 'top-left, 'top-right,
+  'bottom-left, 'bottom-right, 'left-center, 'right-center, 'top-center,
+  'bottom-center. go-to-pos will move the entity's center to the edge, while
+  go-to-pos-inside will keep the entity completely inside the screen.
+}
 
-(define (enemy-entity p)
-  (sprite->entity (spaceship-animator 'left)
-                  #:position    p
-                  #:name        "enemy"
-                  #:components  (every-tick (move-up-and-down #:min   0  
-                                                              #:max   HEIGHT
-                                                              #:speed 10))
-                                (spawner bullet 20)))
 
-(define bullet2
-  (sprite->entity (new-sprite (list (circle 2 "solid" "red")
-                                    (circle 2 "solid" "orange")
-                                    (circle 2 "solid" "yellow")
-                                    (circle 2 "solid" "orange")) 1)
-                  #:position   (posn 100 100)
-                  #:name       "bullet"
-                  #:components (every-tick (move-left #:min   0
-                                                      #:speed 10))
-                               (after-time 20     die)  
-                               (on-collide "ship" die)))
+@defproc[(respawn [edge something?])
+         func?]{
+  Will move the center of the entity to the specified edge of the screen. The
+  entity will be placed somewhere along the edge randomly. Values for edge:
+  'left, 'right, 'top, 'bottom
+}
 
-(define bullet
-  (sprite->entity (sprite-map (lambda (i)
-                                (scale 0.35 i)) (spaceship-animator 'left))
-                  #:position   (posn 100 100)
-                  #:name       "bullet"
-                  #:components (every-tick (move-left #:min   0
-                                                      #:speed 5))
-                               (after-time 75     die)  
-                               (on-collide "ship" die)
-                               (spawner bullet2 10)))
-
-(define (lost? g e)
-  (not (get-entity "ship" g)))
-
-(define (won? g e) 
-  (define speed (get-speed (get-entity "ship" g)))
-  (>= speed 10))
-
-(start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
-            (game-over-screen won? lost?)
-            (spaceship-entity)
-            (ore-entity (posn 400 400))
-            (enemy-entity (posn 500 300))
-            bg-entity)
-
-]
-
+@defproc*[([(set-speed [spd integer?]) func?]
+           [(set-direction [dir integer?]) func?])]{
+  Change the speed or direction component of the entity to spd or dir
+}
