@@ -352,8 +352,9 @@ for quick and easy prototyping.
   Will move the entity to somewhere along the edge of the screen.
   Possible values for pos: ['left, 'right, 'top, 'bottom, 'top-left, 'top-right,
   'bottom-left, 'bottom-right, 'left-center, 'right-center, 'top-center,
-  'bottom-center]. go-to-pos will move the entity's center to the edge, while
-  go-to-pos-inside will keep the entity completely inside the screen.
+  'bottom-center]. Also, @racket[(go-to-pos)] has another value for pos:
+  'center. @racket[(go-to-pos)] will move the entity's center to the edge, while
+  @racket[(go-to-pos-inside)] will keep the entity completely inside the screen.
 }
 
 
