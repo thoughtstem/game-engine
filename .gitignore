@@ -3,3 +3,4 @@ compiled/*
 */compiled/*
 *~
 .DS_Store
+*.bak
