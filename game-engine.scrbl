@@ -40,6 +40,16 @@ Here's a full example:
             bg-entity)
 ] 
 
+
+
+Conceptually speaking, I like to think of entities as a combination of two
+things: art and game logic. The art is specified by the sprite; the game logic
+is specified by the collection of components.
+
+
+
+@section{Sprites}
+
 The @racket[sprite->entity] function is the powertool for converting from an
 image to an entity, allowing you to specify components in the process.
 
@@ -55,15 +65,34 @@ image to an entity, allowing you to specify components in the process.
 }
 
 
-Conceptually speaking, I like to think of entities as a combination of two
-things: art and game logic. The art is specified by the sprite; the game logic
-is specified by the collection of components.
+@defproc[(change-sprite [sprite-or-func (or image? func?)])
+         func?]{
+  This is a function that allows the sprite of an entity to be changed. If
+  sprite-or-func is a image, then the entity's sprite will be changed to the
+  image. If sprite-or-func is an function, then the entity's sprite will be
+  changed to what is returned by the function.
+}
+                        
+@subsection{Sheets}
 
-NOTE: Components can also be added, removed, and updated during runtime.  
+A sheet is an image made up of multiple images, where each image within the
+sheet can be used for animating the sprite.
 
-The next two sections look at 1) the various components that ship with this
-library, and 2) the functions that allow "slicing" sprite sheets into lists of
-images (for animation).
+@defproc[(sheet->sprite [sheet image?]
+                        [#:row        r     integer?]
+                        [#:column     c     integer?]
+                        [#:row-number rnum  integer?]
+                        [#:speed      delay integer?])
+         sprite?]{
+  Divides the sheet into r rows and c columns. This function will then return
+  a sprite that will display each of the rnum row's images with a delay between
+  each image of delay ticks.
+}
+
+@defproc*[([(sheet->rainbow-hue-sheet [sheet image?]) sheet?]
+           [(sheet->rainbow-tint-sheet [sheet image?]) sheet?])]{
+  Converts a 1 row animation or single image to 12 rows with shifted hue or tint
+}
 
 @section{Components}
 
@@ -78,7 +107,9 @@ images (for animation).
   If you're just now embarking on your journey to learn about game design, I
   would recommend sticking to the components provided by others. This engine is
   structured so that you don't need to worry too much about how the components
-  work or how to make new components.  
+  work or how to make new components.
+
+  NOTE: Components can also be added, removed, and updated during runtime.  
 }
 
 That said, here's another function for creating new components (which you can
@@ -352,9 +383,8 @@ for quick and easy prototyping.
   Will move the entity to somewhere along the edge of the screen.
   Possible values for pos: ['left, 'right, 'top, 'bottom, 'top-left, 'top-right,
   'bottom-left, 'bottom-right, 'left-center, 'right-center, 'top-center,
-  'bottom-center]. Also, @racket[(go-to-pos)] has another value for pos:
-  'center. @racket[(go-to-pos)] will move the entity's center to the edge, while
-  @racket[(go-to-pos-inside)] will keep the entity completely inside the screen.
+  'bottom-center]. go-to-pos will move the entity's center to the edge, while
+  go-to-pos-inside will keep the entity completely inside the screen.
 }
 
 
