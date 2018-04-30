@@ -7,7 +7,7 @@
          
          (struct-out hidden)
          
-         (struct-out game)
+         (struct-out game) 
          (struct-out bb)
          
          entity-animation
@@ -270,7 +270,9 @@
   (set-button-states-down! btn-states down)
   btn-states)
 
-(struct game (entities [input #:mutable] [collisions #:mutable]) #:transparent)
+(struct game (entities
+             [input #:mutable]
+             [collisions #:mutable]) #:transparent)
 
 (define (set-game-state g s)
   (game s
@@ -407,14 +409,33 @@
                      (a-fun a-game)))
   (foldl pipeline g game-functions))
 
+(define last-physics-snapshot #f)
+(define last-game-snapshot    #f)
+
+(define (copy-collisions-from from to)
+  (if (not from)
+      to
+      (struct-copy game to
+                   [collisions (game-collisions from)])))
+
+
+
+(define (physics-tick)
+  (and last-game-snapshot
+       (set! last-physics-snapshot last-game-snapshot))
+  (update-collisions last-physics-snapshot)
+  (sleep 0.1)
+  (physics-tick))
+
 (define tick
   (lambda (g)
-    (~> g
-        update-collisions
-        tick-entities
-        handle-dead
-        do-game-functions
-        )))
+    (define new-game (~> g
+                         ;(copy-collisions-from last-physics-snapshot _)
+                         tick-entities
+                         handle-dead
+                         do-game-functions))
+    (set! last-game-snapshot new-game)
+    new-game))
 
 (define (handle-dead g)
   (define is-alive? (lambda (e) (not (get-component e dead?))))
@@ -483,10 +504,19 @@
 (define (game-height g)
   (image-height (draw g)))
 
+
+(define (physics-start larger-state)
+  (set! last-physics-snapshot larger-state)
+  (thread
+    physics-tick))
+
 (define (start-game . initial-world)
   (define larger-state (game initial-world
                              (button-states #f #f #f #f)
                              '()))
+  (displayln "Physics start")
+  (physics-start larger-state)
+  (displayln "Game start")
   (lux-start larger-state))
 
 (define (big-bang-start larger-state)

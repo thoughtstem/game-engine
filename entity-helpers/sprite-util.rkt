@@ -1,5 +1,6 @@
 #lang racket
 
+(provide change-sprite)
 (provide set-size)
 (provide scale-sprite)
 (provide random-dec)
@@ -16,6 +17,16 @@
 ;(require "../ai.rkt")
 
 (require posn)
+
+(define (change-sprite sprite-or-func)
+  (lambda (g e)
+    (define sprite (if (procedure? sprite-or-func)
+                       (sprite-or-func)
+                       sprite-or-func))
+    (define new-bb (image->bb (render sprite)))
+    (update-entity (update-entity e animated-sprite? sprite)
+                   bb?
+                   new-bb)))
 
 (define (set-size amount sprite)
   (lambda (g e)
@@ -44,8 +55,11 @@
   (define new-max (exact-round (* max 100)))
   (/ (random new-min (add1 new-max)) 100))
 
-(define (random-size min max sprite)
+(define (random-size min max sprite-or-func)
   (lambda (g e)
+    (define sprite (if (procedure? sprite-or-func)
+                       (sprite-or-func)
+                       sprite-or-func))
     (define frames (animated-sprite-frames sprite))
     (define rate   (animated-sprite-rate (get-component e animated-sprite?)))
     (define new-min (exact-round (* min 100)))
