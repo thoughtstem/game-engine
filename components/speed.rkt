@@ -27,7 +27,9 @@
 
 (define (random-speed min max)
   (lambda (g e)
-     (update-entity e speed? (speed (random min (add1 max))))))
+    (define new-min (exact-round (* min 100)))
+    (define new-max (exact-round (* max 100)))
+    (update-entity e speed? (speed (/ (random new-min (add1 new-max)) 100)))))
 
 (new-component speed?
                update-speed) 
