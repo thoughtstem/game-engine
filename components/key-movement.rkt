@@ -12,15 +12,15 @@
 (define (update-key-movement g e c)
  (update-entity e posn?
                  (curry posn-add
-                        (velocity-from-buttons (game-input g)
+                        (velocity-from-buttons  g
                                                (key-movement-speed c)))))
 
-(define/contract (velocity-from-buttons btn-states speed)
-  (-> hash? number? posn?)
-  (define leftVel  (if (button-down? 'left btn-states) (- speed) 0))
-  (define rightVel (if (button-down? 'right btn-states)   speed  0))
-  (define upVel    (if (button-down? 'up btn-states) (- speed) 0))
-  (define downVel  (if (button-down? 'down btn-states)   speed  0))
+(define/contract (velocity-from-buttons game speed)
+  (-> game? number? posn?)
+  (define leftVel  (if (button-down? 'left game) (- speed) 0))
+  (define rightVel (if (button-down? 'right game)   speed  0))
+  (define upVel    (if (button-down? 'up game) (- speed) 0))
+  (define downVel  (if (button-down? 'down game)   speed  0))
   (posn (+ leftVel rightVel)
         (+ upVel downVel)))
 
