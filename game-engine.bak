@@ -40,16 +40,6 @@ Here's a full example:
             bg-entity)
 ] 
 
-
-
-Conceptually speaking, I like to think of entities as a combination of two
-things: art and game logic. The art is specified by the sprite; the game logic
-is specified by the collection of components.
-
-
-
-@section{Sprites}
-
 The @racket[sprite->entity] function is the powertool for converting from an
 image to an entity, allowing you to specify components in the process.
 
@@ -65,34 +55,15 @@ image to an entity, allowing you to specify components in the process.
 }
 
 
-@defproc[(change-sprite [sprite-or-func (or image? func?)])
-         func?]{
-  This is a function that allows the sprite of an entity to be changed. If
-  sprite-or-func is a image, then the entity's sprite will be changed to the
-  image. If sprite-or-func is an function, then the entity's sprite will be
-  changed to what is returned by the function.
-}
-                        
-@subsection{Sheets}
+Conceptually speaking, I like to think of entities as a combination of two
+things: art and game logic. The art is specified by the sprite; the game logic
+is specified by the collection of components.
 
-A sheet is an image made up of multiple images, where each image within the
-sheet can be used for animating the sprite.
+NOTE: Components can also be added, removed, and updated during runtime.  
 
-@defproc[(sheet->sprite [sheet image?]
-                        [#:row        r     integer?]
-                        [#:column     c     integer?]
-                        [#:row-number rnum  integer?]
-                        [#:speed      delay integer?])
-         sprite?]{
-  Divides the sheet into r rows and c columns. This function will then return
-  a sprite that will display each of the rnum row's images with a delay between
-  each image of delay ticks.
-}
-
-@defproc*[([(sheet->rainbow-hue-sheet [sheet image?]) sheet?]
-           [(sheet->rainbow-tint-sheet [sheet image?]) sheet?])]{
-  Converts a 1 row animation or single image to 12 rows with shifted hue or tint
-}
+The next two sections look at 1) the various components that ship with this
+library, and 2) the functions that allow "slicing" sprite sheets into lists of
+images (for animation).
 
 @section{Components}
 
@@ -107,9 +78,7 @@ sheet can be used for animating the sprite.
   If you're just now embarking on your journey to learn about game design, I
   would recommend sticking to the components provided by others. This engine is
   structured so that you don't need to worry too much about how the components
-  work or how to make new components.
-
-  NOTE: Components can also be added, removed, and updated during runtime.  
+  work or how to make new components.  
 }
 
 That said, here's another function for creating new components (which you can
@@ -185,8 +154,7 @@ fundamental building blocks for your game.
                      [fun (-> game? entity? component? entity?)])
          component?]{
  
-  Runs a handler function after the specified number of ticks and then all
-  after-time components are removed from the entity
+  Runs a one-time handler function after the specified number of ticks
 
   Example:
 
@@ -279,24 +247,6 @@ fundamental building blocks for your game.
   This overrides things like key-handler.
 }
 
-@defproc[(detect-collide [entity-name1 string?] [entity-name2 string?]
-                          [func func?])
-         component?]{
-  Runs a handler function whenever the two named entities collide
-}
-
-@defproc[(on-edge [edge symbol?] [#:offset off integer?] [func func?])
-         component?]{
-  Runs a handler function whenever entity collides with specified edge.
-  Possible values for edge are ['left, 'right, 'top, 'bottom].
-}
-
-@defproc[(detect-edge [name string?] [edge symbol?] [func func?])
-         component?]{
-  Runs a handler function whenvever the named entity collides with sepcified
-  edge. Possible values for edge are ['left, 'right, 'top, 'bottom].
-}
-
 
 @section{Functions}
 
@@ -328,9 +278,9 @@ for quick and easy prototyping.
          func?]{
   Moves the entity in a fixed manner of motion. dir determines in which
   direction the entity moves, where 0 is to the right and 180 is to the left.
-  spd determines how fast the entity moves. @racket[(move-dir-spd)] is different
-  from @racket[(move)] because the direction and speed parameters will be
-  permanent, so that the speed or direction of motion cannot be changed.
+  spd determines how fast the entity moves. (move-dir-spd) is different from
+  (move) because the direction and speed parameters will be permanent, so that
+  the speed or direction of motion cannot be changed.
 }
 
 
@@ -344,9 +294,8 @@ for quick and easy prototyping.
 
 @defproc[(move-random  [#:speed spd integer?])
           func?]{
-  Will randomly call @racket[(move-left)], @racket[(move-right)],
-  @racket[(move-up)], or @racket[(move-down)] and pass in the speed parameter to
-  the chosen function call
+  Will randomly call move-left, move-right, move-up, or move-down and pass in
+  the speed parameter to the chosen function call
 }
 
 @defproc[(move-up-and-down [#:min small integer?]
@@ -365,7 +314,7 @@ for quick and easy prototyping.
 @defproc[(go-to [x integer?]
                 [y integer?])
          func?]{
-  Will change posn of entity to @racket[(posn x y)]
+  Will change posn of entity to (posn x y)
 }
 
 @defproc[(go-to-random [min-x integer?]
@@ -378,21 +327,21 @@ for quick and easy prototyping.
   min-y to max-y
 }
 
-@defproc*[([(go-to-pos [pos symbol?]) func?]
-           [(go-to-pos-inside [pos symbol?]) func?])]{
+@defproc*[([(go-to-pos [pos something?]) func?]
+           [(go-to-pos-inside [pos something?]) func?])]{
   Will move the entity to somewhere along the edge of the screen.
-  Possible values for pos: ['left, 'right, 'top, 'bottom, 'top-left, 'top-right,
+  Values for pos: 'left, 'right, 'top, 'bottom, 'top-left, 'top-right,
   'bottom-left, 'bottom-right, 'left-center, 'right-center, 'top-center,
-  'bottom-center]. go-to-pos will move the entity's center to the edge, while
+  'bottom-center. go-to-pos will move the entity's center to the edge, while
   go-to-pos-inside will keep the entity completely inside the screen.
 }
 
 
-@defproc[(respawn [edge symbol?])
+@defproc[(respawn [edge something?])
          func?]{
   Will move the center of the entity to the specified edge of the screen. The
-  entity will be placed somewhere along the edge randomly. Possible values for
-  edge: ['left, 'right, 'top, 'bottom]
+  entity will be placed somewhere along the edge randomly. Values for edge:
+  'left, 'right, 'top, 'bottom
 }
 
 @defproc*[([(set-speed [spd integer?]) func?]

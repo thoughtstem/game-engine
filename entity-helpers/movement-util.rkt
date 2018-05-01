@@ -50,7 +50,8 @@
                      [(eq? pos 'left-center)  (posn 0     (/ HEIGHT 2))]
                      [(eq? pos 'right-center) (posn WIDTH (/ HEIGHT 2))]
                      [(eq? pos 'top-center)   (posn (/ WIDTH 2) 0)]
-                     [(eq? pos 'bottom-center)(posn (/ WIDTH 2) HEIGHT)]))))
+                     [(eq? pos 'bottom-center)(posn (/ WIDTH 2) HEIGHT)]
+                     [(eq? pos 'center)       (posn (/ WIDTH 2) (/ HEIGHT 2))]))))
                          
 (define (go-to-pos-inside pos)
   (lambda (g e)
