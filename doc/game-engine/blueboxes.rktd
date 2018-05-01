@@ -10,6 +10,25 @@ procedure
   position : posn?
   components : component?
 procedure
+(change-sprite sprite-or-func) -> func?
+  sprite-or-func : (or image? func?)
+procedure
+(sheet->sprite sheet                 
+               #:row r               
+               #:column c            
+               #:row-number rnum     
+               #:speed delay)    -> sprite?
+  sheet : image?
+  r : integer?
+  c : integer?
+  rnum : integer?
+  delay : integer?
+procedure
+(sheet->rainbow-hue-sheet sheet) -> sheet?
+  sheet : image?
+(sheet->rainbow-tint-sheet sheet) -> sheet?
+  sheet : image?
+procedure
 (component? x) -> boolean?
   x : any/c
 procedure
@@ -42,6 +61,23 @@ procedure
   amount : integer?
 procedure
 (physical-collider) -> component?
+procedure
+(detect-collide entity-name1     
+                entity-name2     
+                func)        -> component?
+  entity-name1 : string?
+  entity-name2 : string?
+  func : func?
+procedure
+(on-edge edge #:offset off func) -> component?
+  edge : symbol?
+  off : integer?
+  func : func?
+procedure
+(detect-edge name edge func) -> component?
+  name : string?
+  edge : symbol?
+  func : func?
 procedure
 (move) -> func?
 procedure
@@ -82,12 +118,12 @@ procedure
   max-y : integer?
 procedure
 (go-to-pos pos) -> func?
-  pos : something?
+  pos : symbol?
 (go-to-pos-inside pos) -> func?
-  pos : something?
+  pos : symbol?
 procedure
 (respawn edge) -> func?
-  edge : something?
+  edge : symbol?
 procedure
 (set-speed spd) -> func?
   spd : integer?
