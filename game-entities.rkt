@@ -31,13 +31,7 @@
          
          image->bb
          touching?
-         button-states
-         button-states?
-         button-states-left
-         button-states-right
-         button-states-up
-         button-states-down
-         
+    
          add-circle-collider
          physical-collider
          
@@ -56,6 +50,8 @@
 (require "./collision-helper.rkt")
 
 (require threading)
+
+(require (for-syntax racket/syntax))
 
 (struct bb [w h])
 (struct cc [r]) ;<- Circle Collider
@@ -123,8 +119,14 @@
   (match-define (entity components) e)
   (entity (update-component components component-pred f)))
 
-(define/contract (get-component e component-pred)
+;You can pass in a predicate or an actual component
+(define/contract (get-component e maybe-pred)
   (-> entity? any/c any/c)
+  (define component-pred
+    (if (procedure? maybe-pred)
+        maybe-pred
+        (lambda (c)
+          (eq? c maybe-pred))))
   (findf component-pred (entity-components e)))
 
 (define (add-component e c)
@@ -136,10 +138,11 @@
   (entity (filter (lambda (c) (not (c? c))) components)))
 
 (define (add-components e . cs)
-  (if (empty? cs)
+  (define flattened (flatten cs))
+  (if (empty? flattened)
       e
-      (apply (curry add-components (add-component e (first cs)))
-             (rest cs))))
+      (apply (curry add-components (add-component e (first flattened)))
+             (rest flattened))))
 
 (define (basic-entity p s)
   (entity (list p
@@ -155,9 +158,9 @@
                                #:name     n
                                #:components (c #f)
                                . cs)
-  (define all-cs (filter identity (cons
-                                   (entity-name n)
-                                   (cons c cs))))
+  (define all-cs (flatten (filter identity (cons
+                                            (entity-name n)
+                                            (cons c cs)))))
   (define sprite (if (animated-sprite? sprite-or-image)
                      sprite-or-image
                      (new-sprite sprite-or-image)))
@@ -252,56 +255,114 @@
 ;Input
 
 
-(struct button-states [left right up down] #:mutable)
+(define-syntax (define-all-buttons stx)
+  (syntax-case stx ()
+    [(_ (button-states up-f down-f button-down? button-up? button-change-down? button-change-up?)
+        (keys ...))
+     (with-syntax [(test 42)]
+       #`(begin
+           (provide button-states)
+           
+           (define button-states
+             (make-hash (list
+                         (cons (format "~a" 'keys) #f)
+                         ...)))
+           
+           (define (button-state-set key val)
+             (hash-set! button-states (format "~a" key) val)
+             button-states)
 
-(define (button-states-set-left btn-states left)
-  (set-button-states-left! btn-states left)
-  btn-states)
+           (provide button-down?)
+           (define (button-down? key g)
+             (define h (game-input g))
+             (hash-ref h (format "~a" key) #f))
 
-(define (button-states-set-right btn-states right)
-  (set-button-states-right! btn-states right)
-  btn-states)
+           (provide button-up?)
+           (define (button-up? key g)
+             (not (button-down? key g)))
+           
+           (provide button-change-down?)
+           (define (button-change-down? key g)
+             (define prev-h (game-prev-input g))
+             (and
+              (button-down? key g)
+              (not (hash-ref prev-h (format "~a" key) #f))))
 
-(define (button-states-set-up btn-states up)
-  (set-button-states-up! btn-states up)
-  btn-states)
+           (provide button-change-up?)
+           (define (button-change-up? key g)
+             (define prev-h (game-prev-input g))
+             (and
+              (button-up? key g)
+              (hash-ref prev-h (format "~a" key) #f)))
 
-(define (button-states-set-down btn-states down)
-  (set-button-states-down! btn-states down)
-  btn-states)
+           (define (convert-special a-key)
+             (cond [(string=? a-key "\b") "backspace"]
+                   [(string=? a-key "\n") "enter"]
+                   [(string=? a-key "\r") "enter"]
+                   [else a-key]))
+           
+           ;Consumes a world, handles a single key PRESS by setting button state to true and returning the world
+           (define (down-f larger-state a-key)
+
+             (define key-name
+               (convert-special a-key))
+
+             (define btn-states (game-input larger-state))
+             
+             (set-game-input! larger-state
+                              (cond                       
+                                [(string=? key-name (format "~a" 'keys))  (button-state-set 'keys #t)]
+                                ...
+                                [else btn-states]))
+             larger-state)
+
+           ;Consumes a world, handles a single key RELEASE by setting button state to false and returning the world
+           (define (up-f larger-state a-key)
+
+             (define key-name
+               (convert-special a-key))
+
+             (define btn-states (game-input larger-state))
+             
+             (set-game-input! larger-state
+                              (cond
+                                [(string=? key-name (format "~a" 'keys))  (button-state-set 'keys #f)]
+                                ...
+                                [else btn-states]))
+             larger-state)))]))
+
+
+(define-all-buttons
+  (button-states handle-key-up handle-key-down button-down? button-up? button-change-down? button-change-up?)
+  (left right up down wheel-up wheel-down
+   rshift lshift
+   backspace
+   enter
+   a b c d e f g h i j k l m n o p q r s t u v w x y z
+   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+   0 1 2 3 4 5 6 7 8 9
+   * - / + = < >
+   |#| : |,| |.| | |
+   |"| |'|
+   |]| |[|
+))
+
+
+
+
+
+
+
+
 
 (struct game (entities
              [input #:mutable]
+             [prev-input #:mutable]
              [collisions #:mutable]) #:transparent)
 
 (define (set-game-state g s)
   (game s
         (game-input g)))
-
-;Consumes a world, handles a single key PRESS by setting button state to true and returning the world
-(define (handle-key-down larger-state a-key)
-  (define btn-states (game-input larger-state))
-  (set-game-input! larger-state
-                   (cond
-                     [(key=? a-key "left")  (button-states-set-left btn-states #t)]
-                     [(key=? a-key "right") (button-states-set-right btn-states #t)]
-                     [(key=? a-key "up")    (button-states-set-up btn-states #t)]
-                     [(key=? a-key "down")  (button-states-set-down btn-states #t)]
-                     [else btn-states]))
-  larger-state)
-
-;Consumes a world, handles a single key RELEASE by setting button state to false and returning the world
-(define (handle-key-up larger-state a-key)
-  (define btn-states (game-input larger-state))
-  (set-game-input! larger-state
-                   (cond
-                     [(key=? a-key "left")  (button-states-set-left btn-states #f)]
-                     [(key=? a-key "right") (button-states-set-right btn-states #f)]
-                     [(key=? a-key "up")    (button-states-set-up btn-states #f)]
-                     [(key=? a-key "down")  (button-states-set-down btn-states #f)]
-                     [else btn-states]))
-  larger-state)
-
 
 
 
@@ -419,6 +480,9 @@
                    [collisions (game-collisions from)])))
 
 
+(define (store-prev-input g)
+  (set-game-prev-input! g (hash-copy (game-input g)))
+  g)
 
 (define (physics-tick)
   (and last-game-snapshot
@@ -433,7 +497,10 @@
                          ;(copy-collisions-from last-physics-snapshot _)
                          tick-entities
                          handle-dead
-                         do-game-functions))
+                         do-game-functions
+                         store-prev-input))
+    ;(set-game-input! g '())
+   
     (set! last-game-snapshot new-game)
     new-game))
 
@@ -512,19 +579,18 @@
 
 (define (start-game . initial-world)
   (define larger-state (game initial-world
-                             (button-states #f #f #f #f)
+                             button-states
+                             button-states
                              '()))
   (displayln "Physics start")
   (physics-start larger-state)
   (displayln "Game start")
-  (lux-start larger-state))
+  (final-state
+   (lux-start larger-state)))
 
-(define (big-bang-start larger-state)
-  (big-bang larger-state                        
-            (on-tick    tick)                    
-            (to-draw    draw)                    
-            (on-key     handle-key-down)         
-            (on-release handle-key-up)))
+
+(define (final-state d)
+  (demo-state d))
 
 
 
@@ -561,6 +627,7 @@
        #f]
       [(lux:key-event? e)
 
+       
        (if (not (eq? 'release (send e get-key-code)))
            (demo g/v (handle-key-down state (format "~a" (send e get-key-code))))
            (demo g/v (handle-key-up state (format "~a" (send e get-key-release-code)))))
@@ -575,9 +642,8 @@
 
 (define (lux-start larger-state)
   (call-with-chaos
-   (make-gui)
+   (make-gui #:start-fullscreen? #t)
    (λ () (fiat-lux (demo (make-gui/val) larger-state)))))
 
-
-
+ 
 
