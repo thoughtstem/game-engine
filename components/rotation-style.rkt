@@ -7,6 +7,7 @@
 (require 2htdp/image)
 
 (provide (rename-out (make-rotation-style rotation-style)))
+(provide (except-out (struct-out rotation-style) rotation-style))
 
 (struct rotation-style (mode facing-right?))
 

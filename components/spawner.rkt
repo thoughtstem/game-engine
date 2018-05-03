@@ -1,6 +1,9 @@
 #lang racket
 
 (require "../game-entities.rkt")
+(require "./rotation-style.rkt")
+(require "./after-time.rkt")
+
 (require posn)
 
 (provide spawner-spawn
@@ -33,10 +36,18 @@
 (define (spawner-do-spawn e) 
   (lambda (s)
     (define to-spawn (next-spawn s))
-
     (define pos (get-component e posn?))
     (define offset (get-component to-spawn posn?))
-    (define new-x (+ (posn-x pos) (posn-x offset)))
+    (define rs? (get-component e rotation-style?))
+    (define m (if rs?
+                  (rotation-style-mode rs?)
+                  #f))
+    (define facing-right? (if (eq? m 'left-right)
+                              (rotation-style-facing-right? rs?)
+                              #t))
+    (define new-x (if facing-right?
+                      (+ (posn-x pos) (posn-x offset))
+                      (- (posn-x pos) (posn-x offset))))
     (define new-y (+ (posn-y pos) (posn-y offset)))
     
     (define new-entity (update-entity to-spawn posn?
