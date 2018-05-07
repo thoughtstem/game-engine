@@ -200,6 +200,12 @@ fundamental building blocks for your game.
   ] 
 }
 
+@defproc[(spawner [sprite entity?] [amount integer?])
+         component?]{
+  Spawns a sprite every amount ticks. @racket[spawner] uses the sprite's
+  position component as the relative spawn location to the main entity
+}
+                     
 @defproc[(on-collide [name string?]
                      [fun (-> game? entity? component?)])
          component?]{
@@ -297,6 +303,26 @@ fundamental building blocks for your game.
   edge. Possible values for edge are ['left, 'right, 'top, 'bottom].
 }
 
+@defproc[(stop-on-edge [edges symbols?])
+         component?]{
+  Prevents the entity from moving off screen along specified edges. Possible
+  values for edge are ['left, 'right, 'top, 'bottom]. There can be any number of
+  specified edges. If no parameters are passed in, default will be all edges.
+}
+
+@defproc[(wrap-around [mode symbol?])
+         component?]{
+  Moves entity to other edge when it moves off screen along specified modes.
+  Possible values for mode are ['left-right, 'top-bottom]. There can be any
+  number of modes. If no parameters are passed in, default will be both modes
+}
+
+@defproc[(rotation-style [mode symbol?])
+         component?]{
+  Only usable with non-player-controlled entities. Will flip the sprite
+  image/animation left-right when the entity has direction between 90-270.
+  @racket[(rotation-style)] assumes that the sprite is drawn facing right.
+}
 
 @section{Functions}
 
@@ -399,3 +425,11 @@ for quick and easy prototyping.
            [(set-direction [dir integer?]) func?])]{
   Change the speed or direction component of the entity to spd or dir
 }
+
+
+
+@defproc[(set-player-speed [amount integer?])
+         func?]{
+  Sets the key movement speed
+}
+
