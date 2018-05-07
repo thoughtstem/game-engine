@@ -319,7 +319,7 @@ fundamental building blocks for your game.
 
 @defproc[(rotation-style [mode symbol?])
          component?]{
-  Only usable with non-player-controlled entities. Will flip the sprite
+  Only usable with entites with @racket[(move)]. Will flip the sprite
   image/animation left-right when the entity has direction between 90-270.
   @racket[(rotation-style)] assumes that the sprite is drawn facing right.
 }
@@ -421,15 +421,31 @@ for quick and easy prototyping.
   edge: ['left, 'right, 'top, 'bottom]
 }
 
-@defproc*[([(set-speed [spd integer?]) func?]
-           [(set-direction [dir integer?]) func?])]{
-  Change the speed or direction component of the entity to spd or dir
+@defproc*[([(set-speed [amount integer?]) func?]
+           [(set-player-speed [amount integer?]) func?]
+           [(set-direction [amount integer?]) func?]
+           [(set-counter [amount integer?]) func?])]{
+  Change the specified component of the entity to amount.
+  @racket[(set-speed)] should be used with entities not controlled by the user
+  (should not have @racket[key-movement]). @racket[(set-player-speed)] should be
+  used with entities controlled by the user (should have @racket[key-movement])
 }
 
-
-
-@defproc[(set-player-speed [amount integer?])
-         func?]{
-  Sets the key movement speed
+@defproc*[([(random-direction [min integer?] [max integer?]) func?]
+           [(random-speed [min integer?] [max integer?]) func?])]{
+ Change the speed or direction component of the entity to a randomly choosen
+ value between min and max
 }
+
+@defproc*[([(change-ai-speed-by [inc integer?]) func?]
+           [(change-speed-by [inc integer?]) func?]
+           [(change-direction-by [inc integer?]) func?]
+           [(change-counter-by [inc integer?]) func?])]{
+  Increase the specified component of the entity by inc. The specified component
+  can be lowered by having inc be negative. @racket[(change-ai-speed-by)] should
+  be used with entities not controlled by the user (should not have
+  @racket[key-movement]). @racket[(change-speed-by)] should be used with 
+  entities controlled by the user (should have @racket[key-movement])
+}
+
 
