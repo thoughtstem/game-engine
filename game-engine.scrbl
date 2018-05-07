@@ -404,21 +404,30 @@ for quick and easy prototyping.
   min-y to max-y
 }
 
-@defproc*[([(go-to-pos [pos symbol?]) func?]
-           [(go-to-pos-inside [pos symbol?]) func?])]{
+@defproc*[([(go-to-pos [pos symbol?] [#:offset offset integer?]) func?]
+           [(go-to-pos-inside [pos symbol?] [#:offset offset integer?]) func?])]{
   Will move the entity to somewhere along the edge of the screen.
   Possible values for pos: ['left, 'right, 'top, 'bottom, 'top-left, 'top-right,
   'bottom-left, 'bottom-right, 'left-center, 'right-center, 'top-center,
-  'bottom-center]. go-to-pos will move the entity's center to the edge, while
-  go-to-pos-inside will keep the entity completely inside the screen.
+  'bottom-center, 'center]. @racket[(go-to-pos)] will move the entity's center
+  to the edge, while @racket[(go-to-pos-inside)] will keep the entity completely
+  inside the screen.
+
+  offset will move the "edge" of the screen. A positive offset value will
+  always move the edge to the right or down. A negative offset value will do the
+  opposite. offset only applies for 'left, 'right, 'top, and 'bottom.
 }
 
 
-@defproc[(respawn [edge symbol?])
+@defproc[(respawn [edge symbol?] [#:offset offset integer?])
          func?]{
   Will move the center of the entity to the specified edge of the screen. The
   entity will be placed somewhere along the edge randomly. Possible values for
   edge: ['left, 'right, 'top, 'bottom]
+
+  offset will move the "edge" of the screen. A positive offset value will
+  always move the edge to the right or down. A negative offset value will do the
+  opposite. offset only applies for 'left, 'right, 'top, and 'bottom.
 }
 
 @defproc*[([(set-speed [amount integer?]) func?]
