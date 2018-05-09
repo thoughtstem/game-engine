@@ -38,9 +38,11 @@
   (lambda (s)
     (define to-spawn (next-spawn s))
     (define pos (get-component e posn?))
-    (define dir (get-direction e))
+    (define dir (if (get-component e direction?)
+                    (get-direction e)
+                    #f))
     (define offset (get-component to-spawn posn?))
-    (define rot-offset (posn-rotate-origin-ccw dir offset))
+    (define rot-offset (unless (eq? dir #f)(posn-rotate-origin-ccw dir offset)))
     (define rs? (get-component e rotation-style?))
     (define m (if rs?
                   (rotation-style-mode rs?)
