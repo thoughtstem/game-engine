@@ -3,6 +3,7 @@
 (require "../game-entities.rkt")
 (require "./rotation-style.rkt")
 (require "./after-time.rkt")
+(require "./direction.rkt")
 
 (require posn)
 
@@ -37,7 +38,9 @@
   (lambda (s)
     (define to-spawn (next-spawn s))
     (define pos (get-component e posn?))
+    (define dir (get-direction e))
     (define offset (get-component to-spawn posn?))
+    (define rot-offset (posn-rotate-origin-ccw dir offset))
     (define rs? (get-component e rotation-style?))
     (define m (if rs?
                   (rotation-style-mode rs?)
@@ -45,14 +48,18 @@
     (define facing-right? (if (eq? m 'left-right)
                               (rotation-style-facing-right? rs?)
                               #t))
-    (define new-x (if facing-right?
-                      (+ (posn-x pos) (posn-x offset))
-                      (- (posn-x pos) (posn-x offset))))
-    (define new-y (+ (posn-y pos) (posn-y offset)))
-    
+    (define new-posn (cond
+                       [(and (eq? m 'left-right) (eq? facing-right? #t)) (posn (+ (posn-x pos) (posn-x offset))
+                                                                               (+ (posn-y pos) (posn-y offset)))]
+                       [(and (eq? m 'left-right) (eq? facing-right? #f)) (posn (- (posn-x pos) (posn-x offset))
+                                                                               (+ (posn-y pos) (posn-y offset)))]
+                       [(eq? m 'face-direction) (posn (+ (posn-x pos) (posn-x rot-offset))
+                                                      (+ (posn-y pos) (posn-y rot-offset)))]
+                       [else (posn (+ (posn-x pos) (posn-x offset))
+                                   (+ (posn-y pos) (posn-y offset)))]))
+                       
     (define new-entity (update-entity to-spawn posn?
-                                      (posn new-x new-y)
-                                      #;(get-component e posn?)))
+                                      new-posn))
     
     (struct-copy spawner s
                  [next new-entity])))
