@@ -32,13 +32,12 @@
   (define x (posn-x (get-component e posn?)))
   (define y (posn-y (get-component e posn?)))
   (define new-dir (unless (eq? target? #f)(radians->degrees (atan (- target-y y) (- target-x x)))))
-  (define update-direction
-    (update-entity e direction? (direction (if (negative? new-dir)
-                                                 (+ 360 new-dir)
-                                                 new-dir))))
   (cond
     [(and (follow-ready? c) target?)
-     (update-entity update-direction follow? reset-follow)]
+     (update-entity (update-entity e direction? (direction (if (negative? new-dir)
+                                                 (+ 360 new-dir)
+                                                 new-dir)))
+                    follow? reset-follow)]
     [(and (not (follow-ready? c)) target?)
      (update-entity e                     follow? inc-follow)]
     [else e]))

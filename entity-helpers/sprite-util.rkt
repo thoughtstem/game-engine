@@ -9,10 +9,14 @@
 (provide change-color-by)
 (provide random-color)
 (provide random-tint)
+(provide spawn)
 
 (require 2htdp/image)
 (require "../game-entities.rkt")
 (require "../components/animated-sprite.rkt")
+(require "../components/direction.rkt")
+(require "../components/rotation-style.rkt")
+(require "../components/spawn-once.rkt")
 (require "./rgb-hsb.rkt")
 ;(require "../ai.rkt")
 
@@ -103,3 +107,7 @@
     (define random-color (make-color-hue (random 255) 255))
     (define new-list (map (curry tint-img random-color) (vector->list frames)))
     (update-entity e animated-sprite? (struct-copy animated-sprite s [frames (list->vector new-list)]))))
+
+(define (spawn s) 
+  (lambda (g e)
+    (add-component e (spawn-once s))))
