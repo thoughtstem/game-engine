@@ -96,11 +96,11 @@ procedure
 (rotation-style mode) -> component?
   mode : symbol?
 procedure
-(move) -> func?
+(follow name interval) -> component?
+  name : string?
+  interval : number?
 procedure
-(move-dir-spd #:dir dir #:speed speed) -> func?
-  dir : integer?
-  speed : integer?
+(move) -> func?
 procedure
 (move-right #:speed spd) -> func?
   spd : integer?
@@ -172,3 +172,6 @@ procedure
 procedure
 (spawn sprite) -> func?
   sprite : entity?
+procedure
+(point-to name) -> func?
+  name : string?
