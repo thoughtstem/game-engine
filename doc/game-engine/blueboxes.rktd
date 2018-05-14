@@ -10,22 +10,24 @@ procedure
   position : posn?
   components : component?
 procedure
-(sheet->sprite img                   
-               #:rows r              
-               #:columns c           
+(change-sprite sprite-or-func) -> func?
+  sprite-or-func : (or image? func?)
+procedure
+(sheet->sprite sheet                 
+               #:row r               
+               #:column c            
                #:row-number rnum     
-               #:speed delay)    -> animated-sprite?
-  img : image?
+               #:speed delay)    -> sprite?
+  sheet : image?
   r : integer?
   c : integer?
   rnum : integer?
   delay : integer?
 procedure
-(sheet->rainbow-hue-sheet img) -> image?
-  img : image?
-procedure
-(sheet->rainbow-tint-sheet img) -> image?
-  img : image?
+(sheet->rainbow-hue-sheet sheet) -> sheet?
+  sheet : image?
+(sheet->rainbow-tint-sheet sheet) -> sheet?
+  sheet : image?
 procedure
 (component? x) -> boolean?
   x : any/c
@@ -34,36 +36,28 @@ procedure
   struct? : (-> any/c boolean?)
   update : (-> game? entity? component? entity?)
 procedure
-(static) -> component?
-procedure
 (key-movement speed) -> component?
   speed : integer?
+procedure
+(on-key key func) -> func?
+  key : symbol?
+  func : func?
 procedure
 (posn x y) -> component?
   x : integer?
   y : integer?
 procedure
-(after-time ticks func) -> component?
+(after-time ticks fun) -> component?
   ticks : integer?
-  func : (-> game? entity? component? entity?)
+  fun : (-> game? entity? component? entity?)
 procedure
-(do-every ticks func) -> component?
-  ticks : integer?
-  func : (-> game? eneity? component? entity?)
+(spawner sprite amount) -> component?
+  sprite : entity?
+  amount : integer?
 procedure
-(on-start func) -> component?
-  func : (-> game? entity? component?)
-procedure
-(on-collide entity-name func) -> component?
-  entity-name : string?
-  func : (-> game? entity? component?)
-procedure
-(detect-collide entity-name1     
-                entity-name2     
-                func)        -> component?
-  entity-name1 : string?
-  entity-name2 : string?
-  func : (-> game? entity? component?)
+(on-collide name fun) -> component?
+  name : string?
+  fun : (-> game? entity? component?)
 procedure
 (every-tick func) -> component?
   func : (-> game? entity? component?)
@@ -74,21 +68,33 @@ procedure
 (health amount) -> component?
   amount : integer?
 procedure
-(spawner sprite time) -> component
-  sprite : entity?
-  time : integer?
-procedure
 (physical-collider) -> component?
 procedure
-(speed value) -> component?
-  value : integer?
-(direction value) -> component?
-  value : integer?
+(detect-collide entity-name1     
+                entity-name2     
+                func)        -> component?
+  entity-name1 : string?
+  entity-name2 : string?
+  func : func?
 procedure
-(counter count) -> component?
-  count : integer?
+(on-edge edge #:offset off func) -> component?
+  edge : symbol?
+  off : integer?
+  func : func?
 procedure
-(do-many ...) -> func?
+(detect-edge name edge func) -> component?
+  name : string?
+  edge : symbol?
+  func : func?
+procedure
+(stop-on-edge edges) -> component?
+  edges : symbols?
+procedure
+(wrap-around mode) -> component?
+  mode : symbol?
+procedure
+(rotation-style mode) -> component?
+  mode : symbol?
 procedure
 (move) -> func?
 procedure
@@ -128,15 +134,20 @@ procedure
   min-y : integer?
   max-y : integer?
 procedure
-(go-to-pos pos) -> func?
-  pos : something?
-(go-to-pos-inside pos) -> func?
-  pos : something?
+(go-to-pos pos #:offset offset) -> func?
+  pos : symbol?
+  offset : integer?
+(go-to-pos-inside pos #:offset offset) -> func?
+  pos : symbol?
+  offset : integer?
 procedure
-(respawn loc) -> func?
-  loc : something?
+(respawn edge #:offset offset) -> func?
+  edge : symbol?
+  offset : integer?
 procedure
 (set-speed amount) -> func?
+  amount : integer?
+(set-player-speed amount) -> func?
   amount : integer?
 (set-direction amount) -> func?
   amount : integer?
@@ -150,14 +161,14 @@ procedure
   min : integer?
   max : integer?
 procedure
-(change-ai-speed-by delta) -> func?
-  delta : integer?
-(change-speed-by delta) -> func?
-  delta : integer?
-(change-direction-by delta) -> func?
-  delta : integer?
-(change-counter-by delta) -> func?
-  delta : integer?
+(change-ai-speed-by inc) -> func?
+  inc : integer?
+(change-speed-by inc) -> func?
+  inc : integer?
+(change-direction-by inc) -> func?
+  inc : integer?
+(change-counter-by inc) -> func?
+  inc : integer?
 procedure
-(change-sprite sprite-or-func) -> func?
-  sprite-or-func : (or/c sprite? func?)
+(spawn sprite) -> func?
+  sprite : entity?
