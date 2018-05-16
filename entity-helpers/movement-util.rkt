@@ -9,6 +9,7 @@
 (provide move-with-speed)
 (provide move-random-speed)
 (provide point-to)
+(provide bounce)
 
 (require "../game-entities.rkt")
 (require "../components/direction.rkt")
@@ -117,3 +118,7 @@
                                                (+ 360 new-dir)
                                                new-dir)))
         e)))
+
+(define (bounce)
+  (lambda (g e)
+    (update-entity e direction (direction (+ (get-direction e) 180)))))
