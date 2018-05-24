@@ -9,12 +9,16 @@
 (provide change-color-by)
 (provide random-color)
 (provide random-tint)
+(provide spawn)
 
 (provide (all-from-out "./rgb-hsb.rkt"))
 
 (require 2htdp/image)
 (require "../game-entities.rkt")
 (require "../components/animated-sprite.rkt")
+(require "../components/direction.rkt")
+(require "../components/rotation-style.rkt")
+(require "../components/spawn-once.rkt")
 (require "./rgb-hsb.rkt")
 ;(require "../ai.rkt")
 
@@ -30,25 +34,27 @@
                    bb?
                    new-bb)))
 
-(define (set-size amount sprite)
+(define (set-size amount)
   (lambda (g e)
-    (define frames (animated-sprite-frames sprite))
-    (define rate (animated-sprite-rate (get-component e animated-sprite?)))
+    (define s (get-component e animated-sprite?))
+    (define frames (animated-sprite-o-frames s))
     (define new-list (map (curry scale amount) (vector->list frames)))
-    (define resized-sprite (new-sprite new-list rate))
+    (define resized-sprite (struct-copy animated-sprite s [frames (list->vector new-list)]))
     (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? (new-sprite new-list rate))
+    (update-entity (update-entity e animated-sprite? resized-sprite)
                    bb?
                    new-bb)))
 
 (define (scale-sprite amount)
   (lambda (g e)
-    (define frames (animated-sprite-frames (get-component e animated-sprite?)))
-    (define rate (animated-sprite-rate (get-component e animated-sprite?)))
+    (define s (get-component e animated-sprite?))
+    (define frames (animated-sprite-o-frames s))
     (define new-list (map (curry scale amount) (vector->list frames)))
-    (define resized-sprite (new-sprite new-list rate))
+    (define resized-sprite (struct-copy animated-sprite s
+                                        [frames   (list->vector new-list)]
+                                        [o-frames (list->vector new-list)]))
     (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? (new-sprite new-list rate))
+    (update-entity (update-entity e animated-sprite? resized-sprite)
                    bb?
                    new-bb)))
 
@@ -57,48 +63,54 @@
   (define new-max (exact-round (* max 100)))
   (/ (random new-min (add1 new-max)) 100))
 
-(define (random-size min max sprite-or-func)
+(define (random-size min max)
   (lambda (g e)
-    (define sprite (if (procedure? sprite-or-func)
-                       (sprite-or-func)
-                       sprite-or-func))
-    (define frames (animated-sprite-frames sprite))
-    (define rate   (animated-sprite-rate (get-component e animated-sprite?)))
+    (define s (get-component e animated-sprite?))
+    (define frames (animated-sprite-o-frames s))
     (define new-min (exact-round (* min 100)))
     (define new-max (exact-round (* max 100)))
     (define new-list (map (curry scale (/ (random new-min (add1 new-max)) 100)) (vector->list frames)))
-    (define resized-sprite (new-sprite new-list rate))
+    (define resized-sprite (struct-copy animated-sprite s [frames (list->vector new-list)]))
     (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? (new-sprite new-list rate))
+    (update-entity (update-entity e animated-sprite? resized-sprite)
                    bb?
                    new-bb)))
 
 (define (change-color-by amount)
   (lambda (g e)
-    (define frames (animated-sprite-frames (get-component e animated-sprite?)))
-    (define rate (animated-sprite-rate (get-component e animated-sprite?)))
+    (define s (get-component e animated-sprite?))
+    (define frames (animated-sprite-o-frames s))
     (define new-list (map (curry change-img-hue amount) (vector->list frames)))
-    (update-entity e animated-sprite? (new-sprite new-list rate))))
+    (update-entity e animated-sprite? (struct-copy animated-sprite s
+                                                   [frames   (list->vector new-list)]
+                                                   [o-frames (list->vector new-list)]
+                                                   ))))
 
-(define (set-color amount sprite)
+(define (set-color amount)
   (lambda (g e)
-    (define frames (animated-sprite-frames sprite))
-    (define rate   (animated-sprite-rate (get-component e animated-sprite?)))
+    (define s (get-component e animated-sprite?))
+    (define frames (animated-sprite-o-frames s))
     (define new-list (map (curry change-img-hue amount) (vector->list frames)))
-    (update-entity e animated-sprite? (new-sprite new-list rate))))
+    (update-entity e animated-sprite?
+                   (struct-copy animated-sprite s [frames (list->vector new-list)]))))
 
 (define (random-color min max)
   (lambda (g e)
-    (define frames (animated-sprite-frames (get-component e animated-sprite?)))
-    (define rate   (animated-sprite-rate (get-component e animated-sprite?)))
+    (define s (get-component e animated-sprite?))
+    (define frames (animated-sprite-o-frames s))
     (define hue-change (random min max))
     (define new-list (map (curry change-img-hue hue-change) (vector->list frames)))
-    (update-entity e animated-sprite? (new-sprite new-list rate))))
+    (update-entity e animated-sprite? (struct-copy animated-sprite s [frames (list->vector new-list)]))))
 
-(define (random-tint sprite)
+(define (random-tint)
   (lambda (g e)
-    (define frames (animated-sprite-frames sprite))
-    (define rate   (animated-sprite-rate (get-component e animated-sprite?)))
+    (define s (get-component e animated-sprite?))
+    (define frames (animated-sprite-o-frames s))
     (define random-color (make-color-hue (random 255) 255))
     (define new-list (map (curry tint-img random-color) (vector->list frames)))
-    (update-entity e animated-sprite? (new-sprite new-list rate))))
+    (update-entity e animated-sprite? (struct-copy animated-sprite s [frames (list->vector new-list)]))))
+
+(define (spawn s) 
+  (lambda (g e)
+    (add-component e (spawn-once s))))
+

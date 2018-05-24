@@ -8,6 +8,8 @@
 (provide respawn)
 (provide move-with-speed)
 (provide move-random-speed)
+(provide point-to)
+(provide bounce)
 
 (require "../game-entities.rkt")
 (require "../components/direction.rkt")
@@ -101,3 +103,22 @@
     (define dir (get-direction e))
     (update-entity e every-tick?
                      (every-tick (move-dir-spd #:dir dir #:speed (random min (add1 max)))))))
+
+
+(define (point-to name)
+  (lambda (g e)
+    (define target? (get-entity name g))
+    (define target-x (unless (eq? target? #f) (posn-x (get-component target? posn?))))
+    (define target-y (unless (eq? target? #f) (posn-y (get-component target? posn?))))
+    (define x (posn-x (get-component e posn?)))
+    (define y (posn-y (get-component e posn?)))
+    (define new-dir (unless (eq? target? #f)(radians->degrees (atan (- target-y y) (- target-x x)))))
+    (if target?
+        (update-entity e direction? (direction (if (negative? new-dir)
+                                               (+ 360 new-dir)
+                                               new-dir)))
+        e)))
+
+(define (bounce)
+  (lambda (g e)
+    (update-entity e direction (direction (+ (get-direction e) 180)))))

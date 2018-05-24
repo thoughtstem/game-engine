@@ -6,8 +6,8 @@
 (provide (struct-out key-movement)
          change-speed-by
          get-speed
-         
-         (struct-out on-no-key-movement))
+         (struct-out on-no-key-movement)
+         set-player-speed)
 
 (struct key-movement (speed))
 
@@ -44,8 +44,6 @@
                update-key-movement)
 
 
-
-
 (struct on-no-key-movement (f))
 
 (define (update-on-stopped g e c)
@@ -57,4 +55,8 @@
 (new-component on-no-key-movement?
                update-on-stopped)
 
+
+(define (set-player-speed n)
+  (lambda (g e)
+    (update-entity e key-movement? (key-movement n))))
 

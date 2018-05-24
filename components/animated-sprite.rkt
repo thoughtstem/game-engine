@@ -9,8 +9,8 @@
          (struct-out animated-sprite)
          sheet->sprite
          sprite-map
-         pick-frame)
-
+         pick-frame
+         sprite-map-original)
 
 (require 2htdp/image)
 (require threading)
@@ -30,6 +30,7 @@
 
 (struct animated-sprite
         (
+         o-frames         ;List of original images
          frames           ;List of images
          total-frames
          current-frame    ;Frame to show currently (integer)
@@ -41,17 +42,22 @@
   (struct-copy animated-sprite s
                [frames (vector-map f (animated-sprite-frames s))]))
 
+(define (sprite-map-original f s)
+  (struct-copy animated-sprite s
+               [frames (vector-map f (animated-sprite-o-frames s))]))
+
 (define/contract (new-sprite costumes (rate 1))
   (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
   (define list-costumes (if (list? costumes)
                             costumes
                             (list costumes)))
   (animated-sprite
-    (list->vector (map bake list-costumes))
-    (length list-costumes)
-    0
-    rate
-    0))
+   (list->vector (map bake list-costumes))
+   (list->vector (map bake list-costumes))
+   (length list-costumes)
+   0
+   rate
+   0))
 
 (define (bake i)
   (define w (image-width i))

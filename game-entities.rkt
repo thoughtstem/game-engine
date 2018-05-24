@@ -642,7 +642,7 @@
 
 (define (lux-start larger-state)
   (call-with-chaos
-   (make-gui #:start-fullscreen? #t)
+   (make-gui #:start-fullscreen? #f)
    (λ () (fiat-lux (demo (make-gui/val) larger-state)))))
 
  

@@ -8,6 +8,8 @@
          move-random
          move-dir-spd
          move
+         move-up-down
+         move-left-right
          spin)
 
 (require posn)
@@ -98,6 +100,32 @@
     (define f (λ(i) (rotate s i)))
     (update-entity e animated-sprite? (curry sprite-map f))))
 
+(define (move-up-down #:min min #:max max)
+  (lambda (g e)
+    (define d (get-direction e))
+    (define s (get-ai-speed e))
+    (define current-pos-y (posn-y (get-component e posn?)))
+    (define current-pos-x (posn-x (get-component e posn?)))
+    (define x-vel (* (cos (degrees->radians d)) s))
+    (define y-vel (* (sin (degrees->radians d)) s))
+    (update-entity (cond [(>= current-pos-y max) (update-entity e direction? (direction 270))]
+                         [(<= current-pos-y min) (update-entity e direction? (direction 90))]
+                         [else e])
+                   posn? (posn (+ current-pos-x x-vel)
+                               (+ current-pos-y y-vel)))))
 
 
+(define (move-left-right #:min min #:max max)
+  (lambda (g e)
+    (define d (get-direction e))
+    (define s (get-ai-speed e))
+    (define current-pos-y (posn-y (get-component e posn?)))
+    (define current-pos-x (posn-x (get-component e posn?)))
+    (define x-vel (* (cos (degrees->radians d)) s))
+    (define y-vel (* (sin (degrees->radians d)) s))
+    (update-entity (cond [(>= current-pos-x max) (update-entity e direction? (direction 180))]
+                         [(<= current-pos-x min) (update-entity e direction? (direction 0))]
+                         [else e])
+                   posn? (posn (+ current-pos-x x-vel)
+                               (+ current-pos-y y-vel)))))
 

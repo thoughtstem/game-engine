@@ -1,40 +1,40 @@
 #lang racket
 
 (require "../game-entities.rkt")
-(require "./rotation-style.rkt")
-(require "./after-time.rkt")
+;(require "../components/after-time.rkt")
 (require "./direction.rkt")
-
+(require "./rotation-style.rkt")
 (require posn)
 
-(provide spawner-spawn
-         spawner-speed
-         spawner-accum
-         spawner-next
-         (rename-out [make-spawner spawner]))
+;(displayln "LOADING ON START")
 
-(struct spawner (spawn speed accum next) #:transparent)
+(provide spawn-once-spawn
+         spawn-once-speed
+         spawn-once-accum
+         spawn-once-next
+         (rename-out [make-spawn-once spawn-once]))
 
-(define (make-spawner spawn speed)
-  (spawner spawn speed 0 #f))
+(struct spawn-once (spawn speed accum next))
 
-(define (spawner-ready? s)
-  (>= (spawner-accum s)
-      (spawner-speed s)))
+(define (make-spawn-once spawn)
+  (spawn-once spawn 1 0 #f))
 
-(define (spawner-reset s)
-  (struct-copy spawner s
+(define (spawn-once-ready? s)
+  (>= (spawn-once-accum s)
+      (spawn-once-speed s)))
+
+(define (spawn-once-reset s)
+  (struct-copy spawn-once s
                [accum 0]
                [next #f]))
 
-
 (define (next-spawn s)
-  (define s2 (spawner-spawn s))
+  (define s2 (spawn-once-spawn s))
   (if (procedure? s2)
       (s2)
       s2))
 
-(define (spawner-do-spawn e) 
+(define (spawn-once-do-spawn e) 
   (lambda (s)
     (define to-spawn (next-spawn s))
     (define pos (get-component e posn?))
@@ -63,40 +63,42 @@
     (define new-entity (update-entity to-spawn posn?
                                       new-posn))
     
-    (struct-copy spawner s
+    (struct-copy spawn-once s
                  [next new-entity])))
 
-(define (spawner-inc s)
-  (struct-copy spawner s
-               [accum (add1 (spawner-accum s))]))
+(define (spawn-once-inc s)
+  (struct-copy spawn-once s
+               [accum (add1 (spawn-once-accum s))]))
 
-(define (update-spawner g e c)
-  (define new-c (spawner-inc c))
-  (if (spawner-ready? new-c)
-      (update-entity e spawner? ((spawner-do-spawn e) new-c))
-      (update-entity e spawner? new-c)))
+(define (update-spawn-once g e c)
+  (define new-c (spawn-once-inc c))
+  (if (spawn-once-ready? new-c)
+       (update-entity e spawn-once? ((spawn-once-do-spawn e) new-c))
+       (update-entity e spawn-once? new-c)))
 
-(define/contract (collect-spawns es)
+(define/contract (collect-spawn-once es)
   (-> (listof entity?) (listof entity?))
-  (define spawners (filter identity (map (λ(x) (get-component x spawner?)) es)))
-  (filter identity (map spawner-next spawners)))
+  (define spawn-once (filter identity (map (λ(x) (get-component x spawn-once?)) es)))
+  (filter identity (map spawn-once-next spawn-once)))
 
-(define (reset-spawners es)
-  (define maybe-spawner-reset (lambda (x) (if (spawner-ready? x)
-                                              (spawner-reset x)
+(define (reset-spawn-once es)
+  #;(define maybe-spawn-once-reset (lambda (x) (if (spawn-once-ready? x)
+                                              (spawn-once-reset x)
                                               x)))
-  (map (λ(x) (update-entity x spawner? maybe-spawner-reset)) es))
+  (map (λ(x) (if (and (get-component x spawn-once?)
+                      (spawn-once-ready? (get-component x spawn-once?)))
+                 (remove-component x spawn-once?)
+                 x)) es))
 
-(define (handle-spawns g)
+(define (handle-spawn-once g)
   (define es     (game-entities g))
-  (define new-es (collect-spawns es))
-  (define all    (append new-es (reset-spawners es)))
+  (define new-es (collect-spawn-once es))
+  (define all    (append new-es (reset-spawn-once es)))
   
   (struct-copy game g
                [entities all]))
 
-(new-component spawner?
-               update-spawner)
+(new-component spawn-once?
+               update-spawn-once)
 
-(new-game-function handle-spawns)
-
+(new-game-function handle-spawn-once)
