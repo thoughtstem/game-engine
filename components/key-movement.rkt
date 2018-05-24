@@ -5,7 +5,9 @@
 
 (provide (struct-out key-movement)
          change-speed-by
-         get-speed)
+         get-speed
+         
+         (struct-out on-no-key-movement))
 
 (struct key-movement (speed))
 
@@ -34,5 +36,25 @@
 (define (get-speed e)
   (key-movement-speed (get-component e key-movement?)))
 
+(define (get-current-velocity g e)
+  (velocity-from-buttons g (get-speed e)))
+
+
 (new-component key-movement?
-               update-key-movement) 
+               update-key-movement)
+
+
+
+
+(struct on-no-key-movement (f))
+
+(define (update-on-stopped g e c)
+  (define v (get-current-velocity g e))
+  (if  (equal? (posn 0 0) v)
+       ((on-no-key-movement-f c) g e)
+       e))
+
+(new-component on-no-key-movement?
+               update-on-stopped)
+
+

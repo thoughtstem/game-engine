@@ -8,7 +8,8 @@
          reset-animation
          (struct-out animated-sprite)
          sheet->sprite
-         sprite-map)
+         sprite-map
+         pick-frame)
 
 
 (require 2htdp/image)
@@ -119,8 +120,4 @@
 (define (sheet->costume-list sheet tiles-across tiles-down total)
   (take (flatten (sheet->costume-grid sheet tiles-across tiles-down))
         total))
-
-
-
-
 

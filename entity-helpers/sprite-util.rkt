@@ -10,6 +10,8 @@
 (provide random-color)
 (provide random-tint)
 
+(provide (all-from-out "./rgb-hsb.rkt"))
+
 (require 2htdp/image)
 (require "../game-entities.rkt")
 (require "../components/animated-sprite.rkt")

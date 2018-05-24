@@ -39,6 +39,10 @@ procedure
 (key-movement speed) -> component?
   speed : integer?
 procedure
+(on-key key func) -> func?
+  key : symbol?
+  func : func?
+procedure
 (posn x y) -> component?
   x : integer?
   y : integer?
@@ -47,6 +51,13 @@ procedure
   ticks : integer?
   fun : (-> game? entity? component? entity?)
 procedure
+<<<<<<< HEAD
+=======
+(spawner sprite amount) -> component?
+  sprite : entity?
+  amount : integer?
+procedure
+>>>>>>> d6133ce3e091443cbe550c13a1373959a889f19c
 (on-collide name fun) -> component?
   name : string?
   fun : (-> game? entity? component?)
@@ -68,6 +79,18 @@ procedure
   entity-name1 : string?
   entity-name2 : string?
   func : func?
+<<<<<<< HEAD
+procedure
+(on-edge edge #:offset off func) -> component?
+  edge : symbol?
+  off : integer?
+  func : func?
+procedure
+(detect-edge name edge func) -> component?
+  name : string?
+  edge : symbol?
+  func : func?
+=======
 procedure
 (on-edge edge #:offset off func) -> component?
   edge : symbol?
@@ -79,11 +102,21 @@ procedure
   edge : symbol?
   func : func?
 procedure
-(move) -> func?
+(stop-on-edge edges) -> component?
+  edges : symbols?
+>>>>>>> d6133ce3e091443cbe550c13a1373959a889f19c
 procedure
-(move-dir-spd #:dir dir #:speed speed) -> func?
-  dir : integer?
-  speed : integer?
+(wrap-around mode) -> component?
+  mode : symbol?
+procedure
+(rotation-style mode) -> component?
+  mode : symbol?
+procedure
+(follow name interval) -> component?
+  name : string?
+  interval : number?
+procedure
+(move) -> func?
 procedure
 (move-right #:speed spd) -> func?
   spd : integer?
@@ -117,6 +150,7 @@ procedure
   min-y : integer?
   max-y : integer?
 procedure
+<<<<<<< HEAD
 (go-to-pos pos) -> func?
   pos : symbol?
 (go-to-pos-inside pos) -> func?
@@ -129,3 +163,46 @@ procedure
   spd : integer?
 (set-direction dir) -> func?
   dir : integer?
+=======
+(go-to-pos pos #:offset offset) -> func?
+  pos : symbol?
+  offset : integer?
+(go-to-pos-inside pos #:offset offset) -> func?
+  pos : symbol?
+  offset : integer?
+procedure
+(respawn edge #:offset offset) -> func?
+  edge : symbol?
+  offset : integer?
+procedure
+(set-speed amount) -> func?
+  amount : integer?
+(set-player-speed amount) -> func?
+  amount : integer?
+(set-direction amount) -> func?
+  amount : integer?
+(set-counter amount) -> func?
+  amount : integer?
+procedure
+(random-direction min max) -> func?
+  min : integer?
+  max : integer?
+(random-speed min max) -> func?
+  min : integer?
+  max : integer?
+procedure
+(change-ai-speed-by inc) -> func?
+  inc : integer?
+(change-speed-by inc) -> func?
+  inc : integer?
+(change-direction-by inc) -> func?
+  inc : integer?
+(change-counter-by inc) -> func?
+  inc : integer?
+procedure
+(spawn sprite) -> func?
+  sprite : entity?
+procedure
+(point-to name) -> func?
+  name : string?
+>>>>>>> d6133ce3e091443cbe550c13a1373959a889f19c

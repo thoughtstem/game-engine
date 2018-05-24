@@ -30,7 +30,7 @@
   (lambda (g e)
     (update-entity e posn? (posn pos-x pos-y))))
 
-(define (go-to-pos pos)
+(define (go-to-pos pos #:offset [offset 0])
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
@@ -39,21 +39,21 @@
     (define pos-y (posn-y p))
     (update-entity e posn?
                    (cond
-                     [(eq? pos 'left)         (posn 0     pos-y)]
-                     [(eq? pos 'right)        (posn WIDTH pos-y)]
-                     [(eq? pos 'top)          (posn pos-x 0)]
-                     [(eq? pos 'bottom)       (posn pos-x HEIGHT)]
-                     [(eq? pos 'top-left)     (posn 0     0)]
-                     [(eq? pos 'top-right)    (posn WIDTH 0)]
-                     [(eq? pos 'bottom-left)  (posn 0     HEIGHT)]
-                     [(eq? pos 'bottom-right) (posn WIDTH HEIGHT)]
-                     [(eq? pos 'left-center)  (posn 0     (/ HEIGHT 2))]
-                     [(eq? pos 'right-center) (posn WIDTH (/ HEIGHT 2))]
-                     [(eq? pos 'top-center)   (posn (/ WIDTH 2) 0)]
-                     [(eq? pos 'bottom-center)(posn (/ WIDTH 2) HEIGHT)]
-                     [(eq? pos 'center)       (posn (/ WIDTH 2) (/ HEIGHT 2))]))))
+                     [(eq? pos 'left)         (posn offset           pos-y)]
+                     [(eq? pos 'right)        (posn (+ WIDTH offset) pos-y)]
+                     [(eq? pos 'top)          (posn pos-x            offset)]
+                     [(eq? pos 'bottom)       (posn pos-x            (+ HEIGHT offset))]
+                     [(eq? pos 'top-left)     (posn 0                0)]
+                     [(eq? pos 'top-right)    (posn WIDTH            0)]
+                     [(eq? pos 'bottom-left)  (posn 0                HEIGHT)]
+                     [(eq? pos 'bottom-right) (posn WIDTH            HEIGHT)]
+                     [(eq? pos 'left-center)  (posn 0                (/ HEIGHT 2))]
+                     [(eq? pos 'right-center) (posn WIDTH            (/ HEIGHT 2))]
+                     [(eq? pos 'top-center)   (posn (/ WIDTH 2)      0)]
+                     [(eq? pos 'bottom-center)(posn (/ WIDTH 2)      HEIGHT)]
+                     [(eq? pos 'center)       (posn (/ WIDTH 2)      (/ HEIGHT 2))]))))
                          
-(define (go-to-pos-inside pos)
+(define (go-to-pos-inside pos #:offset [offset 0])
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
@@ -65,29 +65,29 @@
     (define pos-y (posn-y p))
     (update-entity e posn?
                    (cond
-                     [(eq? pos 'left)         (posn hw           pos-y)]
-                     [(eq? pos 'right)        (posn (- WIDTH hw) pos-y)]
-                     [(eq? pos 'top)          (posn pos-x        hh)]
-                     [(eq? pos 'bottom)       (posn pos-x        (- HEIGHT hh))]
-                     [(eq? pos 'top-left)     (posn hw           hh)]
-                     [(eq? pos 'top-right)    (posn (- WIDTH hw) hh)]
-                     [(eq? pos 'bottom-left)  (posn hw           (- HEIGHT hh))]
-                     [(eq? pos 'bottom-right) (posn (- WIDTH hw) (- HEIGHT hh))]
-                     [(eq? pos 'left-center)  (posn hw           (/ HEIGHT 2))]
-                     [(eq? pos 'right-center) (posn (- WIDTH hw) (/ HEIGHT 2))]
-                     [(eq? pos 'top-center)   (posn (/ WIDTH 2)  hh)]
-                     [(eq? pos 'bottom-center)(posn (/ WIDTH 2)  (- HEIGHT hh))]))))    
+                     [(eq? pos 'left)         (posn (+ offset hw)           pos-y)]
+                     [(eq? pos 'right)        (posn (+ (- WIDTH hw) offset) pos-y)]
+                     [(eq? pos 'top)          (posn pos-x                   (+ offset hh))]
+                     [(eq? pos 'bottom)       (posn pos-x                   (+ (- HEIGHT hh) offset))]
+                     [(eq? pos 'top-left)     (posn hw                      hh)]
+                     [(eq? pos 'top-right)    (posn (- WIDTH hw)            hh)]
+                     [(eq? pos 'bottom-left)  (posn hw                      (- HEIGHT hh))]
+                     [(eq? pos 'bottom-right) (posn (- WIDTH hw)            (- HEIGHT hh))]
+                     [(eq? pos 'left-center)  (posn hw                      (/ HEIGHT 2))]
+                     [(eq? pos 'right-center) (posn (- WIDTH hw)            (/ HEIGHT 2))]
+                     [(eq? pos 'top-center)   (posn (/ WIDTH 2)             hh)]
+                     [(eq? pos 'bottom-center)(posn (/ WIDTH 2)             (- HEIGHT hh))]))))    
 
-(define (respawn edge)
+(define (respawn edge #:offset [offset 0])
   (lambda (g e)
     (define HEIGHT (game-height g))
     (define WIDTH (game-width g))
     ((cond
-      [(eq? edge 'left)   (go-to 0 (random 0 HEIGHT))]
-      [(eq? edge 'right)  (go-to WIDTH (random 0 HEIGHT))]
-      [(eq? edge 'top)    (go-to (random 0 WIDTH) 0)]
-      [(eq? edge 'bottom)  (go-to (random 0 WIDTH) HEIGHT)]
-      [(eq? edge 'anywhere) (go-to (random 0 WIDTH) (random 0 HEIGHT))])
+      [(eq? edge 'left)   (go-to offset (random 0 HEIGHT))]
+      [(eq? edge 'right)  (go-to (+ WIDTH offset) (random 0 HEIGHT))]
+      [(eq? edge 'top)    (go-to (random 0 WIDTH) offset)]
+      [(eq? edge 'bottom)  (go-to (random 0 WIDTH) (+ HEIGHT offset))]
+      [(eq? edge 'anywhere) (go-to (random offset (- WIDTH offset)) (random offset (- HEIGHT offset)))])
       g e)))
 
 (define (move-with-speed spd)

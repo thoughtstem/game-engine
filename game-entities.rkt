@@ -233,7 +233,7 @@
 (struct on-collide (name func))
 
 (define (update-on-collide g e c)
-  (if (is-colliding-with? (on-collide-name c) g e)
+  (if (is-colliding-by-name? (on-collide-name c) (get-name e) g )
       ((on-collide-func c) g e)
       e))
 
