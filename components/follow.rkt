@@ -4,7 +4,8 @@
 (require "./direction.rkt")
 (require posn)
 
-(provide (rename-out (make-follow follow)))
+(provide (rename-out (make-follow follow))
+         follow?)
 
 ;(provide (struct-out do-every))
 
