@@ -5,7 +5,8 @@
 
 ;(provide (struct-out on-edge))
 
-(provide (rename-out (make-on-edge on-edge)))
+(provide (rename-out (make-on-edge on-edge))
+         on-edge?)
 
 (struct on-edge (pos offset func))
 
