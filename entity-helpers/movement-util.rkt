@@ -10,10 +10,17 @@
 (provide move-random-speed)
 (provide point-to)
 (provide bounce)
+(provide change-x-by)
+(provide change-y-by)
+(provide change-x-by-random)
+(provide change-y-by-random)
+(provide freeze-entity)
+(provide un-freeze-entity)
 
 (require "../game-entities.rkt")
 (require "../components/direction.rkt")
 (require "../components/every-tick.rkt")
+(require "../component-util.rkt")
 (require "../ai.rkt")
 
 (require posn)
@@ -122,3 +129,36 @@
 (define (bounce)
   (lambda (g e)
     (update-entity e direction (direction (+ (get-direction e) 180)))))
+
+(define (change-x-by amount)
+  (lambda (g e)
+    (define p (get-component e posn?))
+    (update-entity e posn? (posn (+ (posn-x p) amount) (posn-y p)))))
+
+(define (change-y-by amount)
+  (lambda (g e)
+    (define p (get-component e posn?))
+    (update-entity e posn? (posn (posn-x p) (+ (posn-y p) amount)))))
+
+(define (change-x-by-random min max)
+  (lambda (g e)
+    (define p (get-component e posn?))
+    (update-entity e posn? (posn (+ (posn-x p) (random min (add1 max))) (posn-y p)))))
+
+(define (change-y-by-random min max)
+  (lambda (g e)
+    (define p (get-component e posn?))
+    (update-entity e posn? (posn (posn-x p) (+ (posn-y p) (random min (add1 max)))))))
+
+; Warning: This may not work with other every-tick components
+(define (freeze-entity)
+  (lambda (g e)
+    (define p (get-component e posn?))
+    (add-component (remove-component e every-tick?)
+                   (every-tick (do-many (go-to (posn-x p) (posn-y p))
+                                        (set-direction 0))))))
+
+;;Warning: This will also remove any existing every-tick components
+(define (un-freeze-entity)
+  (lambda (g e)
+    (remove-component e every-tick?)))
