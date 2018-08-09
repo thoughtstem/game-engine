@@ -19,6 +19,7 @@
          remove-component
          add-components
          get-name
+         change-name
          basic-entity
          dead
          die
@@ -648,4 +649,6 @@
    (λ () (fiat-lux (demo (make-gui/val) larger-state)))))
 
  
-
+(define (change-name name)
+  (lambda (g e)
+    (update-entity e entity-name? (entity-name name))))
