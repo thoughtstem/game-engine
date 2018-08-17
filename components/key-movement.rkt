@@ -3,26 +3,39 @@
 (require "../game-entities.rkt")
 (require posn)
 
-(provide (struct-out key-movement)
+(provide (rename-out (make-key-movement key-movement))
+         key-movement?
          change-speed-by
          get-speed
          (struct-out on-no-key-movement)
+         (struct-out on-key-movement)
          set-player-speed)
 
-(struct key-movement (speed))
+(struct key-movement (speed mode rule?))
+
+(define (make-key-movement speed #:mode [mode 'arrow-keys] #:rule [rule? (lambda (g e) #t)])
+  (key-movement speed mode rule?))
 
 (define (update-key-movement g e c)
- (update-entity e posn?
-                 (curry posn-add
+  (define rule? (key-movement-rule? c))
+  (if ((key-movement-rule? c) g e)
+      (update-entity e posn?
+                     (curry posn-add
                         (velocity-from-buttons  g
-                                               (key-movement-speed c)))))
+                                                (key-movement-speed c)
+                                                (key-movement-mode c))))
+      e))
 
-(define/contract (velocity-from-buttons game speed)
-  (-> game? number? posn?)
-  (define leftVel  (if (button-down? 'left game) (- speed) 0))
-  (define rightVel (if (button-down? 'right game)   speed  0))
-  (define upVel    (if (button-down? 'up game) (- speed) 0))
-  (define downVel  (if (button-down? 'down game)   speed  0))
+(define/contract (velocity-from-buttons game speed mode)
+  (-> game? number? symbol? posn?)
+  (define key-list
+    (cond [(eq? mode 'arrow-keys) (list 'left  'right 'up    'down)]
+          [(eq? mode 'wasd)       (list 'a     'd     'w     's)]
+          [else                   (list 'left  'right 'up    'down)]))
+  (define leftVel  (if (button-down? (first  key-list) game) (- speed) 0))
+  (define rightVel (if (button-down? (second key-list) game)   speed  0))
+  (define upVel    (if (button-down? (third  key-list) game) (- speed) 0))
+  (define downVel  (if (button-down? (fourth key-list) game)   speed  0))
   (posn (+ leftVel rightVel)
         (+ upVel downVel)))
 
@@ -36,8 +49,11 @@
 (define (get-speed e)
   (key-movement-speed (get-component e key-movement?)))
 
+(define (get-key-mode e)
+  (key-movement-mode (get-component e key-movement?)))
+
 (define (get-current-velocity g e)
-  (velocity-from-buttons g (get-speed e)))
+  (velocity-from-buttons g (get-speed e) (get-key-mode e)))
 
 
 (new-component key-movement?
@@ -55,6 +71,17 @@
 (new-component on-no-key-movement?
                update-on-stopped)
 
+
+(struct on-key-movement (f))
+
+(define (update-on-moved g e c)
+  (define v (get-current-velocity g e))
+  (if  (equal? (posn 0 0) v)
+       e
+       ((on-key-movement-f c) g e)))
+
+(new-component on-key-movement?
+               update-on-moved)
 
 (define (set-player-speed n)
   (lambda (g e)
