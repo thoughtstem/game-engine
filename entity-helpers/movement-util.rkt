@@ -121,14 +121,12 @@
     (define y (posn-y (get-component e posn?)))
     (define new-dir (unless (eq? target? #f)(radians->degrees (atan (- target-y y) (- target-x x)))))
     (if target?
-        (update-entity e direction? (direction (if (negative? new-dir)
-                                               (+ 360 new-dir)
-                                               new-dir)))
+        (update-entity e direction? (direction (modulo (exact-round new-dir) 360)))
         e)))
 
 (define (bounce)
   (lambda (g e)
-    (update-entity e direction (direction (+ (get-direction e) 180)))))
+    (update-entity e direction? (direction (modulo (+ (get-direction e) 180) 360)))))
 
 (define (change-x-by amount)
   (lambda (g e)
@@ -156,7 +154,7 @@
     (define p (get-component e posn?))
     (add-component (remove-component e every-tick?)
                    (every-tick (do-many (go-to (posn-x p) (posn-y p))
-                                        (set-direction 0))))))
+                                        #;(set-direction 0))))))
 
 ;;Warning: This will also remove any existing every-tick components
 (define (un-freeze-entity)
