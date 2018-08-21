@@ -539,16 +539,27 @@
 (define (is-static? e)
   (get-component e static?))
 
+(define (is-disabled? e)
+  (get-component e disabled?))
+
+(define (is-static-and-not-disabled? e)
+  (and (is-static? e)
+       (not (is-disabled? e))))
+
 (define (non-static? e)
   (not (is-static? e)))
+
+(define (not-static-and-not-disabled? e)
+  (and (not (is-static? e))
+       (not (is-disabled? e))))
 
 (define (not-both-static e-pair)
   (not (and (is-static? (first e-pair))
             (is-static? (second e-pair)))))
 
 (define (collidable-pairs g)
-  (define normal (filter non-static? (game-entities g)))
-  (define static (filter is-static? (game-entities g)))
+  (define normal (filter not-static-and-not-disabled? (game-entities g)))
+  (define static (filter is-static-and-not-disabled? (game-entities g)))
   (define normal-pairs (combinations normal 2))
 
   (define off-pairs (cartesian-product normal static))
