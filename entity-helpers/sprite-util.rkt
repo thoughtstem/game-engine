@@ -10,6 +10,7 @@
 (provide random-color)
 (provide random-tint)
 (provide spawn)
+(provide open-dialog)
 
 (provide (all-from-out "./rgb-hsb.rkt"))
 
@@ -111,6 +112,10 @@
     (update-entity e animated-sprite? (struct-copy animated-sprite s [frames (list->vector new-list)]))))
 
 (define (spawn s) 
+  (lambda (g e)
+    (add-component e (spawn-once s))))
+
+(define (open-dialog s) 
   (lambda (g e)
     (add-component e (spawn-once s))))
 

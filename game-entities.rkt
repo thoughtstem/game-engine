@@ -6,6 +6,9 @@
          (struct-out entity-name)
          
          (struct-out hidden)
+         (struct-out disabled)
+
+         (struct-out active-on-bg)
          
          (struct-out game) 
          (struct-out bb)
@@ -48,11 +51,13 @@
 (require 2htdp/image)
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
+;(require "./components/counter.rkt")
 (require "./collision-helper.rkt")
 
 (require threading)
 
 (require (for-syntax racket/syntax))
+
 
 (struct bb [w h])
 (struct cc [r]) ;<- Circle Collider
@@ -387,7 +392,8 @@
 
 (define/contract (draw g)
   (-> game? image?)
-  (define (not-hidden e) (not (get-component e hidden?)))
+  (define (not-hidden e) (and (not (get-component e hidden?))
+                              (not (get-component e disabled?))))
   (define entities (filter not-hidden (game-entities g)))
   (draw-entities entities))
 
@@ -406,12 +412,16 @@
   (or (member (list name1 name2) names)
       (member (list name2 name1) names)))
 
+(define (non-disabled-physical-entity? e)
+  ((and/c (curryr get-component physical-collider?)
+         (not/c (curryr get-component disabled?)))
+   e))
+
 (define (colliding-with-other-physical-colliders? g e)
   (and (get-component e physical-collider?)
-       (not
-        (empty?
-         (filter identity
-                 (map (curryr get-component physical-collider?) (colliding-with e g)))))))
+       (not (get-component e disabled?))
+       (findf non-disabled-physical-entity?
+              (colliding-with e g))))
 
 (define (extract-out e l)
   (define (not-eq? e o)
@@ -425,7 +435,9 @@
 
 (define (main-tick-component g e c)
   (define handler (get-handler-for-component c))
-  (if handler
+  (if (and handler
+           (or (not (get-component e disabled?))
+               (active-on-bg? c)))
       (handler g e c)
       e))
 
@@ -566,6 +578,19 @@
 (struct hidden ())
 
 ;END HIDDEN
+
+;HIDDEN
+
+(struct disabled ())
+
+;END HIDDEN
+
+
+; ACTIVE ENTITIES
+
+(struct active-on-bg (bg-list))
+
+; END ACTIVE
 
 (define (game-width g)
   (image-width (draw g)))
