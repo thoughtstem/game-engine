@@ -20,6 +20,7 @@
 (require "../components/direction.rkt")
 (require "../components/rotation-style.rkt")
 (require "../components/spawn-once.rkt")
+(require "../components/spawn-dialog.rkt")
 (require "./rgb-hsb.rkt")
 ;(require "../ai.rkt")
 
@@ -117,5 +118,5 @@
 
 (define (open-dialog s) 
   (lambda (g e)
-    (add-component e (spawn-once s))))
+    (add-component e (spawn-dialog s))))
 

@@ -10,6 +10,7 @@
          sheet->sprite
          sprite-map
          pick-frame
+         pick-frame-original
          sprite-map-original)
 
 (require 2htdp/image)
@@ -81,6 +82,10 @@
 (define/contract (pick-frame s i)
   (-> animated-sprite? integer? image?)
   (vector-ref (animated-sprite-frames s) i))
+
+(define/contract (pick-frame-original s i)
+  (-> animated-sprite? integer? image?)
+  (vector-ref (animated-sprite-o-frames s) i))
 
 (define/contract (reset-animation s)
   (-> animated-sprite? animated-sprite?)
