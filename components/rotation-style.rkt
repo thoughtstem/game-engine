@@ -16,7 +16,7 @@
 
 
 (define (flip-frames frames)
-  (map flip-horizontal (vector->list frames)))
+  (map freeze (map flip-horizontal (vector->list frames))))
 
 (define (update-rotation-style g e c)
   (define mode (rotation-style-mode c))
