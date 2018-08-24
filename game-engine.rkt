@@ -1,7 +1,6 @@
 #lang racket
 
 (provide
- (all-from-out racket)
  (all-from-out 2htdp/image)
  (all-from-out threading)
  (all-from-out posn)
