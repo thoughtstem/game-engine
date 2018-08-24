@@ -10,6 +10,7 @@
 (provide random-color)
 (provide random-tint)
 (provide spawn)
+(provide open-dialog)
 
 (provide (all-from-out "./rgb-hsb.rkt"))
 
@@ -19,6 +20,7 @@
 (require "../components/direction.rkt")
 (require "../components/rotation-style.rkt")
 (require "../components/spawn-once.rkt")
+(require "../components/spawn-dialog.rkt")
 (require "./rgb-hsb.rkt")
 ;(require "../ai.rkt")
 
@@ -113,4 +115,8 @@
 (define (spawn s) 
   (lambda (g e)
     (add-component e (spawn-once s))))
+
+(define (open-dialog s) 
+  (lambda (g e)
+    (add-component e (spawn-dialog s))))
 

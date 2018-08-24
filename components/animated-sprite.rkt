@@ -10,6 +10,7 @@
          sheet->sprite
          sprite-map
          pick-frame
+         pick-frame-original
          sprite-map-original)
 
 (require 2htdp/image)
@@ -36,6 +37,7 @@
          current-frame    ;Frame to show currently (integer)
          rate             ;How many ticks before switching frames (integer)
          ticks            ;How many ticks have passed since last frame change (integer)
+         animate?         ;Set true to animate frames
          ) #:transparent)
 
 (define (sprite-map f s)
@@ -46,7 +48,7 @@
   (struct-copy animated-sprite s
                [frames (vector-map f (animated-sprite-o-frames s))]))
 
-(define/contract (new-sprite costumes (rate 1))
+(define/contract (new-sprite costumes (rate 1) #:animate [animate? #t])
   (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
   (define list-costumes (if (list? costumes)
                             costumes
@@ -57,7 +59,8 @@
    (length list-costumes)
    0
    rate
-   0))
+   0
+   animate?))
 
 (define (bake i)
   (define w (image-width i))
@@ -80,6 +83,10 @@
   (-> animated-sprite? integer? image?)
   (vector-ref (animated-sprite-frames s) i))
 
+(define/contract (pick-frame-original s i)
+  (-> animated-sprite? integer? image?)
+  (vector-ref (animated-sprite-o-frames s) i))
+
 (define/contract (reset-animation s)
   (-> animated-sprite? animated-sprite?)
   (struct-copy animated-sprite s
@@ -88,9 +95,11 @@
 
 (define/contract (next-frame s)
   (-> animated-sprite? animated-sprite?)
-  (if (= (animated-sprite-ticks s) (animated-sprite-rate s))
-      (increase-current-frame s)
-      (increase-ticks s)))
+  (if (animated-sprite-animate? s)
+      (if (= (animated-sprite-ticks s) (animated-sprite-rate s))
+          (increase-current-frame s)
+          (increase-ticks s))
+      s))
 
 (define/contract (increase-ticks s)
   (-> animated-sprite? animated-sprite?)

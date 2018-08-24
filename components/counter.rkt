@@ -9,7 +9,9 @@
          set-counter
          get-counter
          change-counter-by
-         draw-counter)
+         draw-counter
+         draw-other-counter
+         random-counter)
 
 (struct counter (count))
 
@@ -31,6 +33,15 @@
   (lambda (g e)
     (define count (get-counter e))
     (update-entity e animated-sprite? (new-sprite (text (~a label count) size color) 1))))
+
+(define (draw-other-counter name label size color)
+  (lambda (g e)
+    (define count (get-counter (get-entity name g)))
+    (update-entity e animated-sprite? (new-sprite (text (~a label count) size color) 1))))
+
+(define (random-counter min max)
+  (lambda (g e)
+     (update-entity e counter? (counter (random min (add1 max))))))
 
 (new-component counter?
                update-counter) 

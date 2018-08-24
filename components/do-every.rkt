@@ -3,7 +3,8 @@
 (require "../game-entities.rkt")
 (require posn)
 
-(provide (rename-out (make-do-every do-every)))
+(provide (rename-out (make-do-every do-every))
+         do-every?)
 
 (struct do-every (accum speed func))
 
