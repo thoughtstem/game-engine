@@ -10,7 +10,11 @@
 (provide random-color)
 (provide random-tint)
 (provide spawn)
-(provide open-dialog)
+(provide open-dialog
+         hide
+         show
+         start-animation
+         stop-animation)
 
 (provide (all-from-out "./rgb-hsb.rkt"))
 
@@ -120,3 +124,26 @@
   (lambda (g e)
     (add-component e (spawn-dialog s))))
 
+(define (hide g e)
+  (add-component (remove-component e hidden?) (hidden)))
+
+(define (show g e)
+  (remove-component e hidden?))
+
+(define (start-animation)
+  (lambda (g e)
+    (define as (get-component e animated-sprite?))
+    (update-entity e
+                   animated-sprite?
+                   (struct-copy animated-sprite as
+                                [animate? #t]))))
+
+(define (stop-animation)
+  (lambda (g e)
+    (define as (get-component e animated-sprite?))
+    (update-entity e
+                   animated-sprite?
+                   (struct-copy animated-sprite as
+                                [current-frame 0]
+                                [ticks 0]
+                                [animate? #f]))))
