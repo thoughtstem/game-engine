@@ -2,6 +2,7 @@
 
 (require "../game-entities.rkt")
 (require "./counter.rkt")
+(require "./backdrop.rkt")
 
 (provide (struct-out active-on-bg))
 
@@ -15,7 +16,9 @@
 
 (define (update-active-on-bg g e c)
   (define num-or-list (active-on-bg-bg-list c))
-  (define current-bg-index (get-counter (get-entity "bg" g)))
+  (define current-bg-index (if (get-component (get-entity "bg" g) backdrop?)
+                               (get-current-tile (get-entity "bg" g))
+                               (get-counter (get-entity "bg" g))))
   (define bg-list (if (list? num-or-list)
                       num-or-list
                       (list num-or-list)))
