@@ -9,6 +9,7 @@
 (provide (struct-out backdrop)
          set-current-tile
          get-current-tile
+         render-tile
          next-tile
          more-tiles?)
 
@@ -28,6 +29,9 @@
 
 (define (get-current-tile e)
   (backdrop-current-tile (get-component e backdrop?)))
+
+(define (render-tile backdrop)
+  (pick-tile backdrop (backdrop-current-tile backdrop)))
 
 (define/contract (pick-tile backdrop i)
   (-> backdrop? integer? image?)

@@ -4,7 +4,8 @@
 (require "./counter.rkt")
 (require "./backdrop.rkt")
 
-(provide (struct-out active-on-bg))
+(provide (struct-out active-on-bg)
+         active-on-random)
 
 #;(provide (rename-out (make-active-on-bg active-on-bg))
          active-on-bg?)
@@ -29,3 +30,7 @@
 
 (new-component active-on-bg?
                update-active-on-bg)
+
+(define (active-on-random min max)
+  (lambda (g e)
+     (update-entity e active-on-bg? (active-on-bg (random min (add1 max))))))
