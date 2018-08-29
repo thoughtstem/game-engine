@@ -1,29 +1,30 @@
 #lang racket
 
-(provide randomly-relocate-me)
-(provide go-to-random)
-(provide go-to)
-(provide go-to-pos)
-(provide go-to-pos-inside)
-(provide respawn)
-(provide move-with-speed)
-(provide move-random-speed)
-(provide point-to)
-(provide bounce)
-(provide change-x-by)
-(provide change-y-by)
-(provide change-x-by-random)
-(provide change-y-by-random)
-(provide freeze-entity)
-(provide un-freeze-entity)
+(provide randomly-relocate-me
+         go-to-random
+         go-to
+         go-to-pos
+         go-to-pos-inside
+         respawn
+         move-with-speed
+         move-random-speed
+         point-to
+         bounce
+         change-x-by
+         change-y-by
+         change-x-by-random
+         change-y-by-random
+         freeze-entity
+         un-freeze-entity
+         distance-between
+         near-entity?)
 
-(require "../game-entities.rkt")
-(require "../components/direction.rkt")
-(require "../components/every-tick.rkt")
-(require "../component-util.rkt")
-(require "../ai.rkt")
-
-(require posn)
+(require "../game-entities.rkt"
+         "../components/direction.rkt"
+         "../components/every-tick.rkt"
+         "../component-util.rkt"
+         "../ai.rkt"
+         posn)
 
 (define (randomly-relocate-me min-x max-x min-y max-y)
   (lambda (g e)
@@ -168,3 +169,13 @@
 (define (un-freeze-entity)
   (lambda (g e)
     (remove-component e every-tick?)))
+
+(define (distance-between pos1 pos2)
+  (define p (posn-subtract pos2 pos1))
+  (sqrt (+ (expt (posn-x p) 2) (expt (posn-y p) 2))))
+
+(define (near-entity? name [range 80])
+  (lambda (g e)
+    (define pos (get-component e posn?))
+    (define target-pos (get-component (get-entity name g) posn?))
+    (< (distance-between target-pos pos) range)))

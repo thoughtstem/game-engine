@@ -11,9 +11,14 @@
          get-current-tile
          render-tile
          next-tile
-         more-tiles?)
+         more-tiles?
+         bg->backdrop)
 
 (struct backdrop (tiles columns current-tile))
+
+
+(define (bg->backdrop bg #:rows rows #:columns columns #:start-tile [current 0])
+  (backdrop (sheet->costume-list bg columns rows (* rows columns)) columns current))
 
 (define (update-backdrop g e c) e)
 
