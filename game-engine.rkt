@@ -37,6 +37,7 @@
  (all-from-out "entity-helpers/movement-util.rkt")
  (all-from-out "entity-helpers/sprite-util.rkt")
  (all-from-out "entity-helpers/rgb-hsb.rkt")
+ (all-from-out "entity-helpers/dialog-util.rkt")
  (all-from-out "ai.rkt")
 
 
@@ -80,5 +81,6 @@
 (require "entity-helpers/movement-util.rkt")
 (require "entity-helpers/sprite-util.rkt")
 (require "entity-helpers/rgb-hsb.rkt")
+(require "entity-helpers/dialog-util.rkt")
 (require "ai.rkt")
 
