@@ -20,6 +20,11 @@
          dialog-selection
          start-blips
          stop-blips
+         all-dialog-closed?
+         npc-spoke-and-near?
+         player-spoke-and-near?
+         ready-to-speak-and-near?
+         npc-dialog-open?
          )
 
 (require "../game-entities.rkt")
@@ -300,3 +305,32 @@
              (animated-dialog msg game-width #:skip spd)
              (new-sprite (draw-dialog-text msg)))
          ) dialog-list))
+
+; === DIALOG RULES ===
+(define (all-dialog-closed? g e)
+  (and (not (get-entity "player dialog" g))
+       (not (get-entity "npc dialog" g))))
+
+(define (npc-spoke-and-near? name)
+  (lambda (g e)
+    (if (and (get-entity "npc dialog" g)
+             ((near-entity? "player") g e))
+        #t
+        #f)))
+
+(define (player-spoke-and-near? name)
+  (lambda (g e)
+    (if (and (get-entity "player dialog" g)
+             ((near-entity? name) g e))
+        #t
+        #f)))
+
+(define (ready-to-speak-and-near? name)
+  (lambda (g e)
+    (and (not (get-entity "player dialog" g))
+         (not (get-entity "npc dialog" g))
+         (not (get-component (get-entity name g) disabled?))
+         ((near-entity? name) g e))))
+
+(define (npc-dialog-open? g e)
+  (get-entity "npc dialog" g))
