@@ -14,17 +14,21 @@
          next-dialog-option
          previous-dialog-option
          reached-frame?
-         dialog
+         create-dialog
          dialog-lg
          dialog-list
          dialog-selection
          start-blips
          stop-blips
+         get-dialog-selection
          all-dialog-closed?
          npc-spoke-and-near?
          player-spoke-and-near?
          ready-to-speak-and-near?
          npc-dialog-open?
+         player-dialog-open?
+         last-dialog?
+         not-last-dialog?
          )
 
 (require "../game-entities.rkt")
@@ -38,6 +42,7 @@
 (require "../components/on-start.rkt")
 (require "../components/on-rule.rkt")
 (require "../components/sound-stream.rkt")
+(require "../components/dialog.rkt")
 (require "../component-util.rkt")
 (require "../entity-helpers/movement-util.rkt")
 (require "../entity-helpers/sprite-util.rkt")
@@ -118,6 +123,8 @@
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
     (define dialog-index (get-counter e))
+    (displayln (~a "CURRENT DIALOG: " dialog-index))
+    (define dialog-length (length dialog-list))
     (define name (get-name e))
     (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
     (define avatar-box
@@ -127,17 +134,19 @@
                         (freeze (scale 2 avatar-img))
                         30 30
                         (rectangle 60 60 "solid" (make-color 20 20 20 150))))))
-    (define message-entity (dialog (list-ref dialog-list dialog-index) name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
+    (define message-entity (create-dialog dialog-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
     (update-entity (add-component e
                                   (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 5)))
                    counter?
-                   (counter (modulo (add1 dialog-index) (length dialog-list))))))
+                   (counter (add1 dialog-index)))))
 
 (define (next-response response-list #:sound [rsound #f])
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
-    (define dialog-index (get-counter (get-entity "player dialog selection" g)))
+    (define player-dialog-index (get-counter (get-entity "player" g)))
+    (define npc-dialog-index (get-counter e))
+    (define response-length (length (list-ref response-list player-dialog-index)))
     (define name (get-name e))
     (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
     (define avatar-box
@@ -147,9 +156,9 @@
                         (freeze (scale 2 avatar-img))
                         30 30
                         (rectangle 60 60 "solid" (make-color 20 20 20 150))))))
-    (define message-entity (dialog (first (shuffle (list-ref response-list dialog-index))) name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
-    (add-component e
-                    (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 10)))))
+    (define message-entity (create-dialog response-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
+    (add-component (update-entity e counter? (counter (add1 npc-dialog-index)))
+                   (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 10)))))
 
 
 (define (next-dialog-option dialog-list box-height)
@@ -168,32 +177,54 @@
                    counter?
                    (counter new-index))))
 
-(define (reached-frame? end-frame)
+(define (reached-frame? g e)
+  (define as (get-component e animated-sprite?))
+  (define total-frames (animated-sprite-total-frames as))
+  (define current-frame (animated-sprite-current-frame as))
+  (define end-frame (sub1 (animated-sprite-total-frames (get-component e animated-sprite?))))
+  (if (> total-frames 1)
+      (= current-frame end-frame)
+      #f))
+
+
+(define (change-dialog-sprite)
   (lambda (g e)
-    (define as (get-component e animated-sprite?))
-    (define total-frames (animated-sprite-total-frames as))
-    (define current-frame (animated-sprite-current-frame as))
-    (if (> total-frames 1)
-        (= current-frame end-frame)
-        #f)))
+    (define npc-dialog-index (get-dialog-index e))
+    (define player-dialog-index (get-counter (get-entity "player" g)))
+    (define npc-dialog-sprites (get-dialog-sprites e))
+    (define simple-dialog? (animated-sprite? (first npc-dialog-sprites)))
+    (define dialog-sprite (if simple-dialog?
+                              (list-ref npc-dialog-sprites npc-dialog-index)
+                              (list-ref (list-ref npc-dialog-sprites player-dialog-index) npc-dialog-index)))
+    ((do-many (change-sprite dialog-sprite)
+              (set-dialog-index (add1 npc-dialog-index))) g e)))
 
-
-(define (dialog dialog-sprite name pos #:delay [delay-time 0] #:sound [rsound #f])
+(define (stop-dialog-scroll)
+  (lambda (g e)
+    (define dialog-sprite (get-component e animated-sprite?))
+    ((change-sprite (new-sprite (pick-frame dialog-sprite (sub1 (animated-sprite-total-frames dialog-sprite))) 1)) g e)))
+    
+(define (create-dialog dialog-list name pos #:delay [delay-time 0] #:sound [rsound #f])
   (sprite->entity empty-image ;(draw-dialog msg)
                   #:name       "npc dialog"
                   #:position   pos ;(posn 0 -40)
                   #:components (static)
                                (hidden)
+                               (dialog dialog-list 0)
                                ;(on-key 'space die)
-                               (on-key 'enter die)
+                               (on-key 'enter #:rule last-dialog? die)
+                               (on-key 'enter #:rule not-last-dialog? (if rsound
+                                                                          (do-many (change-dialog-sprite)
+                                                                                   (start-blips name rsound))
+                                                                          (change-dialog-sprite)))
                                ;(on-start (go-to (/ (* WIDTH 2.5) 4) (- HEIGHT 40)))
-                               (on-rule (reached-frame? (sub1 (animated-sprite-total-frames dialog-sprite))) (do-many (change-sprite (new-sprite (pick-frame dialog-sprite (sub1 (animated-sprite-total-frames dialog-sprite))) 1))
-                                                                                                                      (stop-blips)))
+                               (on-rule reached-frame? #;(reached-frame? (sub1 (animated-sprite-total-frames dialog-sprite))) (do-many (stop-dialog-scroll);(change-sprite (new-sprite (pick-frame dialog-sprite (sub1 (animated-sprite-total-frames dialog-sprite))) 1))
+                                                                                                                                       (stop-blips)))
                                (after-time delay-time (if rsound
-                                                          (do-many (change-sprite dialog-sprite)
+                                                          (do-many (change-dialog-sprite) ;(change-sprite dialog-sprite)
                                                                    show
                                                                    (start-blips name rsound))
-                                                          (do-many (change-sprite dialog-sprite)
+                                                          (do-many (change-dialog-sprite) ;(change-sprite dialog-sprite)
                                                                    show)))
                   ))
      
@@ -214,7 +245,7 @@
                   #:components (static)
                                (hidden)
                                ;(on-key 'space die)
-                               (on-key 'enter die)
+                               (on-key 'enter #:rule last-dialog? die)
                                (on-start (go-to-pos-inside 'bottom-center))
                                (after-time delay-time (do-many show
                                                                (open-dialog message-entity)))
@@ -290,6 +321,12 @@
   (lambda (g e)
     (remove-component e do-every?)))
 
+(define (get-dialog-selection)
+  (lambda (g e)
+    (define selection (get-counter (get-entity "player dialog selection" g)))
+    (displayln (~a "Player Selection: " selection))
+    (update-entity e counter? (counter selection))))
+
 ; === GENERIC SPRITE GENERATORS ===
 (define (dialog->response-sprites dialog-list #:game-width game-width #:animated [animated? #t] #:speed [spd 2])
   (map (lambda (response-list)
@@ -306,6 +343,7 @@
              (new-sprite (draw-dialog-text msg)))
          ) dialog-list))
 
+
 ; === DIALOG RULES ===
 (define (all-dialog-closed? g e)
   (and (not (get-entity "player dialog" g))
@@ -314,7 +352,7 @@
 (define (npc-spoke-and-near? name)
   (lambda (g e)
     (if (and (get-entity "npc dialog" g)
-             ((near-entity? "player") g e))
+             ((near-entity? name) g e))
         #t
         #f)))
 
@@ -334,3 +372,37 @@
 
 (define (npc-dialog-open? g e)
   (get-entity "npc dialog" g))
+
+(define (player-dialog-open? g e)
+  (get-entity "player dialog" g))
+
+(define last-dialog?
+  (lambda (g e)
+    (define npc-dialog-index (get-dialog-index (get-entity "npc dialog" g)))
+    (define player-dialog-index (get-counter (get-entity "player" g)))
+    (define dialog-sprites (get-dialog-sprites (get-entity "npc dialog" g)))
+    (define simple-dialog? (animated-sprite? (first dialog-sprites)))
+    (define dialog-length (if simple-dialog?
+                              (length dialog-sprites)
+                              (length (list-ref dialog-sprites player-dialog-index))))
+    (displayln (~a "last-dialog? " npc-dialog-index "\ndialog-length: " dialog-length))
+    (if (and ;(get-entity "npc dialog" g)
+             ;((near-entity? "player") g e)
+             (= npc-dialog-index dialog-length))
+        #t
+        #f)))
+
+(define not-last-dialog?
+  (lambda (g e)
+    (define npc-dialog-index (get-dialog-index (get-entity "npc dialog" g)))
+    (define player-dialog-index (get-counter (get-entity "player" g)))
+    (define dialog-sprites (get-dialog-sprites (get-entity "npc dialog" g)))
+    (define simple-dialog? (animated-sprite? (first dialog-sprites)))
+    (define dialog-length (if simple-dialog?
+                              (length dialog-sprites)
+                              (length (list-ref dialog-sprites player-dialog-index))))
+    (if (and ;(get-entity "npc dialog" g)
+             ;((near-entity? "player") g e)
+             (not (= npc-dialog-index dialog-length)))
+        #t
+        #f)))
