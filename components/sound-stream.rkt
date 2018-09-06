@@ -8,7 +8,9 @@
          set-sound-stream
          get-sound-stream
          play-sound
+         play-sound-from
          stop-all-sounds
+         stop-sound-streams
          sound-stream?)
 
 (default-sample-rate 48000)
@@ -36,15 +38,27 @@
         (begin
           (pstream-play (get-sound-stream e) rs)
           e)
-        (let ([new-e (add-component e (make-sound-stream))])
+        (begin
+          (displayln "sound-stream component not found")
+          e)
+        #;(let ([new-e (add-component e (make-sound-stream))])
           (pstream-play (get-sound-stream new-e) rs)
           new-e)
         )))
+
+(define (play-sound-from entity-name rs)
+  (lambda (g e)
+    (define source-e (get-entity entity-name g))
+    ((play-sound rs) g source-e)
+    e))
 
 (define (stop-all-sounds)
   (lambda (g e)
     (stop)
     e))
+
+(define (stop-sound-streams)
+  (stop))
 
 (new-component sound-stream?
                update-sound-stream) 

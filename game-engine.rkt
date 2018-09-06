@@ -32,10 +32,13 @@
  (all-from-out "components/spawn-dialog.rkt")
  (all-from-out "components/active-on-bg.rkt")
  (all-from-out "components/lock-to.rkt")
+ (all-from-out "components/backdrop.rkt")
+ (all-from-out "components/dialog.rkt")
  (all-from-out "component-util.rkt")
  (all-from-out "entity-helpers/movement-util.rkt")
  (all-from-out "entity-helpers/sprite-util.rkt")
  (all-from-out "entity-helpers/rgb-hsb.rkt")
+ (all-from-out "entity-helpers/dialog-util.rkt")
  (all-from-out "ai.rkt")
 
 
@@ -74,9 +77,12 @@
 (require "components/spawn-dialog.rkt")
 (require "components/active-on-bg.rkt")
 (require "components/lock-to.rkt")
+(require "components/backdrop.rkt")
+(require "components/dialog.rkt")
 (require "component-util.rkt")
 (require "entity-helpers/movement-util.rkt")
 (require "entity-helpers/sprite-util.rkt")
 (require "entity-helpers/rgb-hsb.rkt")
+(require "entity-helpers/dialog-util.rkt")
 (require "ai.rkt")
 

@@ -43,7 +43,8 @@
 (define (change-speed-by n)
   (lambda (g e)
     (define increase (lambda (k)
-                       (key-movement (+ (key-movement-speed k) n))))
+                       (struct-copy key-movement k
+                                    [speed (+ (key-movement-speed k) n)])))
     (update-entity e key-movement? increase)))
 
 (define (get-speed e)
