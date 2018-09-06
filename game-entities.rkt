@@ -48,7 +48,8 @@
          game-height)
 
 (require posn)
-(require 2htdp/image)
+(require 2htdp/image
+         (prefix-in h:  lang/posn))
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
 ;(require "./components/counter.rkt")
@@ -126,8 +127,8 @@
   (entity (update-component components component-pred f)))
 
 ;You can pass in a predicate or an actual component
-(define/contract (get-component e maybe-pred)
-  (-> entity? any/c any/c)
+(define #;/contract (get-component e maybe-pred)
+ ; (-> entity? any/c any/c)
   (define component-pred
     (if (procedure? maybe-pred)
         maybe-pred
@@ -377,25 +378,38 @@
 
 
 (define (draw-entity e)
-  (render (get-component e animated-sprite?)))
+  (render (get-component e animated-sprite?))
+  #;(square 1000 'solid 'red))
+
+(define (x e)
+  (posn-x (get-component e posn?)))
+
+(define (y e)
+  (posn-y (get-component e posn?)))
+
+
 
 (define (draw-entities es)
   (if (= 1 (length es))
       (draw-entity (first es))
-      (let* ([p (get-component (first es) posn?)]
-             [x (posn-x p)]
-             [y (posn-y p)])
-        (place-image (draw-entity (first es))
-                     x y
-                     (draw-entities (rest es))))))
+
+      (let ([all-but-last (drop-right es 1)])
+        (place-images
+         (map draw-entity all-but-last)
+         (map (λ(e)
+                (h:make-posn (x e)
+                             (y e))) all-but-last)
+         (draw-entity (last es))))))
 
 
-(define/contract (draw g)
-  (-> game? image?)
+(define #;/contract (draw g)
+  ;(-> game? image?)
   (define (not-hidden e) (and (not (get-component e hidden?))
                               (not (get-component e disabled?))))
   (define entities (filter not-hidden (game-entities g)))
-  (draw-entities entities))
+
+  (freeze (draw-entities entities))
+  )
 
 
 
@@ -511,9 +525,15 @@
     (define new-game (~> g
                          ;(copy-collisions-from last-physics-snapshot _)
                          tick-entities
+                         
                          handle-dead
+
+                         
                          do-game-functions
-                         store-prev-input))
+
+                         ;What does this do?  When I comment out, everything still seems to work...
+                         store-prev-input
+                         ))
     ;(set-game-input! g '())
    
     (set! last-game-snapshot new-game)
@@ -633,10 +653,6 @@
 
 
 
-
-;In parallel, I'm doing the controller stuff with Lux.
-;  We might switch to that later (instead of 2htdp/universe)
-
 (require racket/match
          racket/fixnum         
          lux
@@ -648,10 +664,10 @@
 (struct demo
   (g/v state)
   #:methods gen:word
-  [(define (word-fps w)
+  [#;(define (word-fps w)
      60.0)
    
-   (define (word-label s ft)
+   #;(define (word-label s ft)
      (lux-standard-label "Values" ft))
    
    (define (word-output w)
