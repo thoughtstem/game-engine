@@ -2,6 +2,7 @@
 
 (require "../game-entities.rkt")
 (require "./animated-sprite.rkt")
+(require "../entity-helpers/sprite-util.rkt")
 (require 2htdp/image)
 
 (require posn)
@@ -83,3 +84,14 @@
     (if next-bg-index
         #t
         #f)))
+
+;Renders start-tile from the bg-backdrop component
+(define (show-backdrop)
+  (lambda (g e)
+    (define bg-component (get-component e backdrop?))
+    ((change-sprite (new-sprite (render-tile bg-component))) g e)))
+
+;Updates bg-backdrop component
+(define (change-backdrop backdrop)
+  (lambda (g e)
+    ((show-backdrop) g (update-entity e backdrop? backdrop))))
