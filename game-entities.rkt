@@ -37,7 +37,7 @@
          touching?
     
          add-circle-collider
-         physical-collider
+         (struct-out physical-collider)
          
          start-game
 
@@ -58,12 +58,12 @@
 
 (require (for-syntax racket/syntax))
 
-
 (struct bb [w h])
+(struct id [id])
 (struct cc [r]) ;<- Circle Collider
 (struct entity [components] #:transparent)
 
-(struct entity-name (string))
+(struct entity-name (string) #:transparent)
 
 (define component-handlers (hash))
 
@@ -102,6 +102,9 @@
   (if n
       (entity-name-string n)
       #f))
+
+(define (get-id e)
+  (id-id (get-component e id?)))
 
 (define (entity-animation e)
   (findf animated-sprite? (entity-components e)))
@@ -151,7 +154,8 @@
              (rest flattened))))
 
 (define (basic-entity p s)
-  (entity (list p
+  (entity (list (id (random 10000000))
+                p
                 (image->bb (render s))
                 s)))
 
@@ -425,7 +429,8 @@
 
 (define (extract-out e l)
   (define (not-eq? e o)
-    (not (eq? e o)))
+    (not (= (get-id e)
+            (get-id o))))
   (filter (curry not-eq? e) l))
 
 (define (colliding-with e g)
@@ -433,7 +438,8 @@
    (map (curry extract-out e)
         (filter (curry member e) (game-collisions g)))))
 
-(define (main-tick-component g e c)
+(define/contract (main-tick-component g e c)
+  (-> any/c any/c any/c entity?)
   (define handler (get-handler-for-component c))
   (if (and handler
            (or (not (get-component e disabled?))
@@ -441,11 +447,13 @@
       (handler g e c)
       e))
 
-(define (tick-component g e c)
+(define/contract (tick-component g e c)
+  (-> any/c any/c any/c entity?)
   (define next-entity-state (main-tick-component g e c))
   next-entity-state)
 
-(define (main-tick-entity g e)
+(define/contract (main-tick-entity g e)
+  (-> any/c any/c entity?)
   (foldl
    (lambda (c e2)
      (tick-component g e2 c))
