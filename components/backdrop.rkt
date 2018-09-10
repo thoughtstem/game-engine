@@ -13,7 +13,9 @@
          render-tile
          next-tile
          more-tiles?
-         bg->backdrop)
+         bg->backdrop
+         show-backdrop
+         change-backdrop)
 
 (struct backdrop (tiles columns current-tile))
 
