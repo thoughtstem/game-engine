@@ -98,11 +98,7 @@
   (lambda (g e)
     ((show-backdrop) g (update-entity e backdrop? backdrop))))
 
-#;(define (backdrop-eq)
-  (lambda (g e)
-    (get-component e backdrop?)))
-
-;compares id fields of backdrop components
+;Compares id fields of backdrop components
 (define (backdrop-eq backdrop)
   (lambda (g e)
   (define bg-backdrop (get-component e backdrop?))
