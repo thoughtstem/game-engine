@@ -15,13 +15,13 @@
          more-tiles?
          bg->backdrop
          show-backdrop
-         change-backdrop)
+         change-backdrop
+         backdrop-eq)
 
-(struct backdrop (tiles columns current-tile))
-
+(struct backdrop (id tiles columns current-tile))
 
 (define (bg->backdrop bg #:rows rows #:columns columns #:start-tile [current 0])
-  (backdrop (sheet->costume-list bg columns rows (* rows columns)) columns current))
+  (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns current))
 
 (define (update-backdrop g e c) e)
 
@@ -97,3 +97,13 @@
 (define (change-backdrop backdrop)
   (lambda (g e)
     ((show-backdrop) g (update-entity e backdrop? backdrop))))
+
+#;(define (backdrop-eq)
+  (lambda (g e)
+    (get-component e backdrop?)))
+
+;compares id fields of backdrop components
+(define (backdrop-eq backdrop)
+  (lambda (g e)
+  (define bg-backdrop (get-component e backdrop?))
+  (eq? (backdrop-id bg-backdrop) (backdrop-id backdrop))))
