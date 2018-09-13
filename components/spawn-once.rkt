@@ -73,26 +73,30 @@
 (define (update-spawn-once g e c)
   (define new-c (spawn-once-inc c))
   (if (spawn-once-ready? new-c)
-       (update-entity e spawn-once? ((spawn-once-do-spawn e) new-c))
-       (update-entity e spawn-once? new-c)))
+      (update-entity e
+                     (component-is? c)
+                     ((spawn-once-do-spawn e) new-c))
+      e))
 
 (define/contract (collect-spawn-once es)
   (-> (listof entity?) (listof entity?))
-  (define spawn-once (filter identity (map (λ(x) (get-component x spawn-once?)) es)))
-  (filter identity (map spawn-once-next spawn-once)))
+  (define spawn-onces (flatten (map (curryr get-components spawn-once?) es))) ;get-components?
+  (filter identity (map spawn-once-next spawn-onces)))
 
 (define (reset-spawn-once es)
-  #;(define maybe-spawn-once-reset (lambda (x) (if (spawn-once-ready? x)
-                                              (spawn-once-reset x)
-                                              x)))
-  (map (λ(x) (if (and (get-component x spawn-once?)
-                      (spawn-once-ready? (get-component x spawn-once?)))
-                 (remove-component x spawn-once?)
-                 x)) es))
+  (map (λ(x)
+         (define s (get-component x spawn-once?))
+         (if (and s (spawn-once-ready? s))
+             (remove-component x (and/c
+                                  (component-is? s)
+                                  spawn-once-ready?))
+             x))
+       es))
 
 (define (handle-spawn-once g)
   (define es     (game-entities g))
   (define new-es (collect-spawn-once es))
+  
   (define all    (append new-es (reset-spawn-once es)))
   
   (struct-copy game g

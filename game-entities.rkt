@@ -18,6 +18,7 @@
          sprite->bb
          update-entity
          get-component
+         get-components
          add-component
          remove-component
          add-components
@@ -45,15 +46,19 @@
 
          draw
          game-width
-         game-height)
+         game-height
+         width
+         height
+         set-posn
+         get-posn
+
+         component-is?)
 
 (require posn)
-(require 2htdp/image
-         (prefix-in h:  lang/posn))
+(require 2htdp/image)
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
-;(require "./components/counter.rkt")
-(require "./collision-helper.rkt")
+(require racket-chipmunk)
 
 (require threading)
 
@@ -61,10 +66,23 @@
 
 
 (struct bb [w h])
+
+(define (width e)
+  (bb-w (get-component e bb?)))
+
+(define (height e)
+  (bb-h (get-component e bb?)))
+
+(define (set-posn e p)
+  (update-entity e posn? p))
+
+(define (get-posn e)
+  (get-component e posn?))
+
 (struct cc [r]) ;<- Circle Collider
 (struct entity [components] #:transparent)
 
-(struct entity-name (string))
+(struct entity-name (string) #:transparent)
 
 (define component-handlers (hash))
 
@@ -110,6 +128,13 @@
 (define (entity-bb e)
   (findf bb? (entity-components e)))
 
+(define (component-is? c)
+  (λ(x)
+    (eq? x c)))
+
+(define (add-or-update-component e pred? val)
+  (add-component (remove-component e pred?)
+                 val))
 
 (define (update-component components component-pred f)
   (define ci (index-where components component-pred))
@@ -127,14 +152,19 @@
   (entity (update-component components component-pred f)))
 
 ;You can pass in a predicate or an actual component
-(define #;/contract (get-component e maybe-pred)
- ; (-> entity? any/c any/c)
+(define/contract (get-component e maybe-pred)
+  (-> entity? any/c any/c)
   (define component-pred
     (if (procedure? maybe-pred)
         maybe-pred
         (lambda (c)
           (eq? c maybe-pred))))
   (findf component-pred (entity-components e)))
+
+(define/contract (get-components e component-pred)
+  (-> entity? any/c any/c)
+
+  (filter component-pred (entity-components e)))
 
 (define (add-component e c)
   (match-define (entity components) e)
@@ -198,39 +228,56 @@
    (posn (- x (/ w 2)) (+ y (/ h 2))))
   )
 
+
+
 (define (touching? e1 e2)
-  (match-define (entity components1)
-                e1)
+  (begin
+    (match-define (entity components1)
+      e1)
 
-  (match-define (entity components2)
-                e2)
+    (match-define (entity components2)
+      e2)
 
-  (define (rect-case)
     (match-define (bb e1-w e1-h) (get-component e1 bb? ))
     (match-define (bb e2-w e2-h) (get-component e2 bb? ))
     (rect-hits-rect? (get-component e1 posn?) e1-w e1-h
-                          (get-component e2 posn?) e2-w e2-h))
-  
+                     (get-component e2 posn?) e2-w e2-h)))
 
-  (define (circle-rect-case-1)
-    (define rect-points (bb->points (get-component e2 bb?) (get-component e2 posn?)))
-    (apply (curry circle-hits-rect? (get-component e1 posn?) (cc-r (get-component e1 cc?))) rect-points))
+(define (rect-hits-rect? r1-p r1-w r1-h r2-p r2-w r2-h)
 
-  (define (circle-rect-case-2)
-    (define rect-points (bb->points (get-component e1 bb?) (get-component e1 posn?)))
-    (apply (curry circle-hits-rect? (get-component e2 posn?) (cc-r (get-component e2 cc?))) rect-points))
+  (define e1-x (posn-x r1-p))
+  (define e1-y (posn-y r1-p))
+
+  (define e2-x (posn-x r2-p))
+  (define e2-y (posn-y r2-p))
+
+  (define overlap 4)
   
- 
- 
-  (cond [(and (get-component e1 bb?) (get-component e2 bb?))
-         (rect-case)]
-         [(and (get-component e1 cc?) (get-component e2 bb?))
-          (circle-rect-case-1)]
-         [(and (get-component e2 cc?) (get-component e1 bb?))
-          (circle-rect-case-2)]
-         [(and (get-component e2 cc?) (get-component e1 cc?))
-          (circle-hits-circle? (get-component e2 posn?) (cc-r (get-component e2 cc?)) (get-component e1 posn?) (cc-r (get-component e1 cc?)))])
-)
+  (define pad 0 #;(if (and (<= overlap (/ r1-w 2))
+                           (<= overlap (/ r1-h 2))
+                           (<= overlap (/ r2-w 2))
+                           (<= overlap (/ r2-h 2)))
+                      overlap
+                      0))
+
+  (define x-diff (- e1-x e2-x))
+  (define y-diff (- e1-y e2-y))
+  (define w1 (/ r1-w 2))
+  (define w2 (/ r2-w 2))
+  (define h1 (/ r1-h 2))
+  (define h2 (/ r2-h 2))
+
+  (define w-sum (+ w1 w2))
+  (define h-sum (+ h1 h2))
+
+  (define padded-w-sum (- w-sum pad))
+  (define padded-h-sum (- h-sum pad))
+
+  (and (>= x-diff (- padded-w-sum))
+       (<= x-diff    padded-w-sum)
+       (>= y-diff (- padded-h-sum))
+       (<= y-diff    padded-h-sum)))
+
 
 
 (struct physical-collider ())
@@ -364,7 +411,7 @@
 
 
 
-(struct game (entities
+(struct game ([entities #:mutable]
              [input #:mutable]
              [prev-input #:mutable]
              [collisions #:mutable]) #:transparent)
@@ -378,38 +425,28 @@
 
 
 (define (draw-entity e)
-  (render (get-component e animated-sprite?))
-  #;(square 1000 'solid 'red))
-
-(define (x e)
-  (posn-x (get-component e posn?)))
-
-(define (y e)
-  (posn-y (get-component e posn?)))
-
-
+  (define s (get-component e animated-sprite?))
+  (if s
+      (render s)
+      empty-image))
 
 (define (draw-entities es)
   (if (= 1 (length es))
       (draw-entity (first es))
-
-      (let ([all-but-last (drop-right es 1)])
-        (place-images
-         (map draw-entity all-but-last)
-         (map (λ(e)
-                (h:make-posn (x e)
-                             (y e))) all-but-last)
-         (draw-entity (last es))))))
+      (let* ([p (get-component (first es) posn?)]
+             [x (posn-x p)]
+             [y (posn-y p)])
+        (place-image (draw-entity (first es))
+                     x y
+                     (draw-entities (rest es))))))
 
 
-(define #;/contract (draw g)
-  ;(-> game? image?)
+(define/contract (draw g)
+  (-> game? image?)
   (define (not-hidden e) (and (not (get-component e hidden?))
                               (not (get-component e disabled?))))
   (define entities (filter not-hidden (game-entities g)))
-
-  (freeze (draw-entities entities))
-  )
+  (draw-entities entities))
 
 
 
@@ -428,7 +465,7 @@
 
 (define (non-disabled-physical-entity? e)
   ((and/c (curryr get-component physical-collider?)
-         (not/c (curryr get-component disabled?)))
+          (not/c (curryr get-component disabled?)))
    e))
 
 (define (colliding-with-other-physical-colliders? g e)
@@ -466,27 +503,68 @@
    e
    (entity-components e)))
 
-(define (tick-entity g e)
-  ;Naive physics:
-  ;If there's a physical collider on e,
-  ; And we were previously not colliding,
-  ; And we are colliding on the next state,
-  ; Then set the entity's position back to the previous position
 
-  
-  (define previous-posn (get-component e posn?))
-  
+(define debug-circle
+  (sheet->sprite (circle 10 'solid 'red)
+                  #:rows        1
+                  #:columns     1
+                  #:row-number  1
+                  #:speed       0))
+
+(define (debug-highlight e)
+  (add-component (remove-component e animated-sprite?)
+                 debug-circle))
+
+
+(struct previous (state))
+
+(define (previous-entity e)
+  (define p (get-component e previous?))
+  (if p
+      (previous-state p)
+      #f))
+
+(define (set-from-previous e pred?)
+  (define prev-e (previous-entity e))
+
+  (if prev-e
+      (update-entity e pred?
+                     (get-component prev-e pred?))
+      e))
+
+(define (move-toward-previous e)
+  (define prev-e (previous-entity e))
+
+  (if prev-e
+      (update-entity e posn?
+                     (get-component prev-e posn?)
+                     #;(posn-add
+                      (posn-scale 1 ;Shouldn't have to scale...
+                                  (posn-subtract (get-component prev-e posn?)
+                                                 (get-component e posn?)))
+                      (get-component prev-e posn?)))
+      e))
+
+
+(define (set-previous-if-positions-differ e prev-e)
+  (if (equal? (get-posn e)
+              (get-posn prev-e))
+      e
+      (begin
+        (add-or-update-component e
+                                 previous?
+                                 (previous (remove-component prev-e previous?))))))
+
+(define (tick-entity g e)
+
   (define next-entity-state (main-tick-entity g e))
 
- 
- 
-  
-  (define predicted-g (update-collisions (game-replace-entity g next-entity-state)))
+  (define entity-with-history
+    (set-previous-if-positions-differ next-entity-state e))
 
-  
-  (if (colliding-with-other-physical-colliders? predicted-g next-entity-state)
-      (update-entity next-entity-state posn? previous-posn)
-      next-entity-state))
+  (if (colliding-with-other-physical-colliders? g e)
+      (move-toward-previous entity-with-history)
+      entity-with-history))
 
 (define (tick-entities g)
   (define es (game-entities g))
@@ -517,21 +595,17 @@
   (and last-game-snapshot
        (set! last-physics-snapshot last-game-snapshot))
   (update-collisions last-physics-snapshot)
-  (sleep 0.1)
-  (physics-tick))
+  (sleep 0.5)
+  (physics-tick)
+  )
 
 (define tick
   (lambda (g)
     (define new-game (~> g
                          ;(copy-collisions-from last-physics-snapshot _)
                          tick-entities
-                         
                          handle-dead
-
-                         
                          do-game-functions
-
-                         ;What does this do?  When I comment out, everything still seems to work...
                          store-prev-input
                          ))
     ;(set-game-input! g '())
@@ -541,8 +615,8 @@
 
 (define (handle-dead g)
   (define is-alive? (lambda (e) (not (get-component e dead?))))
-  (struct-copy game g
-               [entities (filter is-alive? (game-entities g))]))
+  (set-game-entities! g (filter is-alive? (game-entities g)))
+  g)
 
 
 (define (game-replace-entity g e)
@@ -577,16 +651,29 @@
   (not (and (is-static? (first e-pair))
             (is-static? (second e-pair)))))
 
+
+
+
 (define (collidable-pairs g)
-  (define normal (filter not-static-and-not-disabled? (game-entities g)))
-  (define static (filter is-static-and-not-disabled? (game-entities g)))
-  (define normal-pairs (combinations normal 2))
+  (begin
+    (define normal (filter not-static-and-not-disabled? (game-entities g)))
+    (define static (filter is-static-and-not-disabled? (game-entities g)))
+    (define normal-pairs (combinations normal 2))
 
-  (define off-pairs (cartesian-product normal static))
+    (define off-pairs (cartesian-product normal static))
 
-  (append off-pairs normal-pairs))
+    (define ret (append off-pairs normal-pairs))
+
+    #;(displayln (length ret))
+    
+    ret))
+
+
+
 
 (define (current-collisions g)
+ #;(displayln (length (collidable-pairs g)))
+  
   (filter (curry apply touching?)
           (collidable-pairs g)))
 
@@ -653,6 +740,10 @@
 
 
 
+
+;In parallel, I'm doing the controller stuff with Lux.
+;  We might switch to that later (instead of 2htdp/universe)
+
 (require racket/match
          racket/fixnum         
          lux
@@ -664,10 +755,10 @@
 (struct demo
   (g/v state)
   #:methods gen:word
-  [#;(define (word-fps w)
+  [(define (word-fps w)
      60.0)
    
-   #;(define (word-label s ft)
+   (define (word-label s ft)
      (lux-standard-label "Values" ft))
    
    (define (word-output w)
