@@ -123,7 +123,7 @@
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
     (define dialog-index (get-counter e))
-    (displayln (~a "CURRENT DIALOG: " dialog-index))
+    ;(displayln (~a "CURRENT DIALOG: " dialog-index))
     (define dialog-length (length dialog-list))
     (define name (get-name e))
     (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
@@ -133,7 +133,7 @@
                        (place-image
                         (freeze (scale 2 avatar-img))
                         30 30
-                        (rectangle 60 60 "solid" (make-color 20 20 20 150))))))
+                        (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
     (define message-entity (create-dialog dialog-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
     (update-entity (add-component e
                                   (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 5)))
@@ -155,7 +155,7 @@
                        (place-image
                         (freeze (scale 2 avatar-img))
                         30 30
-                        (rectangle 60 60 "solid" (make-color 20 20 20 150))))))
+                        (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
     (define message-entity (create-dialog response-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
     (add-component (update-entity e counter? (counter (add1 npc-dialog-index)))
                    (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 10)))))
@@ -324,7 +324,7 @@
 (define (get-dialog-selection)
   (lambda (g e)
     (define selection (get-counter (get-entity "player dialog selection" g)))
-    (displayln (~a "Player Selection: " selection))
+    ;(displayln (~a "Player Selection: " selection))
     (update-entity e counter? (counter selection))))
 
 ; === GENERIC SPRITE GENERATORS ===
@@ -385,7 +385,7 @@
     (define dialog-length (if simple-dialog?
                               (length dialog-sprites)
                               (length (list-ref dialog-sprites player-dialog-index))))
-    (displayln (~a "last-dialog? " npc-dialog-index "\ndialog-length: " dialog-length))
+    ;(displayln (~a "last-dialog? " npc-dialog-index "\ndialog-length: " dialog-length))
     (if (and ;(get-entity "npc dialog" g)
              ;((near-entity? "player") g e)
              (= npc-dialog-index dialog-length))
