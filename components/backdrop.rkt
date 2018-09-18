@@ -8,18 +8,24 @@
 (require posn)
 
 (provide (struct-out backdrop)
+         bg->backdrop
+         create-backdrop
          set-current-tile
          get-current-tile
          render-tile
          next-tile
          more-tiles?
-         bg->backdrop)
+         change-backdrop
+         backdrop-eq?)
 
-(struct backdrop (tiles columns current-tile))
+(struct backdrop (id tiles columns current-tile))
 
+;separate create-backdrop component created to keed backdrop id field internal
+(define (create-backdrop tiles columns current-tile)
+   (backdrop (random 1000000) tiles columns current-tile))
 
 (define (bg->backdrop bg #:rows rows #:columns columns #:start-tile [current 0])
-  (backdrop (sheet->costume-list bg columns rows (* rows columns)) columns current))
+  (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns current))
 
 (define (update-backdrop g e c) e)
 
@@ -95,3 +101,9 @@
 (define (change-backdrop backdrop)
   (lambda (g e)
     ((show-backdrop) g (update-entity e backdrop? backdrop))))
+
+;Compares id fields of backdrop components
+(define (backdrop-eq? backdrop)
+  (lambda (g e)
+  (define bg-backdrop (get-component e backdrop?))
+  (eq? (backdrop-id bg-backdrop) (backdrop-id backdrop))))

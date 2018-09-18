@@ -1,7 +1,13 @@
 #lang racket
 
 (require "../game-entities.rkt")
-(require rsound)
+(require (only-in rsound
+                  default-sample-rate
+                  resample-to-rate
+                  rs-read
+                  make-pstream
+                  pstream-play
+                  stop))
 
 (provide (rename-out (make-sound-stream sound-stream))
          make-sound
@@ -39,11 +45,8 @@
           (pstream-play (get-sound-stream e) rs)
           e)
         (begin
-          (displayln "sound-stream component not found")
+          ;(displayln "WARNING: Missing sound-stream component. Sound will not play.")
           e)
-        #;(let ([new-e (add-component e (make-sound-stream))])
-          (pstream-play (get-sound-stream new-e) rs)
-          new-e)
         )))
 
 (define (play-sound-from entity-name rs)

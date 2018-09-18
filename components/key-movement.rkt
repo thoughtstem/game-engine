@@ -13,17 +13,19 @@
 
 (struct key-movement (speed mode rule?))
 
+;This just puts the units we usually use into units that Chimpmunk physics understands.
+(define MAGIC-SPEED-MULTIPLIER 50)
+
 (define (make-key-movement speed #:mode [mode 'arrow-keys] #:rule [rule? (lambda (g e) #t)])
   (key-movement speed mode rule?))
 
 (define (update-key-movement g e c)
   (define rule? (key-movement-rule? c))
   (if ((key-movement-rule? c) g e)
-      (update-entity e posn?
-                     (curry posn-add
-                        (velocity-from-buttons  g
-                                                (key-movement-speed c)
-                                                (key-movement-mode c))))
+      (set-velocity e
+                    (velocity-from-buttons  g
+                                            (* MAGIC-SPEED-MULTIPLIER (key-movement-speed c))
+                                            (key-movement-mode c)))
       e))
 
 (define/contract (velocity-from-buttons game speed mode)

@@ -19,7 +19,7 @@
          update-entity
          get-component
          get-components
-         add-component
+         add-component 
          remove-component
          add-components
          get-name
@@ -35,10 +35,8 @@
 
          
          image->bb
-         touching?
-    
-         add-circle-collider
-         physical-collider
+         
+         (rename-out [make-physical-collider physical-collider])
          
          start-game
 
@@ -51,19 +49,20 @@
          height
          set-posn
          get-posn
+         x y
 
-         component-is?)
+         component-is?
+         set-velocity)
 
 (require posn)
 (require 2htdp/image)
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
-(require racket-chipmunk)
+(require (prefix-in phys: racket-chipmunk))
 
 (require threading)
 
 (require (for-syntax racket/syntax))
-
 
 (struct bb [w h])
 
@@ -74,15 +73,37 @@
   (bb-h (get-component e bb?)))
 
 (define (set-posn e p)
-  (update-entity e posn? p))
+  (~> e
+      (update-entity _ posn? p)
+      ;We don't need this apparently??
+      #;(set-chipmunk-posn! _ p)))
 
 (define (get-posn e)
   (get-component e posn?))
 
-(struct cc [r]) ;<- Circle Collider
+(define (x e)
+  (posn-x (get-posn e)))
+
+(define (y e)
+  (posn-y (get-posn e)))
+
+(define (w e)
+  (bb-w (get-component e bb?)))
+
+(define (h e)
+  (bb-h (get-component e bb?)))
+
+(struct id [id])
+
+
 (struct entity [components] #:transparent)
 
 (struct entity-name (string) #:transparent)
+
+
+(define (entity-eq? e1 e2)
+  (= (get-id e1)
+     (get-id e2)))
 
 (define component-handlers (hash))
 
@@ -122,6 +143,9 @@
       (entity-name-string n)
       #f))
 
+(define (get-id e)
+  (id-id (get-component e id?)))
+
 (define (entity-animation e)
   (findf animated-sprite? (entity-components e)))
 
@@ -152,8 +176,8 @@
   (entity (update-component components component-pred f)))
 
 ;You can pass in a predicate or an actual component
-(define/contract (get-component e maybe-pred)
-  (-> entity? any/c any/c)
+(define #;/contract (get-component e maybe-pred)
+  #;(-> entity? any/c any/c)
   (define component-pred
     (if (procedure? maybe-pred)
         maybe-pred
@@ -161,8 +185,8 @@
           (eq? c maybe-pred))))
   (findf component-pred (entity-components e)))
 
-(define/contract (get-components e component-pred)
-  (-> entity? any/c any/c)
+(define #;/contract (get-components e component-pred)
+  #;(-> entity? any/c any/c)
 
   (filter component-pred (entity-components e)))
 
@@ -182,7 +206,8 @@
              (rest flattened))))
 
 (define (basic-entity p s)
-  (entity (list p
+  (entity (list (id (random 10000000))
+                p
                 (image->bb (render s))
                 s)))
 
@@ -202,8 +227,7 @@
                      sprite-or-image
                      (new-sprite sprite-or-image)))
   (apply (curry add-components (basic-entity p sprite) )
-         all-cs)
-  )
+         all-cs))
 
 (define (sprite->bb s)
   (image->bb (render s)))
@@ -214,73 +238,24 @@
    (image-height i)))
 
 
-(define (add-circle-collider e r)
-  (add-component (remove-component e bb?) (cc r)))
 
+(struct physical-collider (chipmunk force) #:transparent)
 
-(define (bb->points bounding-box p)
-  (match-define (bb w h) bounding-box)
-  (match-define (posn x y) p)
+(define (set-chipmunk-posn! e p)
+  (and (entity->chipmunk e)
+       (phys:cpBodySetPosition (phys:chipmunk-body (entity->chipmunk e))
+                               (phys:cpv (posn-x p)
+                                         (posn-y p))))
+  e)
 
-  (list (posn (- x (/ w 2)) (- y (/ h 2)))
-   (posn (+ x (/ w 2)) (- y (/ h 2)))
-   (posn (+ x (/ w 2)) (+ y (/ h 2)))
-   (posn (- x (/ w 2)) (+ y (/ h 2))))
-  )
+(define (entity->chipmunk e)
+  (define pc (get-component e physical-collider?))
+  (if pc
+      (physical-collider-chipmunk pc)
+      #f))
 
-
-
-(define (touching? e1 e2)
-  (begin
-    (match-define (entity components1)
-      e1)
-
-    (match-define (entity components2)
-      e2)
-
-    (match-define (bb e1-w e1-h) (get-component e1 bb? ))
-    (match-define (bb e2-w e2-h) (get-component e2 bb? ))
-    (rect-hits-rect? (get-component e1 posn?) e1-w e1-h
-                     (get-component e2 posn?) e2-w e2-h)))
-
-(define (rect-hits-rect? r1-p r1-w r1-h r2-p r2-w r2-h)
-
-  (define e1-x (posn-x r1-p))
-  (define e1-y (posn-y r1-p))
-
-  (define e2-x (posn-x r2-p))
-  (define e2-y (posn-y r2-p))
-
-  (define overlap 4)
-  
-  (define pad 0 #;(if (and (<= overlap (/ r1-w 2))
-                           (<= overlap (/ r1-h 2))
-                           (<= overlap (/ r2-w 2))
-                           (<= overlap (/ r2-h 2)))
-                      overlap
-                      0))
-
-  (define x-diff (- e1-x e2-x))
-  (define y-diff (- e1-y e2-y))
-  (define w1 (/ r1-w 2))
-  (define w2 (/ r2-w 2))
-  (define h1 (/ r1-h 2))
-  (define h2 (/ r2-h 2))
-
-  (define w-sum (+ w1 w2))
-  (define h-sum (+ h1 h2))
-
-  (define padded-w-sum (- w-sum pad))
-  (define padded-h-sum (- h-sum pad))
-
-  (and (>= x-diff (- padded-w-sum))
-       (<= x-diff    padded-w-sum)
-       (>= y-diff (- padded-h-sum))
-       (<= y-diff    padded-h-sum)))
-
-
-
-(struct physical-collider ())
+(define (make-physical-collider)
+  (physical-collider #f (posn 0 0)))
 
 (provide (struct-out on-collide))
 
@@ -290,6 +265,13 @@
   (if (is-colliding-with? (on-collide-name c) g e)
       ((on-collide-func c) g e)
       e))
+
+(define (set-velocity e p)
+  (update-entity e physical-collider?
+                 (struct-copy physical-collider (get-component e physical-collider?)
+                              [force p])))
+
+
 
 (new-component on-collide?
                update-on-collide)
@@ -441,8 +423,8 @@
                      (draw-entities (rest es))))))
 
 
-(define/contract (draw g)
-  (-> game? image?)
+(define #;/contract (draw g)
+  #;(-> game? image?)
   (define (not-hidden e) (and (not (get-component e hidden?))
                               (not (get-component e disabled?))))
   (define entities (filter not-hidden (game-entities g)))
@@ -476,7 +458,8 @@
 
 (define (extract-out e l)
   (define (not-eq? e o)
-    (not (eq? e o)))
+    (not (= (get-id e)
+            (get-id o))))
   (filter (curry not-eq? e) l))
 
 (define (colliding-with e g)
@@ -484,7 +467,8 @@
    (map (curry extract-out e)
         (filter (curry member e) (game-collisions g)))))
 
-(define (main-tick-component g e c)
+(define #;/contract (main-tick-component g e c)
+  #;(-> any/c any/c any/c entity?)
   (define handler (get-handler-for-component c))
   (if (and handler
            (or (not (get-component e disabled?))
@@ -492,11 +476,13 @@
       (handler g e c)
       e))
 
-(define (tick-component g e c)
+(define #;/contract (tick-component g e c)
+  #;(-> any/c any/c any/c entity?)
   (define next-entity-state (main-tick-component g e c))
   next-entity-state)
 
-(define (main-tick-entity g e)
+(define #;/contract (main-tick-entity g e)
+  #;(-> any/c any/c entity?)
   (foldl
    (lambda (c e2)
      (tick-component g e2 c))
@@ -524,47 +510,10 @@
       (previous-state p)
       #f))
 
-(define (set-from-previous e pred?)
-  (define prev-e (previous-entity e))
 
-  (if prev-e
-      (update-entity e pred?
-                     (get-component prev-e pred?))
-      e))
-
-(define (move-toward-previous e)
-  (define prev-e (previous-entity e))
-
-  (if prev-e
-      (update-entity e posn?
-                     (get-component prev-e posn?)
-                     #;(posn-add
-                      (posn-scale 1 ;Shouldn't have to scale...
-                                  (posn-subtract (get-component prev-e posn?)
-                                                 (get-component e posn?)))
-                      (get-component prev-e posn?)))
-      e))
-
-
-(define (set-previous-if-positions-differ e prev-e)
-  (if (equal? (get-posn e)
-              (get-posn prev-e))
-      e
-      (begin
-        (add-or-update-component e
-                                 previous?
-                                 (previous (remove-component prev-e previous?))))))
 
 (define (tick-entity g e)
-
-  (define next-entity-state (main-tick-entity g e))
-
-  (define entity-with-history
-    (set-previous-if-positions-differ next-entity-state e))
-
-  (if (colliding-with-other-physical-colliders? g e)
-      (move-toward-previous entity-with-history)
-      entity-with-history))
+  (main-tick-entity g e))
 
 (define (tick-entities g)
   (define es (game-entities g))
@@ -577,40 +526,169 @@
                      (a-fun a-game)))
   (foldl pipeline g game-functions))
 
-(define last-physics-snapshot #f)
-(define last-game-snapshot    #f)
 
-(define (copy-collisions-from from to)
-  (if (not from)
-      to
-      (struct-copy game to
-                   [collisions (game-collisions from)])))
 
 
 (define (store-prev-input g)
-  (set-game-prev-input! g (hash-copy (game-input g)))
+  (set-game-prev-input! g (hash-copy (game-input g))) 
   g)
 
-(define (physics-tick)
-  (and last-game-snapshot
-       (set! last-physics-snapshot last-game-snapshot))
-  (update-collisions last-physics-snapshot)
-  (sleep 0.5)
-  (physics-tick)
-  )
+
+(require (prefix-in h:   lang/posn))
+(require (prefix-in ffi: ffi/unsafe))
+
+(define *tick-rate* (/ 1 120.0))
+
+
+(define (physics-tick g)  
+  (phys:step-chipmunk *tick-rate*)
+
+  (define (physics-tick-entity e)
+    (define pc (get-component e physical-collider?))
+    
+    (if (not pc)
+        e
+        (let ([f (physical-collider-force pc)]
+              [c (physical-collider-chipmunk pc)])
+
+          (define new-pos (posn (phys:x c)
+                                (phys:y c)))
+
+          (update-entity e posn?
+                         new-pos))))
+
+  (define new-es (map physics-tick-entity (game-entities g)))
+  
+  (struct-copy game g
+               [entities new-es]))
+
+
+
+(define (chipmunkify e)
+  (define pc (get-component e physical-collider?))
+  (if (not pc)
+      e
+      (let ([box ((if (get-component e static?) phys:box-kinematic phys:box)
+                  (w e)
+                  (h e)
+                  (phys:cpv (x e)
+                            (y e))
+                  #:group (if (get-component e static?) 2 1))])
+
+
+        (update-entity e physical-collider?
+                       (physical-collider box (posn 0 0))))))
+
+
+
+;The stupid macro....
+(require (for-syntax racket))
+(define-syntax (dumb-duplicate stx)
+  (syntax-case stx ()
+    ((_ id body n)
+     #`(define id
+         (list
+          #,@(map (λ(x) #'body)
+                  (range 0 (syntax->datum #'n))))))))
+
+(define (find-entity-by-chipmunk-body b g)
+  (define (has-body? b e-b)
+    (ffi:ptr-equal? b (second e-b)))
+
+  (define e-b
+    (findf (curry has-body? b)
+            entities-and-bodies))
+  
+  (define original-e
+    (if e-b (first e-b) #f))
+
+  (findf (λ(current-e)
+           (entity-eq? current-e original-e)) (game-entities g)))
+
+
+(define entities-and-bodies '())
+
+(define last-game-snapshot #f)
+
+(define (physics-start g)
+  (displayln "Physics start")
+  
+
+  (define new-es (map chipmunkify (game-entities g)))
+
+  (define (vel-func body gravity damping dt)
+    (ffi:cpointer-push-tag! body 'cpBody)
+
+    (define e (find-entity-by-chipmunk-body body last-game-snapshot))
+
+    (and e
+         (get-component e physical-collider?)
+         (phys:cpBodySetVelocity body
+                                 (phys:cpv (posn-x (physical-collider-force (get-component e physical-collider?)))
+                                           (posn-y (physical-collider-force (get-component e physical-collider?))))))
+    ffi:_void)
+
+  (dumb-duplicate fs
+                  (λ(a b c d)
+                    (vel-func a b c d))
+                  10)
+
+  (define (set-vel-func-for-sure e)
+    
+    (define body (phys:chipmunk-body
+                                     (physical-collider-chipmunk
+                                      (get-component e physical-collider?))))
+
+    (set! entities-and-bodies (cons (list e body)
+                                    entities-and-bodies))
+    
+    (phys:set-cpBody-velocity_func! body
+                                    (first fs))
+
+    (set! fs (rest fs)))
+
+
+  (define (set-vel-func e)
+    (if (is-static? e)
+        e
+        (set-vel-func-for-sure e)))
+
+  
+
+  (define collidables (filter (λ(e) (get-component e physical-collider?)) new-es))
+
+
+
+  (map set-vel-func collidables)
+
+  (struct-copy game g
+
+               ;Filtering here is weird.  It assumes that physical, static, disabled components
+               ;  should not be added to the game.  Optimizes away things like hidden walls.
+               ;  But it's a potential bug if you actually want that thing to become enabled at some point...
+               ;Maybe safe though.  Why not just use hidden?  Can initially disabled components actually be woken up
+               ;  anyway?
+               [entities (filter (or/c
+                                  (not/c is-static?)
+                                  (not/c is-physical?)
+                                  (not/c is-disabled?)) new-es)]))
+
+
+
+
+
 
 (define tick
   (lambda (g)
+    (set! last-game-snapshot g)
+    
     (define new-game (~> g
-                         ;(copy-collisions-from last-physics-snapshot _)
+                         physics-tick ;Just a note for the future.  This is not slow.  Do not move to a different thread in a misguided effort to optimize...
                          tick-entities
                          handle-dead
                          do-game-functions
-                         store-prev-input
-                         ))
-    ;(set-game-input! g '())
-   
-    (set! last-game-snapshot new-game)
+                         store-prev-input))
+
     new-game))
 
 (define (handle-dead g)
@@ -636,6 +714,9 @@
 (define (is-disabled? e)
   (get-component e disabled?))
 
+(define (is-physical? e)
+  (get-component e physical-collider?))
+
 (define (is-static-and-not-disabled? e)
   (and (is-static? e)
        (not (is-disabled? e))))
@@ -653,33 +734,6 @@
 
 
 
-
-(define (collidable-pairs g)
-  (begin
-    (define normal (filter not-static-and-not-disabled? (game-entities g)))
-    (define static (filter is-static-and-not-disabled? (game-entities g)))
-    (define normal-pairs (combinations normal 2))
-
-    (define off-pairs (cartesian-product normal static))
-
-    (define ret (append off-pairs normal-pairs))
-
-    #;(displayln (length ret))
-    
-    ret))
-
-
-
-
-(define (current-collisions g)
- #;(displayln (length (collidable-pairs g)))
-  
-  (filter (curry apply touching?)
-          (collidable-pairs g)))
-
-(define (update-collisions g)
-  (set-game-collisions! g (current-collisions g))
-  g)
 
 
 ;DEAD ENTITIES
@@ -718,21 +772,20 @@
   (image-height (draw g)))
 
 
-(define (physics-start larger-state)
-  (set! last-physics-snapshot larger-state)
-  (thread
-    physics-tick))
 
 (define (start-game . initial-world)
   (define larger-state (game initial-world
                              button-states
                              button-states
                              '()))
-  (displayln "Physics start")
-  (physics-start larger-state)
-  (displayln "Game start")
+
+  (define g (physics-start larger-state))
+
+  
   (final-state
-   (lux-start larger-state)))
+   (lux-start g)))
+
+
 
 
 (define (final-state d)
