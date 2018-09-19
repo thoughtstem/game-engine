@@ -51,13 +51,10 @@ procedure
   ticks : integer?
   fun : (-> game? entity? component? entity?)
 procedure
-<<<<<<< HEAD
-=======
 (spawner sprite amount) -> component?
   sprite : entity?
   amount : integer?
 procedure
->>>>>>> d6133ce3e091443cbe550c13a1373959a889f19c
 (on-collide name fun) -> component?
   name : string?
   fun : (-> game? entity? component?)
@@ -79,18 +76,6 @@ procedure
   entity-name1 : string?
   entity-name2 : string?
   func : func?
-<<<<<<< HEAD
-procedure
-(on-edge edge #:offset off func) -> component?
-  edge : symbol?
-  off : integer?
-  func : func?
-procedure
-(detect-edge name edge func) -> component?
-  name : string?
-  edge : symbol?
-  func : func?
-=======
 procedure
 (on-edge edge #:offset off func) -> component?
   edge : symbol?
@@ -104,7 +89,6 @@ procedure
 procedure
 (stop-on-edge edges) -> component?
   edges : symbols?
->>>>>>> d6133ce3e091443cbe550c13a1373959a889f19c
 procedure
 (wrap-around mode) -> component?
   mode : symbol?
@@ -150,20 +134,6 @@ procedure
   min-y : integer?
   max-y : integer?
 procedure
-<<<<<<< HEAD
-(go-to-pos pos) -> func?
-  pos : symbol?
-(go-to-pos-inside pos) -> func?
-  pos : symbol?
-procedure
-(respawn edge) -> func?
-  edge : symbol?
-procedure
-(set-speed spd) -> func?
-  spd : integer?
-(set-direction dir) -> func?
-  dir : integer?
-=======
 (go-to-pos pos #:offset offset) -> func?
   pos : symbol?
   offset : integer?
@@ -205,4 +175,3 @@ procedure
 procedure
 (point-to name) -> func?
   name : string?
->>>>>>> d6133ce3e091443cbe550c13a1373959a889f19c
