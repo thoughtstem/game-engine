@@ -37,6 +37,7 @@
          image->bb
          
          (rename-out [make-physical-collider physical-collider])
+         physical-collider?
          
          start-game
 
@@ -51,8 +52,11 @@
          get-posn
          x y
 
+         bake
+
          component-is?
-         set-velocity)
+         set-velocity
+         chipmunkify)
 
 (require posn)
 (require 2htdp/image)
@@ -434,7 +438,7 @@
 
  
 (define (is-colliding? e g)
-  (findf (curry member e) (game-collisions g)))
+  (findf (curry member e entity-eq?) (game-collisions g)))
 
 (define (is-colliding-with? name g me)
   (define names (map get-name (colliding-with me g)))
@@ -543,6 +547,9 @@
 (define (physics-tick g)  
   (phys:step-chipmunk *tick-rate*)
 
+
+  
+
   (define (physics-tick-entity e)
     (define pc (get-component e physical-collider?))
     
@@ -564,8 +571,20 @@
 
 
 
+
+
+
 (define (chipmunkify e)
+
+  #;(displayln "Chipmunking!!")
+  #;(displayln e)
+  
+  (define entity-id-ptr
+    (ffi:malloc 'raw 2))
+  (ffi:ptr-set! entity-id-ptr ffi:_uint (get-id e))
+
   (define pc (get-component e physical-collider?))
+  
   (if (not pc)
       e
       (let ([box ((if (get-component e static?) phys:box-kinematic phys:box)
@@ -573,12 +592,13 @@
                   (h e)
                   (phys:cpv (x e)
                             (y e))
-                  #:group (if (get-component e static?) 2 1))])
+                  #:group (if (get-component e static?) 2 1)
+                  #:user-data entity-id-ptr)])
 
 
-        (update-entity e physical-collider?
-                       (physical-collider box (posn 0 0))))))
-
+        (chipmunkify-step2
+         (update-entity e physical-collider?
+                       (physical-collider box (posn 0 0)))))))
 
 
 ;The stupid macro....
@@ -591,47 +611,28 @@
           #,@(map (λ(x) #'body)
                   (range 0 (syntax->datum #'n))))))))
 
-(define (find-entity-by-chipmunk-body b g)
-  (define (has-body? b e-b)
-    (ffi:ptr-equal? b (second e-b)))
+(define (vel-func body gravity damping dt)
+  (ffi:cpointer-push-tag! body 'cpBody)
 
-  (define e-b
-    (findf (curry has-body? b)
-            entities-and-bodies))
-  
-  (define original-e
-    (if e-b (first e-b) #f))
+  (define e (find-entity-by-chipmunk-body body last-game-snapshot))
 
-  (findf (λ(current-e)
-           (entity-eq? current-e original-e)) (game-entities g)))
+  (phys:cpBodyUpdateVelocity body gravity damping dt)
+
+  (and e
+       (get-component e physical-collider?)
+       (phys:cpBodySetVelocity body
+                               (phys:cpv (posn-x (physical-collider-force (get-component e physical-collider?)))
+                                         (posn-y (physical-collider-force (get-component e physical-collider?))))))
+  ffi:_void)
+
+(dumb-duplicate fs
+                (λ(a b c d)
+                  (vel-func a b c d))
+                10)
 
 
-(define entities-and-bodies '())
 
-(define last-game-snapshot #f)
-
-(define (physics-start g)
-  (displayln "Physics start")
-  
-
-  (define new-es (map chipmunkify (game-entities g)))
-
-  (define (vel-func body gravity damping dt)
-    (ffi:cpointer-push-tag! body 'cpBody)
-
-    (define e (find-entity-by-chipmunk-body body last-game-snapshot))
-
-    (and e
-         (get-component e physical-collider?)
-         (phys:cpBodySetVelocity body
-                                 (phys:cpv (posn-x (physical-collider-force (get-component e physical-collider?)))
-                                           (posn-y (physical-collider-force (get-component e physical-collider?))))))
-    ffi:_void)
-
-  (dumb-duplicate fs
-                  (λ(a b c d)
-                    (vel-func a b c d))
-                  10)
+(define (chipmunkify-step2 e)
 
   (define (set-vel-func-for-sure e)
     
@@ -654,13 +655,75 @@
         (set-vel-func-for-sure e)))
 
   
+  (set-vel-func e)
+  e)
 
-  (define collidables (filter (λ(e) (get-component e physical-collider?)) new-es))
+
+(define (find-entity-by-id i g)
+  (findf (λ(e) (= i (get-id e)))
+         (game-entities g)))
 
 
 
-  (map set-vel-func collidables)
+(define (find-entity-by-chipmunk-body b g)
+  (define (has-body? b e-b)
+    (ffi:ptr-equal? b (second e-b)))
 
+  (define e-b
+    (findf (curry has-body? b)
+            entities-and-bodies))
+  
+  (define original-e
+    (if e-b (first e-b) #f))
+
+  (findf (λ(current-e)
+           (entity-eq? current-e original-e)) (game-entities g)))
+
+
+(define entities-and-bodies '())
+
+(define last-game-snapshot #f)
+
+;Should this be getting hidden in wrapper-lib???
+(define (default-presolve-handler arbiter space user-data)
+  
+  (let-values ([(s1 s2) (phys:cpArbiterGetShapes arbiter)])
+    (define s1-data-ptr (phys:cpShapeGetUserData s1))
+    (define s2-data-ptr (phys:cpShapeGetUserData s2))
+
+    (define s1-data (if s1-data-ptr (ffi:ptr-ref s1-data-ptr ffi:_uint) #f))
+    (define s2-data (if s2-data-ptr (ffi:ptr-ref s2-data-ptr ffi:_uint) #f))
+
+    ;Should we get the id here or just store the id pairs in the collisions list....
+    ;  Probably the latter.
+    ;  But start with entity pairs in collisions list.
+    
+    (define e1 (find-entity-by-id s1-data last-game-snapshot))
+    (define e2 (find-entity-by-id s2-data last-game-snapshot))
+
+    (set-game-collisions! last-game-snapshot
+                          (cons (list e1 e2)
+                                (game-collisions last-game-snapshot)))
+    )
+
+  ;Must return 1...
+  1)
+
+(define (physics-start g)
+  (displayln "Physics start")
+
+  ;Ummm. I think we need to do the collision type thingy??
+  ;  How to get the two colliders?  Or we use the user data??
+  (define handler
+    (phys:cpSpaceAddDefaultCollisionHandler phys:*space))
+
+  (phys:set-cpCollisionHandler-cpCollisionPreSolveFunc! handler
+                                                   default-presolve-handler)
+
+
+  (define new-es (map chipmunkify (game-entities g)))
+
+  
   (struct-copy game g
 
                ;Filtering here is weird.  It assumes that physical, static, disabled components
@@ -675,7 +738,9 @@
 
 
 
-
+(define (cleanup-physics g)
+  (set-game-collisions! g '())
+  g)
 
 
 (define tick
@@ -687,12 +752,21 @@
                          tick-entities
                          handle-dead
                          do-game-functions
-                         store-prev-input))
+                         store-prev-input
+                         cleanup-physics))
 
     new-game))
 
 (define (handle-dead g)
   (define is-alive? (lambda (e) (not (get-component e dead?))))
+
+  (define doomed (filter (not/c is-alive?) (game-entities g)))
+
+  (define doomed-chipmunks (map entity->chipmunk doomed))
+
+  (for ([d doomed-chipmunks])
+    (phys:destroy-chipmunk d))
+  
   (set-game-entities! g (filter is-alive? (game-entities g)))
   g)
 
@@ -771,6 +845,47 @@
 (define (game-height g)
   (image-height (draw g)))
 
+(define (has-component? pred?)
+  (lambda(e)
+    (get-component e pred?)))
+
+
+
+(struct bake ())
+
+;Global to prevent segfault... hangs on to chipmunk references...
+(define hidden-bakes '())
+
+(define (bake-in g)
+  (define to-bake (filter (has-component? bake?) (game-entities g)))
+
+  (define bg (last (game-entities g)))
+
+  (define bg-sprite (new-sprite (draw-entities (append to-bake (list bg)))))
+
+  (displayln bg-sprite)
+
+  (define non-bakes (filter (not/c (has-component? bake?)) (game-entities g)))
+
+  (define new-bg
+    (update-entity bg animated-sprite? bg-sprite))
+
+  (set! hidden-bakes (map (λ(e) (add-component e (hidden))) to-bake))
+  
+  (define es (list-set non-bakes
+                       (sub1 (length non-bakes))
+                       new-bg)
+    #;(append
+              hidden-bakes
+              (list-set non-bakes
+                       (sub1 (length non-bakes))
+                       new-bg)))
+
+  (struct-copy game g
+               [entities es]))
+
+
+
 
 
 (define (start-game . initial-world)
@@ -779,7 +894,9 @@
                              button-states
                              '()))
 
-  (define g (physics-start larger-state))
+  (define g
+    (bake-in
+     (physics-start larger-state)))
 
   
   (final-state

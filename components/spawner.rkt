@@ -90,7 +90,12 @@
 (define (handle-spawns g)
   (define es     (game-entities g))
   (define new-es (collect-spawns es))
-  (define all    (append new-es (reset-spawners es)))
+
+  #;(and (not (empty? new-es))
+       (displayln "Spawing!"))
+  
+  (define all    (append (map chipmunkify new-es)
+                         (reset-spawners es)))
   
   (struct-copy game g
                [entities all]))
