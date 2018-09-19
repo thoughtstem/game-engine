@@ -58,7 +58,7 @@
 (require 2htdp/image)
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
-(require racket-chipmunk)
+;(require racket-chipmunk)
 
 (require threading)
 
