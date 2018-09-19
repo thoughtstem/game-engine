@@ -625,7 +625,7 @@
     physics-tick))
 
 (define (start-game . initial-world)
-  (define larger-state (game initial-world
+  (define larger-state (game (flatten initial-world)
                              button-states
                              button-states
                              '()))

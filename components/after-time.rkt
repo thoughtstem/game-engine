@@ -3,7 +3,8 @@
 (require "../game-entities.rkt")
 (require posn)
 
-(provide (rename-out (make-after-time after-time)))
+(provide (rename-out (make-after-time after-time))
+         do-after-time)
 
 (struct after-time (accum speed func))
 
@@ -25,3 +26,7 @@
 
 (new-component after-time?
                update-after-time)
+
+(define (do-after-time time f)
+  (lambda (g e)
+    (add-component e (make-after-time time f))))
