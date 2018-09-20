@@ -11,6 +11,8 @@
 (require posn)
 
 (provide (struct-out backdrop)
+         bg->backdrop
+         create-backdrop
          set-current-tile
          get-current-tile
          render-tile
@@ -20,12 +22,18 @@
          show-backdrop
          change-backdrop
          backdrop-edge-system
-         player-edge-system)
+         player-edge-system
+         change-backdrop
+         backdrop-eq?)
 
-(struct backdrop (tiles columns current-tile))
+(struct backdrop (id tiles columns current-tile))
+
+;separate create-backdrop component created to keed backdrop id field internal
+(define (create-backdrop tiles columns current-tile)
+   (backdrop (random 1000000) tiles columns current-tile))
 
 (define (bg->backdrop bg #:rows rows #:columns columns #:start-tile [current 0])
-  (backdrop (sheet->costume-list bg columns rows (* rows columns)) columns current))
+  (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns current))
 
 (define (update-backdrop g e c) e)
 
@@ -102,7 +110,6 @@
   (lambda (g e)
     ((show-backdrop) g (update-entity e backdrop? backdrop))))
 
-
 ;=== SYSTEMS ===
 ;These are collections of components to help with flip-screen navigation
 
@@ -123,3 +130,9 @@
         (on-edge 'right  #:rule (more-tiles? 'right)  (go-to-pos-inside 'left))
         (on-edge 'top    #:rule (more-tiles? 'top)    (go-to-pos-inside 'bottom))
         (on-edge 'bottom #:rule (more-tiles? 'bottom) (go-to-pos-inside 'top))))
+
+;Compares id fields of backdrop components
+(define (backdrop-eq? backdrop)
+  (lambda (g e)
+  (define bg-backdrop (get-component e backdrop?))
+  (eq? (backdrop-id bg-backdrop) (backdrop-id backdrop))))
