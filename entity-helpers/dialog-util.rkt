@@ -1,6 +1,7 @@
 #lang racket
 
 (provide animated-dialog
+         pad
          draw-title
          draw-dialog
          draw-dialog-text

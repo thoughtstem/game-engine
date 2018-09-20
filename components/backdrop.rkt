@@ -2,7 +2,10 @@
 
 (require "../game-entities.rkt")
 (require "./animated-sprite.rkt")
+(require "./detect-edge.rkt")
+(require "./on-edge.rkt")
 (require "../entity-helpers/sprite-util.rkt")
+(require "../entity-helpers/movement-util.rkt")
 (require 2htdp/image)
 
 (require posn)
@@ -10,13 +13,19 @@
 (provide (struct-out backdrop)
          bg->backdrop
          create-backdrop
-         change-tile-to
+         
          next-tile
          change-backdrop
+         change-tile-to
+
+         get-current-tile
+         render-tile
+         
          backdrop-eq?
          more-tiles?
-         render-tile
-         get-current-tile)
+         
+         backdrop-edge-system
+         player-edge-system)
 
 (define handler-function? (-> game? entity? entity?))
 
@@ -39,7 +48,7 @@
   (backdrop (random 1000000) tiles columns current-tile))
 
 ; === HANDLER FUNCTIONS ===
-(define (next-tile direction)
+(define/contract (next-tile direction)
   (-> symbol? handler-function?)
   (lambda (g e)
     (define backdrop         (get-component e backdrop?))
@@ -51,13 +60,6 @@
         (update-entity ((set-current-tile next-bg-index) g e) ;(update-entity e counter? (counter next-bg-index))
                        animated-sprite? (new-sprite (pick-tile backdrop next-bg-index)))
         e)))
-
-;Renders start-tile from the bg-backdrop component
-(define/contract (show-backdrop)
-  (-> handler-function?)
-  (lambda (g e)
-    (define bg-component (get-component e backdrop?))
-    ((change-sprite (new-sprite (render-tile bg-component))) g e)))
 
 ;Updates bg-backdrop component
 (define/contract (change-backdrop backdrop)
@@ -73,6 +75,13 @@
     (define backdrop (get-component bg-entity backdrop?))
     (update-entity ((set-current-tile num) g e) animated-sprite? (new-sprite (pick-tile backdrop num)))
     ))
+
+;Renders start-tile from the bg-backdrop component
+(define/contract (show-backdrop)
+  (-> handler-function?)
+  (lambda (g e)
+    (define bg-component (get-component e backdrop?))
+    ((change-sprite (new-sprite (render-tile bg-component))) g e)))
 
 (define/contract (set-current-tile num)
   (-> integer? handler-function?)
@@ -114,8 +123,8 @@
   (-> backdrop? integer? image?)
   (list-ref (backdrop-tiles backdrop) i))
 
-(define (next-backdrop-index direction total-tiles col current-backdrop-index)
-  (-> symbol? integer? integer? integer? (and/c integer? boolean?))  
+(define/contract (next-backdrop-index direction total-tiles col current-backdrop-index)
+  (-> symbol? integer? integer? integer? (or/c integer? boolean?))  
   (define left-edge-list   (range 0 total-tiles col))
   (define right-edge-list  (range (sub1 col) total-tiles col))
   (define top-edge-list    (range 0  col))
@@ -132,3 +141,24 @@
         [(eq? direction 'bottom)    (if (member current-backdrop-index bottom-edge-list)
                                     #f
                                     (+ current-backdrop-index col))]))
+
+;=== SYSTEMS ===
+;These are collections of components to help with flip-screen navigation
+
+; Backdrop Edge System
+; Requires a player to be named "player"
+; Should be added to a background entity with a backdrop component
+(define (backdrop-edge-system)
+  (list (detect-edge "player" 'left   (next-tile 'left))
+        (detect-edge "player" 'right  (next-tile 'right))
+        (detect-edge "player" 'top    (next-tile 'top))
+        (detect-edge "player" 'bottom (next-tile 'bottom))))
+
+; Player Edge System
+; Assumes there is background entity named "bg" with a backdrop component
+; Should be added to the player entity
+(define (player-edge-system)
+  (list (on-edge 'left   #:rule (more-tiles? 'left)   (go-to-pos-inside 'right))
+        (on-edge 'right  #:rule (more-tiles? 'right)  (go-to-pos-inside 'left))
+        (on-edge 'top    #:rule (more-tiles? 'top)    (go-to-pos-inside 'bottom))
+        (on-edge 'bottom #:rule (more-tiles? 'bottom) (go-to-pos-inside 'top))))
