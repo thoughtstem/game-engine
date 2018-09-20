@@ -12,7 +12,8 @@
          
          (struct-out game) 
          (struct-out bb)
-         
+
+         entity-eq?
          entity-animation
          sprite->entity
          sprite->bb
@@ -22,6 +23,7 @@
          remove-component
          add-components
          get-name
+         get-id
          change-name
          basic-entity
          dead
@@ -427,10 +429,13 @@
        (findf non-disabled-physical-entity?
               (colliding-with e g))))
 
+(define (entity-eq? e1 e2)
+  (= (get-id e1) 
+     (get-id e2)))
+
 (define (extract-out e l)
   (define (not-eq? e o)
-    (not (= (get-id e)
-            (get-id o))))
+    (not (entity-eq? e o)))
   (filter (curry not-eq? e) l))
 
 (define (colliding-with e g)
@@ -625,7 +630,7 @@
     physics-tick))
 
 (define (start-game . initial-world)
-  (define larger-state (game initial-world
+  (define larger-state (game (flatten initial-world)
                              button-states
                              button-states
                              '()))
