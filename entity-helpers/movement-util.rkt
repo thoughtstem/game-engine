@@ -17,7 +17,10 @@
          freeze-entity
          un-freeze-entity
          distance-between
-         near-entity?)
+         get-entities-near
+         near-entity?
+         near-ent?
+         near?)
 
 (require "../game-entities.rkt"
          "../components/direction.rkt"
@@ -179,3 +182,26 @@
     (define pos (get-component e posn?))
     (define target-pos (get-component (get-entity name g) posn?))
     (< (distance-between target-pos pos) range)))
+
+(define (near-ent? target-e [range 80])
+  (lambda (g e)
+    (define pos (get-component e posn?))
+    (define target-pos (get-component target-e posn?))
+    (< (distance-between target-pos pos) range)))
+
+(define (close? range source-e target-e)
+  (define source-pos (get-component source-e posn?))
+  (define target-pos (get-component target-e posn?))
+  (<  (distance-between target-pos source-pos) range))
+
+(define (get-entities-near e g [range 80])
+  (filter (curry close? range e) (game-entities g)))
+
+(define (near? name)
+  (lambda (g e)
+    (define (not-disabled? ent)
+      (not (get-component ent disabled?)))
+    (define (name-eq? name e)
+      (eq? (get-name e) name))
+    (define nearby-ents (filter (curry name-eq? name) (filter not-disabled? (get-entities-near e g))))
+    (not (empty? nearby-ents))))

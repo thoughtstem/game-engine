@@ -2,7 +2,10 @@
 
 (require "../game-entities.rkt")
 (require "./animated-sprite.rkt")
+(require "./detect-edge.rkt")
+(require "./on-edge.rkt")
 (require "../entity-helpers/sprite-util.rkt")
+(require "../entity-helpers/movement-util.rkt")
 (require 2htdp/image)
 
 (require posn)
@@ -15,10 +18,11 @@
          more-tiles?
          bg->backdrop
          show-backdrop
-         change-backdrop)
+         change-backdrop
+         backdrop-edge-system
+         player-edge-system)
 
 (struct backdrop (tiles columns current-tile))
-
 
 (define (bg->backdrop bg #:rows rows #:columns columns #:start-tile [current 0])
   (backdrop (sheet->costume-list bg columns rows (* rows columns)) columns current))
@@ -97,3 +101,25 @@
 (define (change-backdrop backdrop)
   (lambda (g e)
     ((show-backdrop) g (update-entity e backdrop? backdrop))))
+
+
+;=== SYSTEMS ===
+;These are collections of components to help with flip-screen navigation
+
+; Backdrop Edge System
+; Requires a player to be named "player"
+; Should be added to a background entity with a backdrop component
+(define (backdrop-edge-system)
+  (list (detect-edge "player" 'left   (next-tile 'left))
+        (detect-edge "player" 'right  (next-tile 'right))
+        (detect-edge "player" 'top    (next-tile 'top))
+        (detect-edge "player" 'bottom (next-tile 'bottom))))
+
+; Player Edge System
+; Assumes there is background entity named "bg" with a backdrop component
+; Should be added to the player entity
+(define (player-edge-system)
+  (list (on-edge 'left   #:rule (more-tiles? 'left)   (go-to-pos-inside 'right))
+        (on-edge 'right  #:rule (more-tiles? 'right)  (go-to-pos-inside 'left))
+        (on-edge 'top    #:rule (more-tiles? 'top)    (go-to-pos-inside 'bottom))
+        (on-edge 'bottom #:rule (more-tiles? 'bottom) (go-to-pos-inside 'top))))
