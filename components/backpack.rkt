@@ -3,8 +3,15 @@
 (require "../game-entities.rkt")
 (require "../entity-helpers/sprite-util.rkt")
 (require "../entity-helpers/movement-util.rkt")
+(require "../entity-helpers/dialog-util.rkt")
 (require "./backdrop.rkt")
-;(require 2htdp/image)
+(require "./animated-sprite.rkt")
+(require "./on-start.rkt")
+(require "./sound-stream.rkt")
+(require "./on-key.rkt")
+(require "../component-util.rkt")
+
+(require 2htdp/image)
 
 (require posn)
 (provide (rename-out (make-backpack backpack))
@@ -19,7 +26,12 @@
          drop-last-item
          (struct-out item)
          (struct-out storable)
-         stored?)
+         stored?
+         storable-items-nearby?
+         backpack-not-empty?
+         backpack-is-empty?
+         backpack-system
+         in-backpack?)
 
 (struct item (entity amount))
 
@@ -116,3 +128,92 @@
   (lambda (g e)
     (displayln (~a (map get-id (map item-entity (get-items e)))))
     e))
+
+(define (storable-items-nearby? g e)
+  (define (not-disabled-and-storable? ent)
+      (and (not (get-component ent disabled?))
+           (get-component ent storable?)))
+  (define nearby-storable-items (filter not-disabled-and-storable? (get-entities-near e g)))
+  (not (empty? nearby-storable-items)))
+
+(define (backpack-not-open? g e)
+  (not (get-entity "backpack" g)))
+
+(define (backpack-not-empty? g e)
+  (not (empty? (get-items e))))
+
+(define (backpack-is-empty? g e)
+  (empty? (get-items e)))
+
+(define (draw-backpack image-list)
+  (define (scale-and-pad image) (pad (scale-to-fit image 24) 2 2))
+  (define scaled-list (map scale-and-pad image-list))
+  (define num-of-items (length image-list))
+  (define backpack-items (cond [(> num-of-items 1) (apply above scaled-list)]
+                               [(= num-of-items 1) (first scaled-list)]
+                               [(= num-of-items 0) (rectangle 32 32 "solid" "transparent")]))
+  (overlay backpack-items
+           (rectangle (+ 12 (image-width backpack-items)) (+ 12 (image-height backpack-items)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
+           (rectangle (+ 16 (image-width backpack-items)) (+ 16 (image-height backpack-items)) "solid"  (make-color 20 20 20 150))))
+
+(define (update-backpack-sprite g e)
+  (define (get-frame entity)
+    (render (get-component entity animated-sprite?)))
+  (define image-list (map get-frame (map item-entity (get-items (get-entity "player" g)))))
+  (update-entity e animated-sprite? (new-sprite (draw-backpack image-list))))
+
+(define (in-backpack? name)
+  (lambda (g e)
+    (define items (get-items (get-entity "player" g)))
+    (define entity-list (map item-entity items))
+    (define name-list (map get-name entity-list))
+    (member name name-list)))
+
+; ==== SYSTEMS ====
+(define (backpack-system #:storable-items [storable-item-list #f]
+                         #:store-key      [store-key "z"]
+                         #:drop-key       [drop-key "x"]
+                         #:backpack-key   [backpack-key "b"]
+                         #:pickup-sound   [pickup-sound #f]
+                         #:drop-sound     [drop-sound    #f]
+                         #:backpack-sound [backpack-sound #f])
+  (define backpack-entity
+    (sprite->entity (draw-backpack '())
+                    #:name       "backpack"
+                    #:position   (posn 0 0) ;(posn 12 (/ HEIGHT 2))
+                    #:components (static)
+                                 (hidden)
+                                 (on-start (do-many update-backpack-sprite
+                                                    (go-to-pos-inside 'top-right)
+                                                    show))
+                                 (on-key store-key die)
+                                 (on-key drop-key die)
+                                 (on-key backpack-key die)))
+  (define (storable-item item-name key)
+    (on-key key #:rule storable-items-nearby? (if pickup-sound
+                                                  (do-many (store-nearby-item item-name)
+                                                           (open-dialog backpack-entity)
+                                                           (play-sound pickup-sound))
+                                                  (do-many (store-nearby-item item-name)
+                                                           (open-dialog backpack-entity)))))
+  (append (list (make-backpack)
+                (on-key backpack-key #:rule backpack-not-open? (if backpack-sound
+                                                                   (do-many (display-items)
+                                                                            (open-dialog backpack-entity)
+                                                                            (play-sound backpack-sound))
+                                                                   (do-many (display-items)
+                                                                            (open-dialog backpack-entity))))
+                (on-key drop-key #:rule backpack-not-empty? (if drop-sound
+                                                                (do-many (drop-last-item)
+                                                                         (open-dialog backpack-entity)
+                                                                         (play-sound drop-sound))
+                                                                (do-many (drop-last-item)
+                                                                         (open-dialog backpack-entity)))))
+          (if storable-item-list
+              (map (curryr storable-item store-key) storable-item-list)
+              (list (on-key store-key #:rule storable-items-nearby? (if pickup-sound
+                                                                        (do-many (store-nearby-item)
+                                                                                 (open-dialog backpack-entity)
+                                                                                 (play-sound pickup-sound))
+                                                                        (do-many (store-nearby-item)
+                                                                                 (open-dialog backpack-entity))))))))
