@@ -25,8 +25,10 @@
 (require "../game-entities.rkt"
          "../components/direction.rkt"
          "../components/every-tick.rkt"
+         "../components/animated-sprite.rkt"
          "../component-util.rkt"
          "../ai.rkt"
+         2htdp/image
          posn)
 
 (define (randomly-relocate-me min-x max-x min-y max-y)
@@ -79,9 +81,12 @@
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
     (define p (get-component e posn?))
-    (match-define (bb e-w e-h) (get-component e bb?))
-    (define hw (/ e-w 2))  ;(+ (/ e-w 2) 2)) ; Not sure why 2 was added
-    (define hh (/ e-h 2))  ;(+ (/ e-h 2) 2)) ; Not sure why 2 was added
+    ;(match-define (bb e-w e-h) (get-component e bb?))
+    ;(define hw (/ e-w 2))  ;(+ (/ e-w 2) 2)) ; Not sure why 2 was added
+    ;(define hh (/ e-h 2))  ;(+ (/ e-h 2) 2)) ; Not sure why 2 was added
+    (define as (get-component e animated-sprite?))
+    (define hw (/ (image-width  (render as)) 2))
+    (define hh (/ (image-height (render as)) 2))
     (define pos-x (posn-x p))
     (define pos-y (posn-y p))
     (update-entity e posn?
