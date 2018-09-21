@@ -12,7 +12,8 @@
          
          (struct-out game) 
          (struct-out bb)
-         
+
+         entity-eq?
          entity-animation
          sprite->entity
          sprite->bb
@@ -23,6 +24,7 @@
          remove-component
          add-components
          get-name
+         get-id
          change-name
          basic-entity
          dead
@@ -62,6 +64,7 @@
 (require 2htdp/image)
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
+
 
 (require threading)
 
@@ -414,6 +417,7 @@
   (define names (map (curry map get-name) (game-collisions g)))
   (or (member (list name1 name2) names)
       (member (list name2 name1) names)))
+
 
 (define (extract-out e l)
   (define (not-eq? e o)

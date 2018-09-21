@@ -17,13 +17,18 @@
          freeze-entity
          un-freeze-entity
          distance-between
-         near-entity?)
+         get-entities-near
+         near-entity?
+         near-ent?
+         near?)
 
 (require "../game-entities.rkt"
          "../components/direction.rkt"
          "../components/every-tick.rkt"
+         "../components/animated-sprite.rkt"
          "../component-util.rkt"
          "../ai.rkt"
+         2htdp/image
          posn)
 
 (define (randomly-relocate-me min-x max-x min-y max-y)
@@ -76,9 +81,12 @@
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
     (define p (get-component e posn?))
-    (match-define (bb e-w e-h) (get-component e bb?))
-    (define hw (/ e-w 2))  ;(+ (/ e-w 2) 2)) ; Not sure why 2 was added
-    (define hh (/ e-h 2))  ;(+ (/ e-h 2) 2)) ; Not sure why 2 was added
+    ;(match-define (bb e-w e-h) (get-component e bb?))
+    ;(define hw (/ e-w 2))  ;(+ (/ e-w 2) 2)) ; Not sure why 2 was added
+    ;(define hh (/ e-h 2))  ;(+ (/ e-h 2) 2)) ; Not sure why 2 was added
+    (define as (get-component e animated-sprite?))
+    (define hw (/ (image-width  (render as)) 2))
+    (define hh (/ (image-height (render as)) 2))
     (define pos-x (posn-x p))
     (define pos-y (posn-y p))
     (update-entity e posn?
@@ -179,3 +187,26 @@
     (define pos (get-component e posn?))
     (define target-pos (get-component (get-entity name g) posn?))
     (< (distance-between target-pos pos) range)))
+
+(define (near-ent? target-e [range 80])
+  (lambda (g e)
+    (define pos (get-component e posn?))
+    (define target-pos (get-component target-e posn?))
+    (< (distance-between target-pos pos) range)))
+
+(define (close? range source-e target-e)
+  (define source-pos (get-component source-e posn?))
+  (define target-pos (get-component target-e posn?))
+  (<  (distance-between target-pos source-pos) range))
+
+(define (get-entities-near e g [range 80])
+  (filter (curry close? range e) (game-entities g)))
+
+(define (near? name)
+  (lambda (g e)
+    (define (not-disabled? ent)
+      (not (get-component ent disabled?)))
+    (define (name-eq? name e)
+      (eq? (get-name e) name))
+    (define nearby-ents (filter (curry name-eq? name) (filter not-disabled? (get-entities-near e g))))
+    (not (empty? nearby-ents))))

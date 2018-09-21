@@ -1,6 +1,7 @@
 #lang racket
 
 (provide animated-dialog
+         pad
          draw-title
          draw-dialog
          draw-dialog-text
@@ -46,6 +47,7 @@
 (require "../component-util.rkt")
 (require "../entity-helpers/movement-util.rkt")
 (require "../entity-helpers/sprite-util.rkt")
+(require "../entity-helpers/rgb-hsb.rkt")
 
 (require 2htdp/image
          posn)
@@ -131,8 +133,8 @@
       (freeze (overlay (rectangle 56 56 "outline" (pen "white" 2 "solid" "butt" "bevel"))
                        (rectangle 58 58 "outline" (pen "black" 2 "solid" "butt" "bevel"))
                        (place-image
-                        (freeze (scale 2 avatar-img))
-                        30 30
+                        (freeze (scale-to-fit avatar-img 100))
+                        16 34
                         (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
     (define message-entity (create-dialog dialog-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
     (update-entity (add-component e

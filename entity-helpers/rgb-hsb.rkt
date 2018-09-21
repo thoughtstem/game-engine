@@ -5,6 +5,7 @@
 (provide mask)
 (provide name->color)
 (provide make-color-hue)
+(provide scale-to-fit)
 
 (provide (struct-out color-hsb))
 (provide make-color-hsb)
@@ -201,3 +202,7 @@
 (define (change-img-hue amount image)
   (define image-list (image->color-list image))
   (color-list->bitmap (map (curry change-hue amount) image-list) (image-width image) (image-height image)))
+
+(define/contract (scale-to-fit i w)
+  (-> image? number? image?)
+  (scale (/ w (image-width i)) i))
