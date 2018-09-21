@@ -31,6 +31,13 @@
 (new-component active-on-bg?
                update-active-on-bg)
 
-(define (active-on-random min max)
+(define (active-on-random #:min [min 0] #:max [max #f])
   (lambda (g e)
-     (update-entity e active-on-bg? (active-on-bg (random min (add1 max))))))
+    (define min 0)
+    (define m (get-number-tiles (get-entity "bg" g)))
+    (if (eq? max #f)
+        (update-entity e active-on-bg? (active-on-bg (random min (add1 m))))
+        (update-entity e active-on-bg? (active-on-bg (random min (add1 max)))))
+    ))
+  
+  
