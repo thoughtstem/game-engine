@@ -36,6 +36,7 @@
          
          image->bb
 
+
          start-game
 
          set-game-state
@@ -66,15 +67,12 @@
 
 (require (for-syntax racket/syntax))
 
+
 ;This is what a game is...
 (struct game ([entities #:mutable]
               [input #:mutable]
               [prev-input #:mutable]
               [collisions #:mutable]) #:transparent)
-
-
-
-
 
 
 (struct bb [w h])
@@ -85,6 +83,11 @@
 (define (height e)
   (bb-h (get-component e bb?)))
 
+(define w width)
+(define h height)
+
+
+
 (define (set-posn e p)
   (~> e
       (update-entity _ posn? p)
@@ -94,19 +97,17 @@
 (define (get-posn e)
   (get-component e posn?))
 
+
+
 (define (x e)
   (posn-x (get-posn e)))
 
 (define (y e)
   (posn-y (get-posn e)))
 
-(define (w e)
-  (bb-w (get-component e bb?)))
-
-(define (h e)
-  (bb-h (get-component e bb?)))
 
 (struct id [id])
+
 
 
 (struct entity [components] #:transparent)
@@ -428,12 +429,14 @@
 
 (define #;/contract (main-tick-component g e c)
   #;(-> any/c any/c any/c entity?)
+
   (define handler (get-handler-for-component c))
   (if (and handler
            (or (not (get-component e disabled?))
                (active-on-bg? c)))
       (handler g e c)
       e))
+
 
 (define #;/contract (tick-component g e c)
   #;(-> any/c any/c any/c entity?)
@@ -442,6 +445,7 @@
 
 (define #;/contract (main-tick-entity g e)
   #;(-> any/c any/c entity?)
+
   (foldl
    (lambda (c e2)
      (tick-component g e2 c))
