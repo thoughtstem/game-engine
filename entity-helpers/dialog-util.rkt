@@ -133,8 +133,8 @@
       (freeze (overlay (rectangle 56 56 "outline" (pen "white" 2 "solid" "butt" "bevel"))
                        (rectangle 58 58 "outline" (pen "black" 2 "solid" "butt" "bevel"))
                        (place-image
-                        (freeze (scale-to-fit avatar-img 100))
-                        16 34
+                        (freeze (scale-to-fit avatar-img 80))
+                        20 40
                         (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
     (define message-entity (create-dialog dialog-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
     (update-entity (add-component e
