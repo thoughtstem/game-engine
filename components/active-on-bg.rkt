@@ -31,7 +31,8 @@
 (new-component active-on-bg?
                update-active-on-bg)
 
-(define (active-on-random #:min [min 0] #:max [max #f])
+;NOTE: removed #:min and #:max keywords to keep backwards compatibility.
+(define (active-on-random [min 0] [max #f])
   (lambda (g e)
     (define min 0)
     (define m (get-number-tiles (get-entity "bg" g)))
