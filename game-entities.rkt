@@ -58,7 +58,10 @@
          set-velocity
          chipmunkify
 
-         has-component?)
+         has-component?
+
+         id
+         id?)
 
 (require posn)
 (require 2htdp/image)
@@ -69,6 +72,8 @@
 (require threading)
 
 (require (for-syntax racket/syntax))
+(require (prefix-in phys: racket-chipmunk))
+
 
 
 ;This is what a game is...
@@ -92,10 +97,7 @@
 
 
 (define (set-posn e p)
-  (~> e
-      (update-entity _ posn? p)
-      ;We don't need this apparently??
-      #;(set-chipmunk-posn! _ p)))
+  (update-entity e posn? p))
 
 (define (get-posn e)
   (get-component e posn?))
@@ -193,7 +195,21 @@
 
 (define (update-entity e component-pred f)
   (match-define (entity components) e)
+
+  (and
+   (eq? component-pred posn?)
+   (has-chipmunk-body? e)
+   (update-chipmunk-posn! e f))
+
   (entity (update-component components component-pred f)))
+
+
+(define (update-chipmunk-posn! e p)
+  #;(displayln "Force setting chipmunk...")
+  
+  (phys:set-chipmunk-posn! (entity->chipmunk e)
+                           (posn-x p)
+                           (posn-y p)))
 
 ;You can pass in a predicate or an actual component
 (define #;/contract (get-component e maybe-pred)
@@ -237,9 +253,9 @@
   (findf (curry has-name name) (game-entities g)))
 
 (define (sprite->entity sprite-or-image #:position p
-                               #:name     n
-                               #:components (c #f)
-                               . cs)
+                        #:name     n
+                        #:components (c #f)
+                        . cs)
   (define all-cs (flatten (filter identity (cons
                                             (entity-name n)
                                             (cons c cs)))))
@@ -358,18 +374,18 @@
 (define-all-buttons
   (button-states handle-key-up handle-key-down button-down? button-up? button-change-down? button-change-up?)
   (left right up down wheel-up wheel-down
-   rshift lshift
-   backspace
-   enter
-   space
-   a b c d e f g h i j k l m n o p q r s t u v w x y z
-   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
-   0 1 2 3 4 5 6 7 8 9
-   * - / + = < >
-   |#| : |,| |.| | |
-   |"| |'|
-   |]| |[|
-   ))
+        rshift lshift
+        backspace
+        enter
+        space
+        a b c d e f g h i j k l m n o p q r s t u v w x y z
+        A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+        0 1 2 3 4 5 6 7 8 9
+        * - / + = < >
+        |#| : |,| |.| | |
+        |"| |'|
+        |]| |[|
+        ))
 
 (define (set-game-state g s)
   (game s
@@ -513,10 +529,11 @@
 
   (define doomed (filter (not/c is-alive?) (game-entities g)))
 
-  #;(displayln (~a "Doomed? " (map get-name doomed)))
+  (and (not (empty? doomed))
+       (displayln (~a "Doomed? " (map get-name doomed))))
 
   (define doomed-chipmunks (filter identity
-                            (map entity->chipmunk doomed)))
+                                   (map entity->chipmunk doomed)))
 
   #;(displayln (~a "Doomed chipmunks? " (length doomed-chipmunks)))
 
@@ -627,8 +644,8 @@
   (set! hidden-bakes (map (λ(e) (add-component e (hidden))) to-bake))
   
   (define es #;(list-set non-bakes
-                       (sub1 (length non-bakes))
-                       new-bg)
+                         (sub1 (length non-bakes))
+                         new-bg)
     (append
      hidden-bakes
      (list-set non-bakes
@@ -688,18 +705,18 @@
      (match-define (demo g/v state) w)
      (define closed? #f)
      (cond
-      [(eq? e 'close)
-       #f]
-      [(lux:key-event? e)
+       [(eq? e 'close)
+        #f]
+       [(lux:key-event? e)
 
        
-       (if (not (eq? 'release (send e get-key-code)))
-           (demo g/v (handle-key-down state (format "~a" (send e get-key-code))))
-           (demo g/v (handle-key-up state (format "~a" (send e get-key-release-code)))))
+        (if (not (eq? 'release (send e get-key-code)))
+            (demo g/v (handle-key-down state (format "~a" (send e get-key-code))))
+            (demo g/v (handle-key-up state (format "~a" (send e get-key-release-code)))))
          
-       ]
-      [else
-       (demo g/v state)]))
+        ]
+       [else
+        (demo g/v state)]))
    
    (define (word-tick w)
      (match-define (demo g/v state) w)
@@ -725,7 +742,6 @@
 
 
 ;Physics module.....
-(require (prefix-in phys: racket-chipmunk))
 
 (require (prefix-in h:   lang/posn))
 
@@ -787,7 +803,12 @@
           (define new-pos (posn (phys:x c)
                                 (phys:y c)))
 
-          (update-entity e posn?
+          
+          (update-entity e
+                         ;This looks weird.  it's there to trick update-entity into not
+                         ;  propagating position data into chipmunk world,
+                         ;  since this posn information just came from there
+                         (and/c posn? posn?)
                          new-pos))))
 
   (define new-es (map physics-tick-entity (game-entities g)))
@@ -804,22 +825,25 @@
 
 
   (define pc (get-component e physical-collider?))
+
+  #;(and (entity->chipmunk e)
+         (..destroy old chipmunks here??..))
   
   (if (not pc)
       e
-      (let ([box ((if (get-component e static?) phys:box-kinematic phys:box)
-                  (x e)
-                  (y e)
-                  (w e)
-                  (h e)
-                  #:group (if (get-component e static?) 2 1)
-                  #:meta (get-id e)
-                  )])
+      (let ([chipmunk ((if (get-component e static?) phys:box-kinematic phys:box)
+                       (x e)
+                       (y e)
+                       (w e)
+                       (h e)
+                       #:group (if (get-component e static?) 2 1) ;Is this what we want???
+                       #:meta (get-id e)
+                       )])
 
 
         (chipmunkify-step2
          (update-entity e physical-collider?
-                        (physical-collider box (posn 0 0)))))))
+                        (physical-collider chipmunk (posn 0 0)))))))
 
 
 
@@ -832,7 +856,7 @@
 
   (and e
        (get-component e physical-collider?) ;Shouldn't it always have one at this point??  
-       (phys:set-velocity! chipmunk
+       (phys:set-velocity! (entity->chipmunk e) ;chipmunk
                            (posn-x (physical-collider-force (get-component e physical-collider?)))
                            (posn-y (physical-collider-force (get-component e physical-collider?))))))
 
@@ -881,7 +905,8 @@
                ;Filtering here is weird.  It assumes that physical, static, disabled components
                ;  should not be added to the game.  Optimizes away things like hidden walls.
                ;  But it's a potential bug if you actually want that thing to become enabled at some point...
-               ;Maybe safe though.  Why not just use hidden?  Can initially disabled components actually be woken up
+               ;Maybe safe though.  Why not just use hidden?
+               ;   Can initially disabled components actually be woken up
                ;  anyway?
 
                ;NOTE: Rolled back that filtering optimization.  It loses track of entities, which makes it harder
@@ -897,5 +922,9 @@
   (set-game-collisions! g '())
   g)
 
-
+(define (has-chipmunk-body? e)
+  (and
+   (get-component e physical-collider?)
+   (entity->chipmunk e)
+   (phys:chipmunk-body (entity->chipmunk e))))
 

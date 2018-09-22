@@ -91,16 +91,24 @@
         e
         ((add-item (first nearby-ents)) g e))))
 
+
+
 (define (drop-last-item)
   (lambda (g e)
     (define item-list (get-items e))
     (define current-tile (get-current-tile (get-entity "bg" g)))
     (if (not (empty? item-list))
-        (let ([new-entity (update-entity (update-entity (item-entity (last item-list))
-                                                        active-on-bg? (active-on-bg current-tile))
-                                         posn? (posn 0 0))])
+        (let ([new-entity (update-entity
+                           (update-entity
+                            (update-entity (item-entity (last item-list))
+                                           active-on-bg? (active-on-bg current-tile))
+                            posn? (posn 50 0))
+                           id?
+                           (id (random 100000)))])
           ((spawn new-entity) g (update-entity e backpack? (backpack (remove (last item-list) item-list)))))
         e)))
+
+
 
 (define (get-item-name item)
   (get-name (item-entity item)))
