@@ -99,12 +99,9 @@
     (define current-tile (get-current-tile (get-entity "bg" g)))
     (if (not (empty? item-list))
         (let ([new-entity (update-entity
-                           (update-entity
                             (update-entity (item-entity (last item-list))
                                            active-on-bg? (active-on-bg current-tile))
-                            posn? (posn 50 0))
-                           id?
-                           (id (random 100000)))])
+                            posn? (posn 0 0))])
           ((spawn new-entity) g (update-entity e backpack? (backpack (remove (last item-list) item-list)))))
         e)))
 

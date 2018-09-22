@@ -205,11 +205,11 @@
 
 
 (define (update-chipmunk-posn! e p)
-  #;(displayln "Force setting chipmunk...")
-  
-  (phys:set-chipmunk-posn! (entity->chipmunk e)
-                           (posn-x p)
-                           (posn-y p)))
+  (define c (entity->chipmunk e))
+  (and (not (phys:destroyed-chipmunk? c))
+       (phys:set-chipmunk-posn! c
+                                (posn-x p)
+                                (posn-y p))))
 
 ;You can pass in a predicate or an actual component
 (define #;/contract (get-component e maybe-pred)

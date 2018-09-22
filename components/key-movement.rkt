@@ -11,7 +11,7 @@
          (struct-out on-key-movement)
          set-player-speed)
 
-(struct key-movement (speed mode rule?))
+(struct key-movement (speed mode rule?) #:transparent)
 
 ;This just puts the units we usually use into units that Chimpmunk physics understands.
 (define MAGIC-SPEED-MULTIPLIER 50)
