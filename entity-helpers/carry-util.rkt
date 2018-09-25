@@ -1,7 +1,8 @@
 #lang racket
 
 (provide movable
-         get-carry-offset
+         get-carry-offset-x
+         get-carry-offset-y
          )
 
 (require "../game-entities.rkt"
@@ -44,11 +45,24 @@
 (define (carried? g e)
   (get-component e lock-to?))
 
-(define (get-carry-offset player-sprite item-sprite)
+;added optional location of a carried sprite: 'left or 'right(default)
+(define (get-carry-offset-x player-sprite item-sprite
+                                          #:item-location [item-loc 'right])
   (define p-img (render player-sprite))
   (define i-img (render item-sprite))
-  (define pos-x (+ (/ (image-width p-img) 2) (/ (image-width i-img) 2)))
+  (define pos-x (cond [(eq? item-loc 'right) (+ (/ (image-width p-img) 2) (/ (image-width i-img) 2))]
+                      [(eq? item-loc 'left)  (- (+ (/ (image-width p-img) 2) (/ (image-width i-img) 2)))]))
   (define pos-y 0)
+  (posn pos-x pos-y))
+
+;added optional location for a carried sprite: 'top or 'bottom(default)
+(define (get-carry-offset-y player-sprite item-sprite
+                                          #:item-location [item-loc 'bottom])
+  (define p-img (render player-sprite))
+  (define i-img (render item-sprite))
+  (define pos-x 0)
+  (define pos-y (cond [(eq? item-loc 'bottom) (+ (/ (image-height p-img) 2) (/ (image-height i-img) 2))]
+                      [(eq? item-loc 'top)    (- (+ (/ (image-height p-img) 2) (/ (image-height i-img) 2)))]))
   (posn pos-x pos-y))
 
 ; === GENERIC SYSTEM ===
