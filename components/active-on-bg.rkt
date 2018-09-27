@@ -1,5 +1,6 @@
 #lang racket
 
+#;(
 (require "../game-entities.rkt")
 (require "./counter.rkt")
 (require "./backdrop.rkt")
@@ -34,3 +35,5 @@
 (define (active-on-random min max)
   (lambda (g e)
      (update-entity e active-on-bg? (active-on-bg (random min (add1 max))))))
+
+)
