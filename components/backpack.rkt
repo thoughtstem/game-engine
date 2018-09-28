@@ -157,13 +157,13 @@
   (define backpack-items (cond [(> num-of-items 1) (apply above scaled-list)]
                                [(= num-of-items 1) (first scaled-list)]
                                [(= num-of-items 0) (rectangle 32 32 "solid" "transparent")]))
-  (overlay backpack-items
+  (overlay  backpack-items
            (rectangle (+ 12 (image-width backpack-items)) (+ 12 (image-height backpack-items)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
            (rectangle (+ 16 (image-width backpack-items)) (+ 16 (image-height backpack-items)) "solid"  (make-color 20 20 20 150))))
 
 (define (update-backpack-sprite g e)
   (define (get-frame entity)
-    (render (get-component entity animated-sprite?)))
+    (pick-frame-original (get-component entity animated-sprite?) 1))
   (define image-list (map get-frame (map item-entity (get-items (get-entity "player" g)))))
   (update-entity e animated-sprite? (new-sprite (draw-backpack image-list))))
 

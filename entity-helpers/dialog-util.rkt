@@ -133,8 +133,8 @@
       (freeze (overlay (rectangle 56 56 "outline" (pen "white" 2 "solid" "butt" "bevel"))
                        (rectangle 58 58 "outline" (pen "black" 2 "solid" "butt" "bevel"))
                        (place-image
-                        (freeze (scale-to-fit avatar-img 100))
-                        16 34
+                        (freeze (scale-to-fit avatar-img 80))
+                        20 40
                         (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
     (define message-entity (create-dialog dialog-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
     (update-entity (add-component e
@@ -217,6 +217,7 @@
                                (on-key 'enter #:rule last-dialog? die)
                                (on-key 'enter #:rule not-last-dialog? (if rsound
                                                                           (do-many (change-dialog-sprite)
+                                                                                   (stop-blips)
                                                                                    (start-blips name rsound))
                                                                           (change-dialog-sprite)))
                                ;(on-start (go-to (/ (* WIDTH 2.5) 4) (- HEIGHT 40)))
@@ -368,6 +369,7 @@
 (define (ready-to-speak-and-near? name)
   (lambda (g e)
     (and (not (get-entity "player dialog" g))
+         (not (get-entity "dialog bg" g))
          (not (get-entity "npc dialog" g))
          (not (get-component (get-entity name g) disabled?))
          ((near-entity? name) g e))))
@@ -376,23 +378,27 @@
   (get-entity "npc dialog" g))
 
 (define (player-dialog-open? g e)
-  (get-entity "player dialog" g))
+  (and (get-entity "player dialog" g)
+       (get-entity "player dialog selection" g)))
+
+(define (get-dialog-length dialog)
+  (length dialog))
+
+(define (simple-dialog? dialog)
+  (animated-sprite? (first dialog)))
 
 (define last-dialog?
   (lambda (g e)
-    (define npc-dialog-index (get-dialog-index (get-entity "npc dialog" g)))
-    (define player-dialog-index (get-counter (get-entity "player" g)))
-    (define dialog-sprites (get-dialog-sprites (get-entity "npc dialog" g)))
-    (define simple-dialog? (animated-sprite? (first dialog-sprites)))
-    (define dialog-length (if simple-dialog?
-                              (length dialog-sprites)
-                              (length (list-ref dialog-sprites player-dialog-index))))
-    ;(displayln (~a "last-dialog? " npc-dialog-index "\ndialog-length: " dialog-length))
-    (if (and ;(get-entity "npc dialog" g)
-             ;((near-entity? "player") g e)
-             (= npc-dialog-index dialog-length))
-        #t
-        #f)))
+    (define npc-dialog-entity (get-entity "npc dialog" g))
+    (if npc-dialog-entity
+        (let ([npc-dialog-index (get-dialog-index npc-dialog-entity)]
+              [player-dialog-index (get-counter (get-entity "player" g))]
+              [dialog-sprites (get-dialog-sprites npc-dialog-entity)])
+          (if (simple-dialog? dialog-sprites)
+              (= npc-dialog-index (get-dialog-length dialog-sprites))
+              (= npc-dialog-index (get-dialog-length (list-ref dialog-sprites player-dialog-index)))))
+        #f
+        )))
 
 (define not-last-dialog?
   (lambda (g e)

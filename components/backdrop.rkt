@@ -19,6 +19,8 @@
          change-tile-to
 
          get-current-tile
+         ;??
+         get-number-tiles
          render-tile
          
          backdrop-eq?
@@ -114,6 +116,11 @@
 (define/contract (get-current-tile e)
   (-> entity? integer?)
   (backdrop-current-tile (get-component e backdrop?)))
+
+;??
+(define/contract (get-number-tiles e)
+  (-> entity? integer?)
+  (length (backdrop-tiles (get-component e backdrop?))))
 
 (define/contract (render-tile backdrop)
   (-> backdrop? image?)
