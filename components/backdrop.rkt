@@ -39,10 +39,12 @@
          spawn-all-from-backpack
          spawn-active-from-backpack
          tile-changed?
+         not-tile-changed?
          first-tile?
          track-entities
          store-misplaced
-         destroy-misplaced)
+         destroy-misplaced
+         game->current-tile)
 
 ; ACTIVE ENTITIES
 
@@ -119,6 +121,9 @@
   (define last-tile (backdrop-last-tile (get-component bg-entity backdrop?)))
   (define current-tile (get-current-tile bg-entity))
   (not (eq? last-tile current-tile)))
+
+(define (not-tile-changed? g e)
+  (not (tile-changed? g e)))
 
 (define (update-last-tile g e)
   (define last-tile (backdrop-last-tile (get-component e backdrop?)))
@@ -238,10 +243,6 @@
   
   (define entities-to-stop-tracking
     (game-self-killed-entities g))
-
-  (displayln-if (not (empty? entities-to-stop-tracking))
-                "Stop tracking: "
-                entities-to-stop-tracking)
 
   (define new-entities-to-track
     (filter (λ(e)
@@ -403,6 +404,7 @@
 (struct active-on-bg (bg-list))
 
 (provide (rename-out (make-active-on-bg active-on-bg))
+         active-on-bg-bg-list
          active-on-random
          active-on-bg?
          set-active-on)

@@ -23,17 +23,18 @@
          display-items
          store-item
          store-nearby-item
-         drop-last-item
          (struct-out item)
          (struct-out storable)
          stored?
          storable-items-nearby?
+         backpack-not-open?
          backpack-not-empty?
          backpack-is-empty?
-         backpack-system
          in-backpack?
          set-backpack-entities
-         get-backpack-entities)
+         get-backpack-entities
+         draw-backpack
+         update-backpack-sprite)
 
 (struct item (entity amount))
 
@@ -105,19 +106,6 @@
         ((add-item (first nearby-ents)) g e))))
 
 
-(define (drop-last-item)
-  (lambda (g e)
-    (define item-list (get-items e))
-    ;(define current-tile (get-current-tile (get-entity "bg" g)))
-    (if (not (empty? item-list))
-        (let ([new-entity (update-entity
-                           (item-entity (last item-list))
-                            #;(update-entity (item-entity (last item-list))
-                                           active-on-bg? (active-on-bg current-tile))
-                            posn? (posn 0 0))])
-          ((spawn new-entity) g (update-entity e backpack? (backpack (remove (last item-list) item-list)))))
-        e)))
-
 
 
 (define (get-item-name item)
@@ -187,6 +175,20 @@
     (define name-list (map get-name entity-list))
     (member name name-list)))
 
+#|
+(define (drop-last-item)
+  (lambda (g e)
+    (define item-list (get-items e))
+    ;(define current-tile (get-current-tile (get-entity "bg" g)))
+    (if (not (empty? item-list))
+        (let ([new-entity (update-entity
+                           (item-entity (last item-list))
+                            #;(update-entity (item-entity (last item-list))
+                                           active-on-bg? (active-on-bg current-tile))
+                            posn? (posn 0 0))])
+          ((spawn new-entity) g (update-entity e backpack? (backpack (remove (last item-list) item-list)))))
+        e)))
+
 ; ==== SYSTEMS ====
 (define (backpack-system #:storable-items [storable-item-list #f]
                          #:store-key      [store-key "z"]
@@ -235,3 +237,4 @@
                                                                                  (play-sound pickup-sound))
                                                                         (do-many (store-nearby-item)
                                                                                  (open-dialog backpack-entity))))))))
+|#

@@ -290,7 +290,7 @@
 
 (define (update-on-collide g e c)
   
-  (displayln-if (not (empty? (game-collisions g)))
+  #;(displayln-if (not (empty? (game-collisions g)))
                 "Collisions!! "
                 (map get-name (flatten (game-collisions g))))
 
