@@ -371,6 +371,7 @@
     (and (not (get-entity "player dialog" g))
          (not (get-entity "dialog bg" g))
          (not (get-entity "npc dialog" g))
+         (get-entity name g)
          (not (get-component (get-entity name g) disabled?))
          ((near-entity? name) g e))))
 

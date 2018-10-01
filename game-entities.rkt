@@ -8,7 +8,7 @@
          (struct-out hidden)
          (struct-out disabled)
 
-         (struct-out active-on-bg)
+
          
          (struct-out game) 
          (struct-out bb)
@@ -38,10 +38,9 @@
          
          image->bb
 
+         displayln-if
 
          start-game
-
-         set-game-state
 
          draw
          game-width
@@ -78,6 +77,7 @@
 
 ;This is what a game is...
 (struct game ([entities #:mutable]
+              [self-killed-entities #:mutable]
               [input #:mutable]
               [prev-input #:mutable]
               [collisions #:mutable]) #:transparent)
@@ -193,7 +193,12 @@
             components))
       components))
 
-(define (update-entity e component-pred f)
+
+;Only remove this contract if you want to spend a bunch of
+; time tracking down bugs caused by forgetting to put at ? at
+; the end of your predicate.
+(define/contract (update-entity e component-pred f)
+  (-> entity? (-> any/c boolean?) any/c entity?)
   (match-define (entity components) e)
 
   (and
@@ -279,10 +284,21 @@
 
 (struct on-collide (name func))
 
+(define (displayln-if pred? . s)
+  (and pred?
+       (displayln (apply ~a s))))
+
 (define (update-on-collide g e c)
+  
+  #;(displayln-if (not (empty? (game-collisions g)))
+                "Collisions!! "
+                (map get-name (flatten (game-collisions g))))
+
+  
   (if (is-colliding-with? (on-collide-name c) g e)
-      ((on-collide-func c) g e)
-      e))
+      ((on-collide-func c) g e)       
+      e
+      ))
 
 (new-component on-collide?
                update-on-collide)
@@ -387,10 +403,6 @@
         |]| |[|
         ))
 
-(define (set-game-state g s)
-  (game s
-        (game-input g)))
-
 
 
 
@@ -451,9 +463,7 @@
   #;(-> any/c any/c any/c entity?)
 
   (define handler (get-handler-for-component c))
-  (if (and handler
-           (or (not (get-component e disabled?))
-               (active-on-bg? c)))
+  (if handler
       (handler g e c)
       e))
 
@@ -517,30 +527,38 @@
                          ;  However, maybe we should consider moving this to its own physics module...?
                          physics-tick 
                          tick-entities
-                         handle-dead
+                         handle-self-killed-entities
                          do-game-functions
+                         handle-killed-entities
                          store-prev-input
                          cleanup-physics))
+    ;(displayln (~a (map get-name (flatten (game-collisions g)))))
 
+    (set-game-self-killed-entities! new-game '())
+  
     new-game))
 
-(define (handle-dead g)
+(define (handle-self-killed-entities g)
+  (handle-dead g #t))
+
+(define (handle-killed-entities g)
+  (handle-dead g #f))
+
+(define (handle-dead g self-killed?)
   (define is-alive? (lambda (e) (not (get-component e dead?))))
 
   (define doomed (filter (not/c is-alive?) (game-entities g)))
 
-  (and (not (empty? doomed))
-       (displayln (~a "Doomed? " (map get-name doomed))))
-
   (define doomed-chipmunks (filter identity
                                    (map entity->chipmunk doomed)))
-
-  #;(displayln (~a "Doomed chipmunks? " (length doomed-chipmunks)))
 
   (for ([d doomed-chipmunks])
     (phys:destroy-chipmunk d))
   
   (set-game-entities! g (filter is-alive? (game-entities g)))
+  
+  (and self-killed?
+       (set-game-self-killed-entities! g doomed))
   g)
 
 
@@ -605,9 +623,6 @@
 ;END HIDDEN
 
 
-; ACTIVE ENTITIES
-
-(struct active-on-bg (bg-list))
 
 ; END ACTIVE
 
@@ -661,6 +676,7 @@
 
 (define (start-game . initial-world)
   (define larger-state (game (flatten initial-world)
+                             '()
                              button-states
                              button-states
                              '()))
@@ -825,10 +841,7 @@
 
 
   (define pc (get-component e physical-collider?))
-
-  #;(and (entity->chipmunk e)
-         (..destroy old chipmunks here??..))
-  
+ 
   (if (not pc)
       e
       (let ([chipmunk ((if (get-component e static?) phys:box-kinematic phys:box)

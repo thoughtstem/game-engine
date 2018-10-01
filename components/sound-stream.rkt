@@ -1,7 +1,8 @@
 #lang racket
 
 (require "../game-entities.rkt")
-(require (only-in rsound
+
+#;(require (only-in rsound
                   default-sample-rate
                   resample-to-rate
                   rs-read
@@ -19,15 +20,17 @@
          stop-sound-streams
          sound-stream?)
 
-(default-sample-rate 48000)
+;(default-sample-rate 48000)
 
 (define (make-sound string-path)
-  (resample-to-rate 48000 (rs-read (string->path string-path))))
+  '()
+  #;(resample-to-rate 48000 (rs-read (string->path string-path))))
 
 (struct sound-stream (ps))
 
 (define (make-sound-stream)
-  (sound-stream (make-pstream)))
+  (sound-stream '()
+                #;(make-pstream)))
 
 (define (update-sound-stream g e c) e)
 
@@ -42,7 +45,7 @@
   (lambda (g e)
     (if (get-component e sound-stream?)
         (begin
-          (pstream-play (get-sound-stream e) rs)
+          #;(pstream-play (get-sound-stream e) rs)
           e)
         (begin
           ;(displayln "WARNING: Missing sound-stream component. Sound will not play.")
@@ -57,11 +60,12 @@
 
 (define (stop-all-sounds)
   (lambda (g e)
-    (stop)
+    #;(stop)
     e))
 
 (define (stop-sound-streams)
-  (stop))
+  '()
+  #;(stop))
 
 (new-component sound-stream?
                update-sound-stream) 

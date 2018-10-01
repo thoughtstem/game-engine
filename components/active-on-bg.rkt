@@ -1,5 +1,6 @@
 #lang racket
 
+#;(
 (require "../game-entities.rkt")
 (require "./counter.rkt")
 (require "./backdrop.rkt")
@@ -34,11 +35,8 @@
 ;NOTE: removed #:min and #:max keywords to keep backwards compatibility.
 (define (active-on-random [min 0] [max #f])
   (lambda (g e)
-    (define min 0)
-    (define m (get-number-tiles (get-entity "bg" g)))
+    (define m (get-total-tiles (get-entity "bg" g)))
     (if (eq? max #f)
-        (update-entity e active-on-bg? (active-on-bg (random min (add1 m))))
-        (update-entity e active-on-bg? (active-on-bg (random min (add1 max)))))
-    ))
-  
-  
+        (update-entity e active-on-bg? (make-active-on-bg (random min (add1 m))))
+        (update-entity e active-on-bg? (make-active-on-bg (random min (add1 max)))))
+    )))

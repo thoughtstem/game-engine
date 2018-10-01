@@ -14,10 +14,10 @@
          spawn-once-next
          (rename-out [make-spawn-once spawn-once]))
 
-(struct spawn-once (spawn speed accum next))
+(struct spawn-once (spawn speed accum next relative?))
 
-(define (make-spawn-once spawn)
-  (spawn-once spawn 1 0 #f))
+(define (make-spawn-once spawn #:relative [relative? #t])
+  (spawn-once spawn 1 0 #f relative?))
 
 (define (spawn-once-ready? s)
   (>= (spawn-once-accum s)
@@ -37,6 +37,7 @@
 (define (spawn-once-do-spawn e) 
   (lambda (s)
     (define to-spawn (next-spawn s))
+    (define relative? (spawn-once-relative? (get-component e spawn-once?)))
     (define pos (get-component e posn?))
     (define dir (if (get-component e direction?)
                     (get-direction e)
@@ -63,8 +64,11 @@
     (define new-entity (update-entity to-spawn posn?
                                       new-posn))
     
-    (struct-copy spawn-once s
-                 [next new-entity])))
+    (if relative?
+        (struct-copy spawn-once s
+                 [next new-entity])
+        (struct-copy spawn-once s
+                 [next to-spawn]))))
 
 (define (spawn-once-inc s)
   (struct-copy spawn-once s
@@ -88,7 +92,8 @@
          (define s (get-component x spawn-once?))
          (if (and s (spawn-once-ready? s))
              (remove-component x (and/c
-                                  (component-is? s)
+                                  ;(component-is? s)
+                                  spawn-once?
                                   spawn-once-ready?))
              x))
        es))
@@ -97,8 +102,8 @@
   (define es     (game-entities g))
   (define new-es (collect-spawn-once es))
 
-  #;(and (not (empty? new-es))
-       (displayln "Spawing!"))
+  (and (not (empty? new-es))
+       (displayln (~a "Spawning: " (map get-name new-es))))
   
   (define all    (append (map chipmunkify new-es)
                          (reset-spawn-once es)))

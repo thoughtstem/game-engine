@@ -4,7 +4,7 @@
 (require "../entity-helpers/sprite-util.rkt")
 (require "../entity-helpers/movement-util.rkt")
 (require "../entity-helpers/dialog-util.rkt")
-(require "./backdrop.rkt")
+
 (require "./animated-sprite.rkt")
 (require "./on-start.rkt")
 (require "./sound-stream.rkt")
@@ -23,29 +23,35 @@
          display-items
          store-item
          store-nearby-item
-         drop-last-item
          (struct-out item)
          (struct-out storable)
          stored?
          storable-items-nearby?
+         backpack-not-open?
          backpack-not-empty?
          backpack-is-empty?
-         backpack-system
-         in-backpack?)
+         in-backpack?
+         set-backpack-entities
+         get-backpack-entities
+         draw-backpack
+         update-backpack-sprite)
 
 (struct item (entity amount))
 
 (struct backpack (items))
 
+(define (entity->item e)
+  (item e 1))
 
-(define (make-backpack . items)
-  (define new-items (map (lambda (e) (item e 1)) items))
+
+(define (make-backpack . entities)
+  (define new-items (map (lambda (e) (item e 1)) entities))
   (backpack new-items))
 
-(define (update-backpack g e c) e)
+;(define (update-backpack g e c) e)
 
-(new-component backpack?
-               update-backpack)
+;(new-component backpack?
+;               update-backpack)
 
 (struct storable ())
 
@@ -60,6 +66,14 @@
 
 (new-component storable?
                update-storable)
+
+(define (set-backpack-entities entity-with-backpack entities-for-backpack)
+  (update-entity entity-with-backpack
+                 backpack?
+                 (backpack (map entity->item entities-for-backpack))))
+
+(define (get-backpack-entities e)
+  (map item-entity (get-items e)))
 
 (define (get-items e)
   (backpack-items (get-component e backpack?)))
@@ -91,19 +105,6 @@
         e
         ((add-item (first nearby-ents)) g e))))
 
-
-
-(define (drop-last-item)
-  (lambda (g e)
-    (define item-list (get-items e))
-    (define current-tile (get-current-tile (get-entity "bg" g)))
-    (if (not (empty? item-list))
-        (let ([new-entity (update-entity
-                            (update-entity (item-entity (last item-list))
-                                           active-on-bg? (active-on-bg current-tile))
-                            posn? (posn 0 0))])
-          ((spawn new-entity) g (update-entity e backpack? (backpack (remove (last item-list) item-list)))))
-        e)))
 
 
 
@@ -174,6 +175,20 @@
     (define name-list (map get-name entity-list))
     (member name name-list)))
 
+#|
+(define (drop-last-item)
+  (lambda (g e)
+    (define item-list (get-items e))
+    ;(define current-tile (get-current-tile (get-entity "bg" g)))
+    (if (not (empty? item-list))
+        (let ([new-entity (update-entity
+                           (item-entity (last item-list))
+                            #;(update-entity (item-entity (last item-list))
+                                           active-on-bg? (active-on-bg current-tile))
+                            posn? (posn 0 0))])
+          ((spawn new-entity) g (update-entity e backpack? (backpack (remove (last item-list) item-list)))))
+        e)))
+
 ; ==== SYSTEMS ====
 (define (backpack-system #:storable-items [storable-item-list #f]
                          #:store-key      [store-key "z"]
@@ -222,3 +237,4 @@
                                                                                  (play-sound pickup-sound))
                                                                         (do-many (store-nearby-item)
                                                                                  (open-dialog backpack-entity))))))))
+|#
