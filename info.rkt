@@ -10,6 +10,6 @@
                "htdp-lib"
                "lux"
                "jack-posn"
-               "rsound"
+               ;"rsound"
                "base"))
 
