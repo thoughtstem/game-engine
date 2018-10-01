@@ -40,6 +40,7 @@
  (all-from-out "entity-helpers/rgb-hsb.rkt")
  (all-from-out "entity-helpers/dialog-util.rkt")
  (all-from-out "entity-helpers/backpack-util.rkt")
+ (all-from-out "entity-helpers/carry-util.rkt")
  (all-from-out "ai.rkt")
 
 
@@ -86,5 +87,6 @@
 (require "entity-helpers/rgb-hsb.rkt")
 (require "entity-helpers/dialog-util.rkt")
 (require "entity-helpers/backpack-util.rkt")
+(require "entity-helpers/carry-util.rkt")
 (require "ai.rkt")
 

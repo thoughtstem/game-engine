@@ -29,6 +29,8 @@
          change-tile-to
 
          get-current-tile
+         ;??
+         get-total-tiles
          render-tile
          
          backdrop-eq?
