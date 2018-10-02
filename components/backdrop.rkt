@@ -229,11 +229,23 @@
   (update-entity e backdrop? updated-backdrop))
 
 (define (backdrop-end-of-frame g)
+  (if (or (not (get-backdrop-entity g))
+          (not (get-entity "player" g)))
+      g
+      (backdrop-end-of-frame-for-real g)))
+
+(define (backdrop-end-of-frame-for-real g)
+
   (define WIDTH (game-width g))
   (define HEIGHT (game-height g))
+
   (define p (get-component (get-entity "player" g) posn?)) ;need a better way to find the player without name
+
+
   (define pos-x (posn-x p))
   (define pos-y (posn-y p))
+
+
   (define old-bg-entity (get-backdrop-entity g))
   
   (define bg-entity      
@@ -242,6 +254,8 @@
           [(<= pos-y 0)      ((next-tile 'top)    g old-bg-entity)]
           [(>= pos-y HEIGHT) ((next-tile 'bottom) g old-bg-entity)]
           [else old-bg-entity]))
+
+ 
 
   ;(define bg-entity-backpack (get-component bg-entity backpack?))
 
@@ -256,6 +270,8 @@
               (not (member e entities-to-stop-tracking entity-eq?)))
             entities-being-tracked))
 
+  (displayln "Here 3")
+
   (define misplaced-entities (backdrop-misplaced-entities (get-component bg-entity backdrop?)))
   
   (define new-bg-entity (update-entity
@@ -268,6 +284,7 @@
   (define new-entities (update-entities-list new-bg-entity (game-entities g)))
   
   (define new-entities-with-dead (map (die-if-member-of misplaced-entities) new-entities))
+
   
   (struct-copy game g
                [entities new-entities-with-dead]))

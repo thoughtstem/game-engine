@@ -60,7 +60,9 @@
          has-component?
 
          id
-         id?)
+         id?
+
+         new-game-function-f)
 
 (require posn)
 (require 2htdp/image)
@@ -146,9 +148,17 @@
 
 (define game-functions (list))
 
-(define (new-game-function update)
+(require (for-syntax racket))
+(define-syntax (new-game-function stx)
+  
+  (define update (second (syntax->datum stx)))
+  (displayln (~a "Registering game extension " update))
+  (datum->syntax stx
+   `(new-game-function-f ,(~a update) ,update)))
+
+(define (new-game-function-f f-name update)
   (set! game-functions
-        (append game-functions (list update))))
+        (append game-functions (list (list f-name update)))))
 
 
 ;Animated sprites are components, but we'll handle them specially
@@ -495,7 +505,9 @@
 
 (define (do-game-functions g)
   (define pipeline (lambda (a-fun a-game)
-                     (a-fun a-game)))
+                     (with-handlers ([exn:fail?
+                                      (λ (e) (error (~a "Error running " (first a-fun) ": " e)))])
+                       ((second a-fun) a-game))))
   (foldl pipeline g game-functions))
 
 
