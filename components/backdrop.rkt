@@ -51,7 +51,8 @@
          game->current-tile
 
          backdrop-width
-         backdrop-height)
+         backdrop-height
+         backdrop-length)
 
 ; ACTIVE ENTITIES
 
@@ -91,7 +92,7 @@
   (define backpack-entities (map item-entity (get-items e)))
   (displayln (~a "Backpack: " (map get-name backpack-entities)))
   (add-components e
-                 (map (curry spawn-once #:relative #f) backpack-entities)))
+                 (map (curry spawn-once #:relative? #f) backpack-entities)))
 
 (define (spawn-active-from-backpack g e)
   (displayln "SPAWNING ACTIVE ENTITIES FROM BACKPACK")
@@ -102,7 +103,7 @@
                                     (map item-entity (get-items e))))
   (displayln (~a "ACTIVE: " (length backpack-entities)))
   (add-components e
-                 (map (curry spawn-once #:relative #f) backpack-entities)))
+                 (map (curry spawn-once #:relative? #f) backpack-entities)))
 
 (define (spawn-entities-on-tile-change g e)
   (define WIDTH (game-width g))
@@ -292,6 +293,9 @@
 
 (define (backdrop-height b)
   (image-height  (first (backdrop-tiles (first b)))))
+
+(define (backdrop-length b)
+  (length (backdrop-tiles (first b))))
 
 ; === COMPONENTS ===
 ;separate create-backdrop component created to keep backdrop id field internal
