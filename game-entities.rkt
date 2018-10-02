@@ -289,16 +289,16 @@
        (displayln (apply ~a s))))
 
 (define (update-on-collide g e c)
-  
-  #;(displayln-if (not (empty? (game-collisions g)))
-                "Collisions!! "
-                (map get-name (flatten (game-collisions g))))
+  (add-physical-collider-if-necessary
+   (if (is-colliding-with? (on-collide-name c) g e)
+       ((on-collide-func c) g e)       
+       e
+       )))
 
-  
-  (if (is-colliding-with? (on-collide-name c) g e)
-      ((on-collide-func c) g e)       
+(define (add-physical-collider-if-necessary e)
+  (if (get-component e physical-collider?)
       e
-      ))
+      (chipmunkify (add-component e (make-physical-collider)))))
 
 (new-component on-collide?
                update-on-collide)

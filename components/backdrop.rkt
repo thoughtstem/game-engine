@@ -4,6 +4,8 @@
 (require "./animated-sprite.rkt")
 (require "./detect-edge.rkt")
 (require "./on-edge.rkt")
+(require "./on-rule.rkt")
+(require "../component-util.rkt")
 (require "./counter.rkt")
 (require "./spawn-once.rkt")
 (require "../entity-helpers/sprite-util.rkt")
@@ -46,7 +48,10 @@
          track-entities
          store-misplaced
          destroy-misplaced
-         game->current-tile)
+         game->current-tile
+
+         backdrop-width
+         backdrop-height)
 
 ; ACTIVE ENTITIES
 
@@ -272,8 +277,21 @@
 
 ; === POWERTOOLS ===
 (define/contract (bg->backdrop bg #:rows rows #:columns columns #:start-tile [current 0])
-  (-> image? #:rows integer? #:columns integer? #:start-tile integer? backdrop?)
-  (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns #f current '()))
+  (-> image? #:rows integer? #:columns integer? #:start-tile integer? (listof any/c))
+  (list
+   (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns #f current '())
+   (backpack)
+   (on-rule first-tile? track-entities)
+   (on-rule not-tile-changed? (do-many store-misplaced
+                                       destroy-misplaced))
+
+   (on-rule tile-changed? spawn-active-from-backpack)))
+
+(define (backdrop-width b)
+  (image-width  (first (backdrop-tiles (first b)))))
+
+(define (backdrop-height b)
+  (image-height  (first (backdrop-tiles (first b)))))
 
 ; === COMPONENTS ===
 ;separate create-backdrop component created to keep backdrop id field internal
@@ -354,8 +372,10 @@
   (length (backdrop-tiles (get-component e backdrop?))))
 
 (define/contract (render-tile backdrop)
-  (-> backdrop? image?)
-  (pick-tile backdrop (backdrop-current-tile backdrop)))
+  (-> (or/c backdrop? list?) image?)
+  (if (list? backdrop)
+      (render-tile (first backdrop))
+      (pick-tile backdrop (backdrop-current-tile backdrop))))
 
 (define/contract (pick-tile backdrop i)
   (-> backdrop? integer? image?)
@@ -396,10 +416,10 @@
 ; Assumes there is background entity named "bg" with a backdrop component
 ; Should be added to the player entity
 (define (player-edge-system)
-  (list (on-edge 'left   #:rule (more-tiles? 'left)   (go-to-pos-inside 'right))
-        (on-edge 'right  #:rule (more-tiles? 'right)  (go-to-pos-inside 'left))
-        (on-edge 'top    #:rule (more-tiles? 'top)    (go-to-pos-inside 'bottom))
-        (on-edge 'bottom #:rule (more-tiles? 'bottom) (go-to-pos-inside 'top))))
+  (list (on-edge 'left   #:rule tile-changed?  (go-to-pos-inside 'right))
+        (on-edge 'right  #:rule tile-changed?  (go-to-pos-inside 'left))
+        (on-edge 'top    #:rule tile-changed?  (go-to-pos-inside 'bottom))
+        (on-edge 'bottom #:rule tile-changed?  (go-to-pos-inside 'top))))
 
 
 
