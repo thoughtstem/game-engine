@@ -16,7 +16,7 @@
 
 (struct spawn-once (spawn speed accum next relative?))
 
-(define (make-spawn-once spawn #:relative [relative? #t])
+(define (make-spawn-once spawn #:relative? [relative? #t])
   (spawn-once spawn 1 0 #f relative?))
 
 (define (spawn-once-ready? s)
