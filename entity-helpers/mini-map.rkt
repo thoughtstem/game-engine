@@ -1,7 +1,6 @@
 #lang racket
 
-(provide add-mini-map
-         mini-map-closed?)
+(provide open-mini-map)
 
 (require "../game-entities.rkt"
          "../component-util.rkt"
@@ -23,10 +22,10 @@
 (define rule?             (-> game? entity? boolean?))
 
 ; allows to add mini-map entity to the game.
-; Requires game to have an entity with a backdrop.
-; Can be called from any entity: (on-key "m" #:rule mini-map-closed? (add-mini-map))
-(define/contract (add-mini-map)
-  (-> handler-function?)
+; Requires game to have an entity with a backdrop component.
+; Can be called from any entity: (on-key "m" (open-mini-map #:close-key 'o))
+(define/contract (open-mini-map #:close-key close-key)
+  (-> #:close-key (or/c symbol? string?) handler-function?)
   (lambda (g e)
     (define backdrop          (get-component (get-backdrop-entity g) backdrop?))
     (define tile-index        (backdrop-current-tile backdrop))
@@ -44,9 +43,11 @@
                                                       (change-x-by mini-map-offset-x)
                                                       (change-y-by mini-map-offset-y)
                                                       show))
-                                   (on-key "m" die)
+                                   (on-key close-key die)
                                    (on-rule tile-changed? (update-mini-map))))
-    (add-components e (spawn-once mini-map-entity))))
+    (if (get-entity "mini-map" g)
+        e
+        (add-components e (spawn-once mini-map-entity #:relative? #f)))))
 
 ; create an image for a mini-map entity animated-sprite
 (define/contract (mini-map-img backdrop tile-index)
@@ -135,8 +136,3 @@
         [(eq? direction 'bottom)    (if (member current-backdrop-index bottom-edge-list)
                                     #f
                                     (+ current-backdrop-index col))]))
-
-; checks if mini-map closed, if so returns #t
-(define/contract (mini-map-closed? g e)
-  rule?
-  (not (get-entity "mini-map" g)))
