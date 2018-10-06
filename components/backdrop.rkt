@@ -271,7 +271,7 @@
               (not (member e entities-to-stop-tracking entity-eq?)))
             entities-being-tracked))
 
-  (displayln "Here 3")
+  ;(displayln "Here 3")
 
   (define misplaced-entities (backdrop-misplaced-entities (get-component bg-entity backdrop?)))
   
@@ -280,7 +280,6 @@
                          backpack?
                          (apply backpack new-entities-to-track)))
  
-  
 
   (define new-entities (update-entities-list new-bg-entity (game-entities g)))
   
