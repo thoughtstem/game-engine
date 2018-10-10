@@ -11,5 +11,6 @@
                "lux"
                "jack-posn"
                ;"rsound"
+               "racket-chipmunk"
                "base"))
 

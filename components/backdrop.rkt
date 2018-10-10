@@ -13,13 +13,13 @@
 (require "./backpack.rkt")
 (require 2htdp/image)
 
-
 (require posn
          threading)
 
 (provide #;(struct-out backdrop)
          (rename-out [make-backdrop backdrop])
          backdrop-current-tile
+         backdrop-columns
          backdrop-tiles
          backdrop?
          
@@ -33,6 +33,7 @@
          get-current-tile
          ;??
          get-total-tiles
+         get-backdrop-entity
          render-tile
          
          backdrop-eq?
@@ -171,7 +172,7 @@
 (define (game->active-entities g)
   (define entities-to-track (get-trackable-entities g))
 
-  (define current-tile-num (game->current-tile g))
+(define current-tile-num (game->current-tile g))
 
 
   (define active-entities
@@ -294,7 +295,10 @@
 
 
 ; === POWERTOOLS ===
-(define/contract (bg->backdrop bg #:rows rows #:columns columns #:start-tile [current 0])
+(define/contract (bg->backdrop bg #:rows       rows
+                                  #:columns    columns
+                                  #:start-tile [current 0])
+  ; #:mini-map (yes/no) #:key
   (-> image? #:rows integer? #:columns integer? #:start-tile integer? (listof any/c))
   (list
    (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns #f current '())
@@ -441,8 +445,6 @@
         (on-edge 'right  #:rule tile-changed?  (go-to-pos-inside 'left))
         (on-edge 'top    #:rule tile-changed?  (go-to-pos-inside 'bottom))
         (on-edge 'bottom #:rule tile-changed?  (go-to-pos-inside 'top))))
-
-
 
 (struct active-on-bg (bg-list))
 
