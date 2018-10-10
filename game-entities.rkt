@@ -13,6 +13,8 @@
          (struct-out game) 
          (struct-out bb)
 
+         draw-entities
+
          entity-eq?
          entity-animation
          sprite->entity
