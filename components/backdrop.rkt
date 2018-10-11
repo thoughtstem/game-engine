@@ -143,8 +143,10 @@
 
 (define (destroy-misplaced g e)
   (define misplaced-entities (game->misplaced-entities g))
+  
   (and (not (empty? misplaced-entities))
             (displayln (~a "Misplaced: " (map get-name misplaced-entities))))
+  
   (define bg-backdrop (get-component e backdrop?))
   (define new-backdrop (struct-copy backdrop bg-backdrop [misplaced-entities misplaced-entities]))
   (update-entity e backdrop? new-backdrop))
@@ -271,8 +273,6 @@
     (filter (λ(e)
               (not (member e entities-to-stop-tracking entity-eq?)))
             entities-being-tracked))
-
-  (displayln "Here 3")
 
   (define misplaced-entities (backdrop-misplaced-entities (get-component bg-entity backdrop?)))
   
@@ -446,7 +446,7 @@
         (on-edge 'top    #:rule tile-changed?  (go-to-pos-inside 'bottom))
         (on-edge 'bottom #:rule tile-changed?  (go-to-pos-inside 'top))))
 
-(struct active-on-bg (bg-list))
+(struct active-on-bg (bg-list) #:transparent)
 
 (provide (rename-out (make-active-on-bg active-on-bg))
          active-on-bg-bg-list

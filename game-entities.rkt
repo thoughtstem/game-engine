@@ -249,7 +249,18 @@
 
 (define (remove-component e c?)
   (match-define (entity components) e)
+
+  ;Just a quick little side-effect here,
+  ;  Nobody will notice...
+  (maybe-clean-up-physical-collider! e c?)
+  
   (entity (filter (lambda (c) (not (c? c))) components)))
+
+(define (maybe-clean-up-physical-collider! e c?)
+  (and (or (physical-collider? c?)
+           (eq? physical-collider? c?))
+       (already-chipmunkified? (get-component e physical-collider?))
+       (phys:destroy-chipmunk (physical-collider-chipmunk (get-component e physical-collider?)))))
 
 (define (add-components e . cs)
   (define flattened (flatten cs))
@@ -497,7 +508,7 @@
 
 
 (define (tick-entity g e)
-  (main-tick-entity g e))
+  (main-tick-entity g (chipmunkify e)))
 
 (define (tick-entities g)
   (define es (game-entities g))
@@ -825,7 +836,8 @@
   (define (physics-tick-entity e)
     (define pc (get-component e physical-collider?))
     
-    (if (not pc)
+    (if (or (not pc)
+            (not (already-chipmunkified? pc)))
         e
         (let ([f (physical-collider-force pc)]
               [c (physical-collider-chipmunk pc)])
@@ -849,14 +861,17 @@
 
 
 
-
+(define (already-chipmunkified? pc)
+  (and (physical-collider-chipmunk pc)
+       (not (phys:destroyed-chipmunk? (physical-collider-chipmunk pc)))))
 
 (define (chipmunkify e)
 
 
   (define pc (get-component e physical-collider?))
  
-  (if (not pc)
+  (if (or (not pc)
+          (already-chipmunkified? pc))
       e
       (let ([chipmunk ((if (get-component e static?) phys:box-kinematic phys:box)
                        (x e)

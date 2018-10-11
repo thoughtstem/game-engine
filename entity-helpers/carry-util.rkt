@@ -3,7 +3,7 @@
 (provide movable
          get-carry-offset-x
          get-carry-offset-y
-         )
+         carried?)
 
 (require "../game-entities.rkt"
          "../components/backdrop.rkt"
@@ -14,8 +14,7 @@
          "../components/on-key.rkt"
          "../component-util.rkt"
          posn
-         2htdp/image
-         )
+         2htdp/image)
 
 ; === GENENRIC RULES AND HELPERS ===
 ; TODO: add to game engine
@@ -32,15 +31,16 @@
   (lambda (g e)
     (if (get-component e lock-to?)
         e
-        (add-component (remove-component e physical-collider?) (lock-to name #:offset offset)))))
+        (add-component (remove-component e physical-collider?)
+                       (lock-to name #:offset offset)))))
 
 (define (remove-lock-to)
   (lambda (g e)
     (add-component (remove-component e lock-to?) (physical-collider))))
 
 (define (near-player-and-not-carried? g e)
-    (and ((near-entity? "player") g e)
-         (not (get-component e lock-to?))))
+  (and ((near-entity? "player") g e)
+       (not (get-component e lock-to?))))
 
 (define (carried? g e)
   (get-component e lock-to?))
