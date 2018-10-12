@@ -2,6 +2,7 @@
 
 (provide movable
          nearest-to-player?
+         near-player?
          get-carry-offset-x
          get-carry-offset-y
          carried?

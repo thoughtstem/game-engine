@@ -287,6 +287,7 @@
 (define (maybe-clean-up-physical-collider! e c?)
   (and (or (physical-collider? c?)
            (eq? physical-collider? c?))
+       (get-component e physical-collider?)
        (already-chipmunkified? (get-component e physical-collider?))
        (phys:destroy-chipmunk (physical-collider-chipmunk (get-component e physical-collider?)))))
 
