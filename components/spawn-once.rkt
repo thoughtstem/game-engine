@@ -105,7 +105,8 @@
   (and (not (empty? new-es))
        (displayln (~a "Spawning: " (map get-name new-es))))
   
-  (define all    (append (map chipmunkify new-es)
+  (define all    (append #;new-es
+                         (map (curry uniqify-id g) new-es)
                          (reset-spawn-once es)))
   
   (struct-copy game g
@@ -115,3 +116,6 @@
                update-spawn-once)
 
 (new-game-function handle-spawn-once)
+
+
+

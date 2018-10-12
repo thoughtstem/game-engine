@@ -6,12 +6,12 @@
          ;"../component-util.rkt"
          posn)
 
-(struct observe-change (rule last-val on-change))
+(struct observe-change (rule last-val previous-entity on-change))
 
 
 
 (define (make-observe-change rule on-change)
-  (observe-change rule (void) on-change))
+  (observe-change rule (void) (void) on-change))
 
 
 #;(observe-change carried?
@@ -27,13 +27,14 @@
   (define last-val (observe-change-last-val c))
 
   (define new-c (struct-copy observe-change c
-                             [last-val current-val]))
+                             [last-val current-val]
+                             [previous-entity e]))
 
   (define new-e (update-entity e (λ(x) (eq? x c)) new-c))
 
   (if (eq? current-val last-val)
       e
-      ((observe-change-on-change c) g new-e)))
+      ((observe-change-on-change c) g (observe-change-previous-entity c) new-e)))
 
 (new-component observe-change?
                update-observe-change)

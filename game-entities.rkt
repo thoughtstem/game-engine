@@ -57,14 +57,23 @@
 
          component-is?
          set-velocity
-         chipmunkify
+         ;chipmunkify
+         uniqify-id
 
          has-component?
+         is-component?
 
          id
          id?
 
-         new-game-function-f)
+         new-game-function-f
+
+         and/r
+         or/r
+         not/r
+
+         entity-with-name
+         )
 
 (require posn)
 (require 2htdp/image)
@@ -115,7 +124,7 @@
   (posn-y (get-posn e)))
 
 
-(struct id [id])
+(struct id [id] #:transparent)
 
 
 
@@ -147,6 +156,21 @@
 (define (component? x)
   (get-handler-for-component x))
 
+(define (and/r . rs)
+  (λ(g e)
+    (define bs (map (λ(r) (r g e)) rs))
+    (define b (not (member #f bs)))
+    b))
+
+(define (or/r . rs)
+  (λ(g e)
+    (define bs (map (λ(r) (r g e)) rs))
+    (define b (member #t bs))
+    b))
+
+(define (not/r r)
+  (λ(g e)
+    (not (r g e))))
 
 (define game-functions (list))
 
@@ -176,6 +200,10 @@
   (if n
       (entity-name-string n)
       #f))
+
+
+(define (entity-with-name n g)
+  (findf (λ(x) (string=? n (get-name x))) (game-entities g)))
 
 (define (get-id e)
   (id-id (get-component e id?)))
@@ -270,7 +298,7 @@
              (rest flattened))))
 
 (define (basic-entity p s)
-  (entity (list (id (random 10000000))
+  (entity (list (id #f)
                 p
                 (image->bb (render s))
                 s)))
@@ -533,21 +561,34 @@
 
 
 (define (find-entity-by-id i g)
-  (findf (λ(e) (= i (get-id e)))
+  (findf (λ(e) (eq? i (get-id e)))
          (game-entities g)))
 
 (define (current-version-of e g)
   (find-entity-by-id (get-id e) g))
 
-
-
 (define last-game-snapshot #f)
+
+(define (uniqify-id g e)
+  (if (or (not (get-id e))
+          (member (get-id e)
+                  (map get-id (remove e (game-entities g) entity-eq?))))
+      (begin
+       #;(displayln (~a "Setting new id"))
+       (update-entity e id? (id (random 1000000))))
+      e))
+
+(define (uniqify-ids g)
+  (struct-copy game g
+               [entities (map (curry uniqify-id g)
+                              (game-entities g))]))
 
 (define tick
   (lambda (g)
     (set! last-game-snapshot g)
     
     (define new-game (~> g
+                         uniqify-ids
                          ;Just a note for the future.  This is not slow.  Do not move to a different thread in a misguided effort to optimize...
                          ;  However, maybe we should consider moving this to its own physics module...?
                          physics-tick 
@@ -663,6 +704,12 @@
     (get-component e pred?)))
 
 
+(define (is-component? c)
+  (lambda(o)
+    (or
+     (eq? o c)
+     (and (list? c)
+          (member o c)))))
 
 (struct bake ())
 
@@ -708,7 +755,7 @@
 
   (define g
     (bake-in
-     (physics-start larger-state)))
+     (physics-start (uniqify-ids larger-state))))
 
   
   (final-state
@@ -865,9 +912,8 @@
   (and (physical-collider-chipmunk pc)
        (not (phys:destroyed-chipmunk? (physical-collider-chipmunk pc)))))
 
+
 (define (chipmunkify e)
-
-
   (define pc (get-component e physical-collider?))
  
   (if (or (not pc)
@@ -893,6 +939,10 @@
 (define (vel-func chipmunk gravity damping dt)
 
   (define e (find-entity-by-id (phys:chipmunk-meta chipmunk) last-game-snapshot))
+
+  ;(displayln (~a "Find by id " (phys:chipmunk-meta chipmunk)))
+  ;(displayln e)
+
 
   #;(phys:cpBodyUpdateVelocity body gravity damping dt)
 

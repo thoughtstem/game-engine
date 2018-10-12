@@ -94,7 +94,7 @@
   #;(and (not (empty? new-es))
        (displayln "Spawing!"))
   
-  (define all    (append (map chipmunkify new-es)
+  (define all    (append (map (curry uniqify-id g) new-es)
                          (reset-spawners es)))
   
   (struct-copy game g

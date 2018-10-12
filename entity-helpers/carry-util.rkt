@@ -1,6 +1,7 @@
 #lang racket
 
 (provide movable
+         nearest-to-player?
          get-carry-offset-x
          get-carry-offset-y
          carried?)
@@ -14,7 +15,8 @@
          "../components/on-key.rkt"
          "../component-util.rkt"
          posn
-         2htdp/image)
+         2htdp/image
+         threading)
 
 ; === GENENRIC RULES AND HELPERS ===
 ; TODO: add to game engine
@@ -38,9 +40,28 @@
   (lambda (g e)
     (add-component (remove-component e lock-to?) (physical-collider))))
 
-(define (near-player-and-not-carried? g e)
-  (and ((near-entity? "player") g e)
-       (not (get-component e lock-to?))))
+(define (near-player? g e)
+  ((near-entity? "player") g e))
+
+(define (nearest-to-player? g e)
+  (define all-es (filter (has-component? carriable?)
+                         (game-entities g)))
+
+  (define player (entity-with-name "player" g))
+
+  (define all-but-me-and-player
+    (~> all-es
+        (remove player _ entity-eq?)
+        (remove e      _ entity-eq?)))
+  
+  (define my-dist (distance-between (get-posn e)
+                                    (get-posn player))) 
+
+  (define other-distances (map (curry distance-between (get-posn player))
+                               (map get-posn all-but-me-and-player)))
+
+  (or (empty? other-distances)
+      (< my-dist (apply min other-distances))))
 
 (define (carried? g e)
   (get-component e lock-to?))
@@ -65,8 +86,12 @@
                       [(eq? item-loc 'top)    (- (+ (/ (image-height p-img) 2) (/ (image-height i-img) 2)))]))
   (posn pos-x pos-y))
 
+
+
+(struct carriable ())
+
 ; === GENERIC SYSTEM ===
-; TODO: only carry on at a time option
+; TODO: only carry one at a time option
 ;       calculate offset from game entities, use struct?
 (define (movable #:carry-offset   [offset (posn 0 0)]
                  #:storable-items [movable-item-list #f]
@@ -74,10 +99,13 @@
                  #:drop-key       [drop-key "x"]
                  #:pickup-sound   [pickup-sound #f]
                  #:drop-sound     [drop-sound    #f])
-  (list (on-key pickup-key #:rule near-player-and-not-carried? (do-many (add-lock-to "player" #:offset offset)
-                                                                        (remove-active-on-bg)))
-        (on-key drop-key #:rule carried? (do-many (remove-lock-to)
-                                                  (add-active-on-bg)))))
+  (list (carriable)
+        (on-key pickup-key #:rule (and/r nearest-to-player?
+                                         near-player?
+                                         (not/r carried?)
+                                         (not/r (other-entity-locked-to? "player")))
+                (add-lock-to "player" #:offset offset))
+        (on-key drop-key #:rule carried? (remove-lock-to))))
 
 
 
