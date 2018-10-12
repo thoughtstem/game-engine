@@ -164,7 +164,7 @@
 
 (define (update-backpack-sprite g e)
   (define (get-frame entity)
-    (pick-frame-original (get-component entity animated-sprite?) 1))
+    (pick-frame-original (get-component entity animated-sprite?) 0))
   (define image-list (map get-frame (map item-entity (get-items (get-entity "player" g)))))
   (update-entity e animated-sprite? (new-sprite (draw-backpack image-list))))
 
