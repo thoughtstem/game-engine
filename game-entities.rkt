@@ -585,10 +585,11 @@
 
 (define tick
   (lambda (g)
-    (set! last-game-snapshot g)
+    (define new-g (uniqify-ids g))
     
-    (define new-game (~> g
-                         uniqify-ids
+    (set! last-game-snapshot new-g)
+    
+    (define new-game (~> new-g
                          ;Just a note for the future.  This is not slow.  Do not move to a different thread in a misguided effort to optimize...
                          ;  However, maybe we should consider moving this to its own physics module...?
                          physics-tick 
@@ -983,7 +984,7 @@
      (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
      (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
 
-     #;(display (~a "Colliding" (get-name e1) (get-name e2)))
+     (display (~a "Colliding " (get-name e1) " " (get-name e2)))
 
      (set-game-collisions! last-game-snapshot
                            (cons (list e1 e2)
