@@ -257,8 +257,8 @@
                                 (posn-y p))))
 
 ;You can pass in a predicate or an actual component
-(define #;/contract (get-component e maybe-pred)
-  #;(-> entity? any/c any/c)
+(define/contract (get-component e maybe-pred)
+  (-> entity? any/c any/c)
   (define component-pred
     (if (procedure? maybe-pred)
         maybe-pred

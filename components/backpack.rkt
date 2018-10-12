@@ -20,6 +20,7 @@
          set-items
          add-item
          remove-item
+         get-last-item
          display-items
          store-item
          store-nearby-item
@@ -40,11 +41,13 @@
 
 (struct backpack (items))
 
-(define (entity->item e)
+(define/contract (entity->item e)
+  (-> entity? item?)
   (item e 1))
 
 
-(define (make-backpack . entities)
+(define/contract (make-backpack . entities)
+  (->* () () #:rest (listof entity?) backpack?)
   (define new-items (map (lambda (e) (item e 1)) entities))
   (backpack new-items))
 
@@ -78,7 +81,11 @@
 (define (get-items e)
   (backpack-items (get-component e backpack?)))
 
-(define (add-item ent [amount 1])
+(define (get-last-item e)
+  (item-entity (last (get-items e))))
+
+(define/contract (add-item ent [amount 1])
+  (->* (entity?) (number?) procedure?)
   (lambda (g e)
     (define old-items (get-items e))
     (define new-items (append old-items (list (item ent amount))))
@@ -117,7 +124,8 @@
   (entity-eq? (item-entity item1)
               (item-entity item2)))
 
-(define (remove-item ent [amount 1])
+(define/contract (remove-item ent [amount 1])
+  (->* (entity?) (number?) procedure?)
   (lambda (g e)
     (define old-items (get-items e))
     (define new-items (remove (item ent amount) old-items item-eq?))
