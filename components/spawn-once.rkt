@@ -66,9 +66,9 @@
     
     (if relative?
         (struct-copy spawn-once s
-                 [next new-entity])
+                     [next new-entity])
         (struct-copy spawn-once s
-                 [next to-spawn]))))
+                     [next to-spawn]))))
 
 (define (spawn-once-inc s)
   (struct-copy spawn-once s
