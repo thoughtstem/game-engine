@@ -36,8 +36,10 @@
 
 (define (spawn-once-do-spawn e) 
   (lambda (s)
+    
     (define to-spawn (next-spawn s))
-    (define relative? (spawn-once-relative? (get-component e spawn-once?)))
+    (define relative? (spawn-once-relative? s #;(get-component e spawn-once?)))
+    ;(displayln (~a "Spawning from: " (get-name e) ", Relative: " relative?))
     (define pos (get-component e posn?))
     (define dir (if (get-component e direction?)
                     (get-direction e)
