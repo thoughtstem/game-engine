@@ -44,8 +44,8 @@
   ((near-entity? "player") g e))
 
 (define (nearest-to-player? g e)
-  (define all-es (filter (has-component? carriable?)
-                         (game-entities g)))
+  (define all-es (game-entities g) #;(filter (has-component? carriable?)
+                                             (game-entities g)))
 
   (define player (entity-with-name "player" g))
 
@@ -59,6 +59,8 @@
 
   (define other-distances (map (curry distance-between (get-posn player))
                                (map get-posn all-but-me-and-player)))
+
+  #;(displayln (list (get-name e) (get-id e) my-dist other-distances))
 
   (or (empty? other-distances)
       (< my-dist (apply min other-distances))))
