@@ -4,7 +4,8 @@
          nearest-to-player?
          get-carry-offset-x
          get-carry-offset-y
-         carried?)
+         carried?
+         carried-by)
 
 (require "../game-entities.rkt"
          "../components/backdrop.rkt"
@@ -110,5 +111,8 @@
         (on-key drop-key #:rule carried? (remove-lock-to))))
 
 
+(define (carried-by g e)
+  (define target-name (lock-to-name (get-component e lock-to?)))
 
+  (entity-with-name target-name g))
 

@@ -31,10 +31,11 @@
                              [previous-entity e]))
 
   (define new-e (update-entity e (λ(x) (eq? x c)) new-c))
+  (define prev-e (observe-change-previous-entity c))
 
   (if (eq? current-val last-val)
-      e
-      ((observe-change-on-change c) g (observe-change-previous-entity c) new-e)))
+      new-e
+      ((observe-change-on-change c) g prev-e new-e)))
 
 (new-component observe-change?
                update-observe-change)
