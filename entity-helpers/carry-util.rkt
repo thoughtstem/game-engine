@@ -11,7 +11,6 @@
 (require "../game-entities.rkt"
          "../components/backdrop.rkt"
          "../components/lock-to.rkt"
-         "../components/active-on-bg.rkt"
          "../entity-helpers/movement-util.rkt"
          "../components/animated-sprite.rkt"
          "../components/on-key.rkt"

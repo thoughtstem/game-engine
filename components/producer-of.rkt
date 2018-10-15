@@ -13,21 +13,39 @@
          posn
          threading)
 
-(define (producer-of to-carry)
+
+(define (display-entity e)
+  (define i (draw-entity e))
+  (define p (get-posn e))
+  (define a (get-component e active-on-bg?))
+  
+  (displayln i)
+  (displayln (~a "(posn "
+                 (exact-round (posn-x p))
+                 " "
+                 (exact-round (posn-y p))
+                 ")"))
+  (displayln (~a "(active-on-bg "
+                 (first (active-on-bg-bg-list a))
+                 ")"))
+  
+  e)
+
+(define (producer-of to-carry #:on-drop (on-drop display-entity))
   (define to-clone
     (~> to-carry
         (update-entity _ posn? (posn 0 0))
         (add-components _
-         (movable #:carry-offset (posn 20 0))
-         (lock-to "player" #:offset (posn 20 0))
-         (observe-change carried? 
-                         (λ(g e1 e2)
-                           (if (carried? g e2)
-                               (begin
-                                 (remove-component e2 active-on-bg?))
-                               (begin
-                                 (add-component e2 (active-on-bg (game->current-tile g)))
-                                 ))  ))  )
+                        (movable #:carry-offset (posn 20 0))
+                        (lock-to "player" #:offset (posn 20 0))
+                        (observe-change carried? 
+                                        (λ(g e1 e2)
+                                          (if (carried? g e2)
+                                              (begin
+                                                (remove-component e2 active-on-bg?))
+                                              (on-drop
+                                               (add-component e2 (active-on-bg (game->current-tile g)))
+                                               ))  ))  )
         (remove-component _ physical-collider?)  ))
   
   (list

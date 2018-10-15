@@ -89,20 +89,20 @@
 |#
 
 (define (spawn-all-from-backpack g e)
-  (displayln "SPAWNING ALL FROM BACKPACK")
+  #;(displayln "SPAWNING ALL FROM BACKPACK")
   (define backpack-entities (map item-entity (get-items e)))
-  (displayln (~a "Backpack: " (map get-name backpack-entities)))
+  #;(displayln (~a "Backpack: " (map get-name backpack-entities)))
   (add-components e
                  (map (curry spawn-once #:relative? #f) backpack-entities)))
 
 (define (spawn-active-from-backpack g e)
-  (displayln "SPAWNING ACTIVE ENTITIES FROM BACKPACK")
+  #;(displayln "SPAWNING ACTIVE ENTITIES FROM BACKPACK")
   (define current-tile-num (game->current-tile g))
   (define backpack-entities (filter (λ(ent)
                                       (can-be-on-tile? ent
                                                        current-tile-num))
                                     (map item-entity (get-items e))))
-  (displayln (~a "ACTIVE: " (length backpack-entities)))
+  #;(displayln (~a "ACTIVE: " (length backpack-entities)))
   (add-components e
                  (map (curry spawn-once #:relative? #f) backpack-entities)))
 
@@ -144,7 +144,7 @@
 (define (destroy-misplaced g e)
   (define misplaced-entities (game->misplaced-entities g))
   
-  (and (not (empty? misplaced-entities))
+  #;(and (not (empty? misplaced-entities))
             (displayln (~a "Misplaced: " (map get-name misplaced-entities))))
   
   (define bg-backdrop (get-component e backdrop?))

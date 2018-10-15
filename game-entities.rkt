@@ -14,6 +14,7 @@
          (struct-out bb)
 
          draw-entities
+         draw-entity
 
          entity-eq?
          entity-animation
