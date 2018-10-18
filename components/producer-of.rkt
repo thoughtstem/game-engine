@@ -1,12 +1,14 @@
 #lang racket
 
-(provide producer-of) 
+(provide producer-of
+         producer) 
 
 (require "../game-entities.rkt"
          "../entity-helpers/carry-util.rkt"
          "../entity-helpers/sprite-util.rkt"
          "./lock-to.rkt"
          "./observe-change.rkt"
+         "./on-start.rkt"
          "./backdrop.rkt"
          "./on-key.rkt"
          "../component-util.rkt"
@@ -31,6 +33,14 @@
   
   e)
 
+(define (add-producer-of-self #:on-drop [on-drop display-entity])
+  (lambda (g e)
+    (add-components e
+                    (producer-of e #:on-drop on-drop))))
+
+(define (producer #:on-drop [on-drop display-entity])
+   (on-start (add-producer-of-self #:on-drop on-drop)))
+
 (define (producer-of to-carry #:on-drop (on-drop display-entity))
   (define to-clone
     (~> to-carry
@@ -38,7 +48,7 @@
         (add-components _
                         (movable #:carry-offset (posn 20 0))
                         (lock-to "player" #:offset (posn 20 0))
-                        (observe-change carried? 
+                        #;(observe-change carried? 
                                         (λ(g e1 e2)
                                           (if (carried? g e2)
                                               (begin

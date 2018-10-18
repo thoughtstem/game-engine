@@ -14,6 +14,7 @@
          "../entity-helpers/movement-util.rkt"
          "../components/animated-sprite.rkt"
          "../components/on-key.rkt"
+         "../components/observe-change.rkt"
          "../component-util.rkt"
          posn
          2htdp/image
@@ -93,6 +94,23 @@
 
 (struct carriable ())
 
+(define (display-entity e)
+  (define i (draw-entity e))
+  (define p (get-posn e))
+  (define a (get-component e active-on-bg?))
+  
+  (displayln i)
+  (displayln (~a "(posn "
+                 (exact-round (posn-x p))
+                 " "
+                 (exact-round (posn-y p))
+                 ")"))
+  (displayln (~a "(active-on-bg "
+                 (first (active-on-bg-bg-list a))
+                 ")"))
+  
+  e)
+
 ; === GENERIC SYSTEM ===
 ; TODO: only carry one at a time option
 ;       calculate offset from game entities, use struct?
@@ -101,14 +119,25 @@
                  #:pickup-key     [pickup-key "z"]
                  #:drop-key       [drop-key "x"]
                  #:pickup-sound   [pickup-sound #f]
-                 #:drop-sound     [drop-sound    #f])
+                 #:drop-sound     [drop-sound    #f]
+                 #:on-drop        [on-drop display-entity])
   (list (carriable)
         (on-key pickup-key #:rule (and/r nearest-to-player?
                                          near-player?
                                          (not/r carried?)
                                          (not/r (other-entity-locked-to? "player")))
                 (add-lock-to "player" #:offset offset))
-        (on-key drop-key #:rule carried? (remove-lock-to))))
+        (on-key drop-key #:rule carried? (remove-lock-to))
+        (observe-change carried? 
+                        (λ(g e1 e2)
+                          (if (carried? g e2)
+                              (begin
+                                (remove-component e2 active-on-bg?))
+                              (on-drop
+                               (if (void? e1)
+                                   e2
+                                   (add-component e2 (active-on-bg (game->current-tile g))))
+                               ))  ))))
 
 
 (define (carried-by g e)

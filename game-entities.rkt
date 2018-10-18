@@ -576,7 +576,7 @@
           (member (get-id e)
                   (map get-id (remove e (game-entities g) entity-eq?))))
       (begin
-       #;(displayln (~a "Setting new id"))
+       ;(displayln (~a "Setting new id"))
        (update-entity e id? (id (random 1000000))))
       e))
 
@@ -622,7 +622,8 @@
                                    (map entity->chipmunk doomed)))
 
   (for ([d doomed-chipmunks])
-    (phys:destroy-chipmunk d))
+    (or (phys:destroyed-chipmunk? d)
+        (phys:destroy-chipmunk d)))
   
   (set-game-entities! g (filter is-alive? (game-entities g)))
   
