@@ -11,6 +11,6 @@
                "lux"
                "jack-posn"
                ;"rsound"
-               "racket-chipmunk"
+               "https://github.com/thoughtstem/racket-chipmunk.git"
                "base"))
 
