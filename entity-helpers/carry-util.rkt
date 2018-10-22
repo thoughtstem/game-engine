@@ -12,9 +12,12 @@
          "../components/backdrop.rkt"
          "../components/lock-to.rkt"
          "../entity-helpers/movement-util.rkt"
+         (only-in "../entity-helpers/dialog-util.rkt"
+                  draw-dialog)
          "../components/animated-sprite.rkt"
          "../components/on-key.rkt"
          "../components/observe-change.rkt"
+         "../components/spawn-once.rkt"
          "../component-util.rkt"
          posn
          2htdp/image
@@ -111,6 +114,30 @@
   
   e)
 
+(define (draw-info g e1 e2)
+  (define e2-pos (get-component e2 posn?))
+  (define pos-x (exact-floor (posn-x e2-pos)))
+  (define pos-y (exact-floor (posn-y e2-pos)))
+  (define current-tile (game->current-tile g))
+  (define e2-height (image-height (render (get-component e2 animated-sprite?))))
+  (define info-entity
+    (sprite->entity (draw-dialog (~a "(posn " pos-x " " pos-y ")"
+                                     "\nTile: " current-tile))
+                    #:position (posn 0 (+ 10 (/ e2-height 2)))
+                    #:name     "info"
+                    #:components (static)
+                                 (active-on-bg current-tile)
+                                 (on-key "z" die)))
+  (if (carried? g e2)
+      (begin
+        (displayln "Picked up")
+        e2)
+      (begin (displayln "Dropped")
+             (if (void? e1)
+                 e2
+                 (add-component e2 (spawn-once info-entity))))
+      ))
+
 ; === GENERIC SYSTEM ===
 ; TODO: only carry one at a time option
 ;       calculate offset from game entities, use struct?
@@ -120,6 +147,7 @@
                  #:drop-key       [drop-key "x"]
                  #:pickup-sound   [pickup-sound #f]
                  #:drop-sound     [drop-sound    #f]
+                 #:show-info?     [show-info? #f]
                  #:on-drop        [on-drop display-entity])
   (list (carriable)
         (on-key pickup-key #:rule (and/r nearest-to-player?
@@ -137,7 +165,10 @@
                                (if (void? e1)
                                    e2
                                    (add-component e2 (active-on-bg (game->current-tile g))))
-                               ))  ))))
+                               ))  ))
+        (if show-info?
+            (observe-change carried? draw-info)
+            #f)))
 
 
 (define (carried-by g e)
