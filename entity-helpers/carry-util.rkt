@@ -46,7 +46,13 @@
     (add-component (remove-component e lock-to?) (physical-collider))))
 
 (define (near-player? g e)
-  ((near-entity? "player") g e))
+  (define player (entity-with-name "player" g))
+  (define e-width  (image-width  (render (get-component e animated-sprite?))))
+  ;(define e-height (image-height (render (get-component e animated-sprite?))))
+  (define p-width  (image-width  (render (get-component player animated-sprite?))))
+  ;(define p-height (image-height (render (get-component player animated-sprite?))))
+  (define range (+ (/ e-width 2) (/ p-width 2) 10))
+  ((near-entity? "player" range) g e))
 
 (define (nearest-to-player? g e)
   (define all-es (game-entities g) #;(filter (has-component? carriable?)
