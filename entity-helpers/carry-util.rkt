@@ -28,7 +28,7 @@
 
 (define (add-active-on-bg)
   (lambda (g e)
-    (define current-tile (get-current-tile (get-entity "bg" g)))
+    (define current-tile (game->current-tile  g))
     (add-component e (active-on-bg current-tile))))
 
 (define (add-lock-to name #:offset [offset (posn 10 0)])
@@ -114,6 +114,24 @@
 ; === GENERIC SYSTEM ===
 ; TODO: only carry one at a time option
 ;       calculate offset from game entities, use struct?
+
+
+(define (active-on-bg-twiddle on-drop)
+  (lambda (g e1 e2)
+    (define (when-picked-up)
+      (remove-component e2 active-on-bg?))
+
+    (define (when-put-down)
+      (on-drop
+       (add-component e2 (active-on-bg (game->current-tile g)))))
+  
+    (if (carried? g e2)
+        (when-picked-up)
+        (if (void? e1)
+            e2
+            (when-put-down)))))
+
+
 (define (movable #:carry-offset   [offset (posn 0 0)]
                  #:storable-items [movable-item-list #f]
                  #:pickup-key     [pickup-key "z"]
@@ -128,16 +146,8 @@
                                          (not/r (other-entity-locked-to? "player")))
                 (add-lock-to "player" #:offset offset))
         (on-key drop-key #:rule carried? (remove-lock-to))
-        (observe-change carried? 
-                        (λ(g e1 e2)
-                          (if (carried? g e2)
-                              (begin
-                                (remove-component e2 active-on-bg?))
-                              (on-drop
-                               (if (void? e1)
-                                   e2
-                                   (add-component e2 (active-on-bg (game->current-tile g))))
-                               ))  ))))
+        (observe-change carried? (active-on-bg-twiddle on-drop)
+                        )))
 
 
 (define (carried-by g e)

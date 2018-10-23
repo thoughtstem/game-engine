@@ -74,6 +74,13 @@
          not/r
 
          entity-with-name
+         replace-entity-in-list
+         entity-in-list?
+         union-entities
+         die-if-member-of
+         handler
+         f-handler
+         simple-handler
          )
 
 (require posn)
@@ -96,6 +103,18 @@
               [prev-input #:mutable]
               [collisions #:mutable]) #:transparent)
 
+(define-syntax-rule (handler g e body)
+  (lambda (g e)
+    body ))
+
+(define-syntax-rule (f-handler g e f)
+  (lambda (g e)
+    (f e)))
+
+(define-syntax-rule (simple-handler body)
+  (lambda (g e)
+    body
+    e))
 
 (struct bb [w h])
 
@@ -284,6 +303,26 @@
   (maybe-clean-up-physical-collider! e c?)
   
   (entity (filter (lambda (c) (not (c? c))) components)))
+
+  
+(define (replace-entity-in-list updated-entity current-entities)
+  (define (f entity)
+    (if (entity-eq? entity updated-entity)
+        updated-entity
+        entity))
+  (map f current-entities))
+
+(define (entity-in-list? e l)
+  (not (member e l entity-eq?)))
+
+(define (union-entities a b) ;Versions of entities in a take presidence 
+  (define in-a-not-b (filter (λ (o) (not (member o b entity-eq?))) a))
+  (define in-a-and-b (filter (λ (o)      (member o b entity-eq?)) a))
+  (define in-b-not-a (filter (λ (o) (not (member o a entity-eq?))) b))
+  (append in-a-not-b
+          in-a-and-b
+          in-b-not-a))
+
 
 (define (maybe-clean-up-physical-collider! e c?)
   (and (or (physical-collider? c?)
@@ -549,7 +588,9 @@
 (define (do-game-functions g)
   (define pipeline (lambda (a-fun a-game)
                      (with-handlers ([exn:fail?
-                                      (λ (e) (error (~a "Error running " (first a-fun) ": " e)))])
+                                      (λ (e)
+                                        (displayln e)
+                                        (error (~a "Error running " (first a-fun) ": " e)))])
                        ((second a-fun) a-game))))
   (foldl pipeline g game-functions))
 
@@ -612,6 +653,12 @@
 
 (define (handle-killed-entities g)
   (handle-dead g #f))
+
+
+(define (die-if-member-of e doomed)
+  (if (member e doomed entity-eq?)
+      (add-component e (dead))
+      e))
 
 (define (handle-dead g self-killed?)
   (define is-alive? (lambda (e) (not (get-component e dead?))))

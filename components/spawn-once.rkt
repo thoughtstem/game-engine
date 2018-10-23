@@ -8,7 +8,8 @@
 
 ;(displayln "LOADING ON START")
 
-(provide spawn-once-spawn
+(provide spawn-many-from
+         spawn-once-spawn
          spawn-once-speed
          spawn-once-accum
          spawn-once-next
@@ -113,6 +114,11 @@
   
   (struct-copy game g
                [entities all]))
+
+
+(define (spawn-many-from source to-spawn #:relative (r #t))
+  (add-components source (map (curry make-spawn-once #:relative? r) to-spawn)))
+
 
 (new-component spawn-once?
                update-spawn-once)
