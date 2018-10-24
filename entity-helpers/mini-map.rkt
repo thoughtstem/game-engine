@@ -1,6 +1,8 @@
 #lang racket
 
-(provide open-mini-map)
+(provide open-mini-map
+         mini-map-layout-m
+         mini-map-layout-nm)
 
 (require "../game-entities.rkt"
          "../component-util.rkt"
@@ -16,10 +18,37 @@
          "../entity-helpers/sprite-util.rkt"
          "../entity-helpers/movement-util.rkt"
          2htdp/image
-         posn)
+         posn
+         memoize)
 
 (define handler-function? (-> game? entity? entity?))
 (define rule?             (-> game? entity? boolean?))
+
+(define/memo (mini-map-layout-m backdrop)
+  (define tiles      (backdrop-tiles backdrop))
+  (define columns    (backdrop-columns backdrop))
+  (define rows       (/ (length tiles) columns))
+
+  (define tile-width  (image-width  (first tiles)))
+  (define tile-height (image-height (first tiles)))
+   
+  (frame-mini-map (scale 0.07 (mini-map-layout tiles
+                                    columns rows
+                                    tile-width tile-height
+                                    (length tiles)))))
+
+(define (mini-map-layout-nm backdrop)
+  (define tiles      (backdrop-tiles backdrop))
+  (define columns    (backdrop-columns backdrop))
+  (define rows       (/ (length tiles) columns))
+
+  (define tile-width  (image-width  (first tiles)))
+  (define tile-height (image-height (first tiles)))
+   
+  (frame-mini-map (scale 0.07 (mini-map-layout tiles
+                                    columns rows
+                                    tile-width tile-height
+                                    (length tiles)))))
 
 ; allows to add mini-map entity to the game.
 ; Requires game to have an entity with a backdrop component.
