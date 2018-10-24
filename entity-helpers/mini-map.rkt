@@ -1,8 +1,6 @@
 #lang racket
 
-(provide open-mini-map
-         mini-map-layout-m
-         mini-map-layout-nm)
+(provide open-mini-map)
 
 (require "../game-entities.rkt"
          "../component-util.rkt"
@@ -23,32 +21,6 @@
 
 (define handler-function? (-> game? entity? entity?))
 (define rule?             (-> game? entity? boolean?))
-
-(define/memo (mini-map-layout-m backdrop)
-  (define tiles      (backdrop-tiles backdrop))
-  (define columns    (backdrop-columns backdrop))
-  (define rows       (/ (length tiles) columns))
-
-  (define tile-width  (image-width  (first tiles)))
-  (define tile-height (image-height (first tiles)))
-   
-  (frame-mini-map (scale 0.07 (mini-map-layout tiles
-                                    columns rows
-                                    tile-width tile-height
-                                    (length tiles)))))
-
-(define (mini-map-layout-nm backdrop)
-  (define tiles      (backdrop-tiles backdrop))
-  (define columns    (backdrop-columns backdrop))
-  (define rows       (/ (length tiles) columns))
-
-  (define tile-width  (image-width  (first tiles)))
-  (define tile-height (image-height (first tiles)))
-   
-  (frame-mini-map (scale 0.07 (mini-map-layout tiles
-                                    columns rows
-                                    tile-width tile-height
-                                    (length tiles)))))
 
 ; allows to add mini-map entity to the game.
 ; Requires game to have an entity with a backdrop component.
@@ -105,8 +77,8 @@
                                         frame))))
 
 ; puts all tiles from list together
-(define/contract (mini-map-layout tiles columns rows tile-width tile-height total-tiles)
-  (-> list? integer? integer? integer? integer? integer? image?)
+(define/memo (mini-map-layout tiles columns rows tile-width tile-height total-tiles)
+  ;(-> list? integer? integer? integer? integer? integer? image?)
   (define x (modulo (- total-tiles   (length tiles)) columns))
   (define y (quotient (- total-tiles (length tiles)) columns))
   (if (empty? tiles) (rectangle (* tile-width columns)
