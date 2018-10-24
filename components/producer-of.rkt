@@ -41,15 +41,19 @@
 (define (producer #:on-drop [on-drop display-entity])
    (on-start (add-producer-of-self #:on-drop on-drop)))
 
-(define (producer-of to-carry #:on-drop (on-drop display-entity))
-  (define to-clone
-    (~> to-carry
+(define (start-movable-and-locked e on-drop)
+  (~> e
         (update-entity _ posn? (posn 0 0))
         (add-components _
-                        (movable #:carry-offset (posn 20 0))
-                        (lock-to "player" #:offset (posn 20 0))  )
+                        (movable #:carry-offset (posn 20 0) #:on-drop on-drop #:show-info? #t)
+                        (lock-to "player" #:offset (posn 20 0)))
         (remove-component _ physical-collider?)  ))
-  
+
+(define (producer-of to-carry #:on-drop (on-drop display-entity))
+  (define to-clone
+    (if (procedure? to-carry)
+        (thunk (start-movable-and-locked (to-carry) on-drop))
+        (start-movable-and-locked to-carry on-drop)))
   (list
    (on-key 'z
            #:rule (and/r near-player?
