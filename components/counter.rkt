@@ -44,4 +44,46 @@
      (update-entity e counter? (counter (random min (add1 max))))))
 
 (new-component counter?
-               update-counter) 
+               update-counter)
+
+; === SIMPLE STRUCTS ===
+(struct hue-val  (hue))
+(struct size-val (size))
+
+(define (set-hue-val num)
+ (lambda (g e)
+     (update-entity e hue-val? (hue-val num))))
+
+(define (get-hue-val e)
+  (define hue-comp (get-component e hue-val?))
+  (if hue-comp
+      (hue-val-hue hue-comp)
+      #f))
+
+(define (change-hue-val-by inc)
+  (lambda (g e)
+    (define num (get-hue-val e))
+    (update-entity e hue-val? (hue-val (+ num inc)))))
+
+(define (set-size-val num)
+  (lambda (g e)
+    (update-entity e size-val? (size-val num))))
+
+(define (get-size-val e)
+  (define size-comp (get-component e size-val?))
+  (if size-comp
+      (size-val-size size-comp)
+      #f))
+
+(define (multiply-size-val-by inc)
+  (lambda (g e)
+    (define num (get-size-val e))
+    (update-entity e size-val? (size-val (* num inc)))))
+
+(provide (struct-out hue-val)
+         (struct-out size-val)
+         get-hue-val
+         change-hue-val-by
+         set-size-val
+         get-size-val
+         multiply-size-val-by)

@@ -18,6 +18,7 @@
          "../components/on-key.rkt"
          "../components/observe-change.rkt"
          "../components/spawn-once.rkt"
+         "../components/counter.rkt"
          "../component-util.rkt"
          posn
          2htdp/image
@@ -126,9 +127,13 @@
   (define pos-y (exact-floor (posn-y e2-pos)))
   (define current-tile (game->current-tile g))
   (define e2-height (image-height (render (get-component e2 animated-sprite?))))
+  (define hue (get-hue-val e2))
+  (define size (get-size-val e2))
   (define info-entity
     (sprite->entity (draw-dialog (~a "(posn " pos-x " " pos-y ")"
-                                     "\nTile: " current-tile))
+                                     "\nTile: " current-tile
+                                     (if hue  (~a "\nHue:  " (modulo hue 360)) "")
+                                     (if size (~a "\nSize: " size) "")))
                     #:position (posn 0 (+ 10 (/ e2-height 2)))
                     #:name     "info"
                     #:components (static)
