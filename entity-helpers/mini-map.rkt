@@ -13,6 +13,7 @@
          "../components/spawn-once.rkt"
          "../components/on-key.rkt"
          "../components/after-time.rkt"
+         "../components/counter.rkt"
          "../entity-helpers/sprite-util.rkt"
          "../entity-helpers/movement-util.rkt"
          2htdp/image
@@ -28,9 +29,11 @@
 (define/contract (open-mini-map #:close-key close-key)
   (-> #:close-key (or/c symbol? string?) handler-function?)
   (lambda (g e)
-    (define backdrop          (get-component (get-backdrop-entity g) backdrop?))
-    (define tile-index        (backdrop-current-tile backdrop))
-    (define mini-map          (mini-map-img backdrop tile-index))
+    (define backdrop   (get-component (get-backdrop-entity g) backdrop?))
+    (define tile-index (backdrop-current-tile backdrop))
+    (define mini-map   (mini-map-img backdrop tile-index))
+    (define id         (backdrop-id backdrop))
+    
     (define mini-map-offset-x (* -0.05 (game-width g)))
     (define mini-map-offset-y (* -0.05 (game-height g)))
     
@@ -40,12 +43,16 @@
                       #:position   (posn 0 0)
                       #:components (hidden)
                                    (static)
+                                   (counter -1)
                                    (on-start (do-many (go-to-pos-inside 'bottom-right)
                                                       (change-x-by mini-map-offset-x)
                                                       (change-y-by mini-map-offset-y)
+                                                      (set-counter id)
                                                       show))
                                    (on-key close-key die)
-                                   (on-rule tile-changed? (update-mini-map))))
+                                   (on-rule on-backdrop-changed? (update-mini-map))
+                                   (on-rule tile-changed? (update-mini-map))
+                                   ))
     (if (get-entity "mini-map" g)
         e
         (add-components e (spawn-once mini-map-entity #:relative? #f)))))
@@ -75,6 +82,8 @@
                                         (* frame-x tile-width)
                                         (* frame-y tile-height)
                                         frame))))
+
+
 
 ; puts all tiles from list together
 (define/memo (mini-map-layout tiles columns rows tile-width tile-height total-tiles)
@@ -137,3 +146,8 @@
         [(eq? direction 'bottom)    (if (member current-backdrop-index bottom-edge-list)
                                     #f
                                     (+ current-backdrop-index col))]))
+
+(define (on-backdrop-changed? g e)
+  (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
+  (define last-backdrop-id    (get-counter e))
+  (not (eq? current-backdrop-id last-backdrop-id)))

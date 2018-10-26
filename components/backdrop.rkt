@@ -21,6 +21,7 @@
          backdrop-current-tile
          backdrop-columns
          backdrop-tiles
+         backdrop-id
          backdrop?
          
          bg->backdrop
@@ -306,7 +307,6 @@
    (on-rule first-tile? track-entities)
    (on-rule not-tile-changed? (do-many store-misplaced
                                        destroy-misplaced))
-
    (on-rule tile-changed? spawn-active-from-backpack)))
 
 (define (backdrop-width b)
@@ -338,12 +338,20 @@
                        animated-sprite? (new-sprite (pick-tile backdrop next-bg-index)))
         e)))
 
-;Updates bg-backdrop component
-(define/contract (change-backdrop backdrop)
-  (-> backdrop? handler-function?)
+;Updates bg-backdrop component. Inputs new background img. Num col and rows will stay the same for a new backdrop!
+; Function only replaces list of tiles stored in the struct.
+(define (change-backdrop new-bg)
+  ;(-> image? handler-function?)
   (lambda (g e)
-    ((show-backdrop) g (update-entity e backdrop? backdrop))))
+    (define bg-entity   (get-entity "bg" g))
+    (define bg-backdrop (get-component bg-entity backdrop?))
+    (define columns     (backdrop-columns bg-backdrop))
+    (define rows        (/ (length (backdrop-tiles bg-backdrop)) columns))
+    (define new-tiles   (sheet->costume-list new-bg columns rows (* rows columns)))
 
+    (define new-bg-backdrop   (struct-copy backdrop bg-backdrop [id (random 1000000)] [tiles new-tiles]))
+    ((show-backdrop) g (update-entity e backdrop? new-bg-backdrop))))
+ 
 ;Change backdrop tile 
 (define/contract (change-tile-to num)
   (-> integer? handler-function?)
