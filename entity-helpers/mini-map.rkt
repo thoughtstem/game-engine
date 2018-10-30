@@ -50,13 +50,14 @@
                                                       (set-counter id)
                                                       show))
                                    (on-key close-key die)
-                                   (on-rule on-backdrop-changed? (update-mini-map))
+                                   (on-rule on-backdrop-changed? (do-many (update-counter)
+                                                                          (update-mini-map)))
                                    (on-rule tile-changed? (update-mini-map))
                                    ))
     (if (get-entity "mini-map" g)
         e
         (add-components e (spawn-once mini-map-entity #:relative? #f)))))
-
+  
 ; create an image for a mini-map entity animated-sprite
 (define/contract (mini-map-img backdrop tile-index)
   (-> backdrop? integer? image?)
@@ -146,8 +147,18 @@
         [(eq? direction 'bottom)    (if (member current-backdrop-index bottom-edge-list)
                                     #f
                                     (+ current-backdrop-index col))]))
-
+  
 (define (on-backdrop-changed? g e)
   (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
-  (define last-backdrop-id    (get-counter e))
+  (define last-backdrop-id    (if (get-entity "mini-map" g) (get-counter (get-entity "mini-map" g)) -1))
+  (displayln (~a "current-backdrop-id =  " current-backdrop-id))
+  (displayln (~a "last-backdrop-id =  " last-backdrop-id))
+  (displayln (~a "on-backdrop-changed? " (not (eq? current-backdrop-id last-backdrop-id))))
   (not (eq? current-backdrop-id last-backdrop-id)))
+
+; updates a counter that keeps "last-backdrop-id"
+(define (update-counter)
+  (lambda (g e)
+    (define mini-map-entity (get-entity "mini-map" g))
+    (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
+    (update-entity e counter? (counter current-backdrop-id))))
