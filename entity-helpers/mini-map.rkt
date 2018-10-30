@@ -151,9 +151,9 @@
 (define (on-backdrop-changed? g e)
   (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
   (define last-backdrop-id    (if (get-entity "mini-map" g) (get-counter (get-entity "mini-map" g)) -1))
-  (displayln (~a "current-backdrop-id =  " current-backdrop-id))
-  (displayln (~a "last-backdrop-id =  " last-backdrop-id))
-  (displayln (~a "on-backdrop-changed? " (not (eq? current-backdrop-id last-backdrop-id))))
+  ;(displayln (~a "current-backdrop-id =  " current-backdrop-id))
+  ;(displayln (~a "last-backdrop-id =  " last-backdrop-id))
+  ;(displayln (~a "on-backdrop-changed? " (not (eq? current-backdrop-id last-backdrop-id))))
   (not (eq? current-backdrop-id last-backdrop-id)))
 
 ; updates a counter that keeps "last-backdrop-id"
