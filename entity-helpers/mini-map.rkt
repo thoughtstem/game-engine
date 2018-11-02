@@ -1,8 +1,6 @@
 #lang racket
 
-(provide open-mini-map
-         frame-mini-map
-         mini-map-layout)
+(provide open-mini-map)
 
 (require "../game-entities.rkt"
          "../component-util.rkt"
@@ -53,11 +51,9 @@
                                    (on-start (do-many (go-to-pos-inside 'bottom-right)
                                                       (change-x-by mini-map-offset-x)
                                                       (change-y-by mini-map-offset-y)
-                                                      (update-counter)
                                                       show))
                                    (on-key close-key die)
-                                   #;(on-rule on-backdrop-changed? (do-many (update-counter)
-                                                                          (update-mini-map-layout)))
+                                  
                                    (observe-change backdrop-r? (λ(g e1 e2)
                                                                 (define backdrop     (get-component (get-backdrop-entity g) backdrop?))
                                                                 (define current-tile (get-current-tile (get-backdrop-entity g)))
@@ -216,7 +212,6 @@
   (lambda (g e)
     (define mini-map-entity (get-entity "mini-map" g))
     (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
-    ;(displayln (~a "Update counter to " current-backdrop-id))
     (update-entity e counter? (counter current-backdrop-id))))
 
 ; updates a counter that keeps "last-backdrop-id"
@@ -224,10 +219,8 @@
   (lambda (g e1)
     (define mini-map-entity (get-entity "mini-map" g))
     (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
-    ;(displayln (~a "Update counter to " current-backdrop-id))
     (update-entity e1 counter? (counter current-backdrop-id))))
 
-
+; Function for observe-rule change in backdrop id
 (define (backdrop-r? g e)
-  (displayln (~a "backdrop-r? " (get-component (get-backdrop-entity g) backdrop?) " " (backdrop-id (get-component (get-backdrop-entity g) backdrop?))))
   (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
