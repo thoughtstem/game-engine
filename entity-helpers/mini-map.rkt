@@ -24,6 +24,10 @@
 (define handler-function? (-> game? entity? entity?))
 (define rule?             (-> game? entity? boolean?))
 
+; You can specify mini-map scale and frame width here
+(define mini-map-scale 0.07)
+(define frame-width 6)
+
 ; allows to add mini-map entity to the game.
 ; Requires game to have an entity with a backdrop component.
 ; Can be called from any entity: (on-key "m" (open-mini-map #:close-key 'o))
@@ -53,7 +57,6 @@
                                                       (change-y-by mini-map-offset-y)
                                                       show))
                                    (on-key close-key die)
-                                  
                                    (observe-change backdrop-r? (λ(g e1 e2)
                                                                 (define backdrop     (get-component (get-backdrop-entity g) backdrop?))
                                                                 (define current-tile (get-current-tile (get-backdrop-entity g)))
@@ -61,8 +64,7 @@
                                                                     (update-entity e2 animated-sprite? (new-sprite (mini-map-layout backdrop current-tile)))
                                                                     (if (void? e1)
                                                                         e2
-                                                                        (update-entity e2 animated-sprite? (new-sprite (mini-map-layout backdrop current-tile))))))); no counter
-                                   ))
+                                                                        (update-entity e2 animated-sprite? (new-sprite (mini-map-layout backdrop current-tile)))))))))
     (define mini-map-frame-entity
       (sprite->entity mini-map-f
                       #:name       "mini-map-frame"
@@ -70,8 +72,8 @@
                       #:components (hidden)
                                    (static)
                                    (on-start (do-many (go-to-pos-inside 'bottom-right)
-                                                      (change-x-by (+ -3 mini-map-offset-x))
-                                                      (change-y-by (+ -3 mini-map-offset-y))
+                                                      (change-x-by (+ (/ frame-width -2) mini-map-offset-x))
+                                                      (change-y-by (+ (/ frame-width -2) mini-map-offset-y))
                                                       show))
                                    (on-key close-key die)
                                    (on-rule tile-changed? (update-mini-map-frame mini-map-l))
@@ -85,8 +87,6 @@
 ; create an image for a mini-map entity animated-sprite
 (define/contract (mini-map-layout backdrop tile-index)
   (-> backdrop? integer? image?)
-  (define mini-map-scale 0.07)
-  
   (define tiles      (backdrop-tiles backdrop))
   (define columns    (backdrop-columns backdrop))
   (define rows       (/ (length tiles) columns))
@@ -107,9 +107,7 @@
 
 (define/contract (mini-map-frame backdrop tile-index layout)
   (-> backdrop? integer? image? image?)
-  (define mini-map-scale 0.07)
-
-  (define empty-image (rectangle (+ -6 (image-width layout)) (+ -6 (image-height layout)) "solid" (make-color 0 0 0 0)))
+  (define empty-image (rectangle (+ (- frame-width) (image-width layout)) (+ (- frame-width) (image-height layout)) "solid" (make-color 0 0 0 0)))
   
   (define tiles      (backdrop-tiles backdrop))
   (define columns    (backdrop-columns backdrop))
@@ -142,7 +140,6 @@
 ; add frame to mini-map 
 (define/contract (frame-mini-map img)
   (-> image? image?)
-  (define frame-width 6)
   (underlay 
     (underlay/align "middle" "middle"
       (rectangle (+ frame-width (image-width img))
@@ -201,25 +198,6 @@
         [(eq? direction 'bottom)    (if (member current-backdrop-index bottom-edge-list)
                                     #f
                                     (+ current-backdrop-index col))]))
-  
-(define (on-backdrop-changed? g e)
-  (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
-  (define last-backdrop-id    (if (get-entity "mini-map-layout" g) (get-counter (get-entity "mini-map-layout" g)) -1))
-  (not (eq? current-backdrop-id last-backdrop-id)))
-
-; updates a counter that keeps "last-backdrop-id"
-(define (update-counter)
-  (lambda (g e)
-    (define mini-map-entity (get-entity "mini-map" g))
-    (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
-    (update-entity e counter? (counter current-backdrop-id))))
-
-; updates a counter that keeps "last-backdrop-id"
-(define (update-counter-e e1)
-  (lambda (g e1)
-    (define mini-map-entity (get-entity "mini-map" g))
-    (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
-    (update-entity e1 counter? (counter current-backdrop-id))))
 
 ; Function for observe-rule change in backdrop id
 (define (backdrop-r? g e)
