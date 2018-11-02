@@ -16,6 +16,7 @@
          "../components/on-key.rkt"
          "../components/after-time.rkt"
          "../components/counter.rkt"
+         "../components/observe-change.rkt"
          "../entity-helpers/sprite-util.rkt"
          "../entity-helpers/movement-util.rkt"
          2htdp/image
@@ -31,13 +32,13 @@
 (define/contract (open-mini-map #:close-key close-key)
   (-> #:close-key (or/c symbol? string?) handler-function?)
   (lambda (g e)
-    (define backdrop        (get-component (get-backdrop-entity g) backdrop?))
-    (define tile-index      (backdrop-current-tile backdrop))
+    (define backdrop   (get-component (get-backdrop-entity g) backdrop?))
+    (define tile-index (backdrop-current-tile backdrop))
     
     (define mini-map-l (mini-map-layout backdrop tile-index))
-    (define mini-map-f  (mini-map-frame backdrop tile-index mini-map-l))
+    (define mini-map-f (mini-map-frame backdrop tile-index mini-map-l))
     
-    (define id              (backdrop-id backdrop))
+    (define id         (backdrop-id backdrop))
     
     (define mini-map-offset-x (* -0.05 (game-width g)))
     (define mini-map-offset-y (* -0.05 (game-height g)))
@@ -55,8 +56,16 @@
                                                       (update-counter)
                                                       show))
                                    (on-key close-key die)
-                                   (on-rule on-backdrop-changed? (do-many (update-counter)
+                                   #;(on-rule on-backdrop-changed? (do-many (update-counter)
                                                                           (update-mini-map-layout)))
+                                   (observe-change backdrop-r? (λ(g e1 e2)
+                                                                (define backdrop     (get-component (get-backdrop-entity g) backdrop?))
+                                                                (define current-tile (get-current-tile (get-backdrop-entity g)))
+                                                                (if (backdrop-r? g e2)
+                                                                    (update-entity e2 animated-sprite? (new-sprite (mini-map-layout backdrop current-tile)))
+                                                                    (if (void? e1)
+                                                                        e2
+                                                                        (update-entity e2 animated-sprite? (new-sprite (mini-map-layout backdrop current-tile))))))); no counter
                                    ))
     (define mini-map-frame-entity
       (sprite->entity mini-map-f
@@ -76,7 +85,7 @@
         e
         (add-components e (spawn-once mini-map-layout-entity #:relative? #f)
                           (spawn-once mini-map-frame-entity #:relative? #f)))))
-  
+
 ; create an image for a mini-map entity animated-sprite
 (define/contract (mini-map-layout backdrop tile-index)
   (-> backdrop? integer? image?)
@@ -171,6 +180,7 @@
   (lambda (g e)
     (define backdrop     (get-component (get-backdrop-entity g) backdrop?))
     (define current-tile (get-current-tile (get-backdrop-entity g)))
+    
     (if current-tile
         (update-entity e animated-sprite? (new-sprite (mini-map-layout backdrop current-tile)))
         e)
@@ -206,5 +216,18 @@
   (lambda (g e)
     (define mini-map-entity (get-entity "mini-map" g))
     (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
-    (displayln (~a "Update counter to " current-backdrop-id))
+    ;(displayln (~a "Update counter to " current-backdrop-id))
     (update-entity e counter? (counter current-backdrop-id))))
+
+; updates a counter that keeps "last-backdrop-id"
+(define (update-counter-e e1)
+  (lambda (g e1)
+    (define mini-map-entity (get-entity "mini-map" g))
+    (define current-backdrop-id (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
+    ;(displayln (~a "Update counter to " current-backdrop-id))
+    (update-entity e1 counter? (counter current-backdrop-id))))
+
+
+(define (backdrop-r? g e)
+  (displayln (~a "backdrop-r? " (get-component (get-backdrop-entity g) backdrop?) " " (backdrop-id (get-component (get-backdrop-entity g) backdrop?))))
+  (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
