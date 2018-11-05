@@ -28,18 +28,9 @@
          next-tile
          change-backdrop
          change-tile-to
-
-         ;get-current-tile
-         ;??
-         ;get-total-tiles
-         ;get-backdrop-entity
          
          backdrop-eq?
          more-tiles?
-         
-         ;backdrop-edge-system
-         ;spawn-all-from-backpack
-         ;spawn-active-from-backpack
          tile-changed?
 
          render-tile
