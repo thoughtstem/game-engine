@@ -34,20 +34,14 @@
 (define/contract (open-mini-map #:close-key close-key)
   (-> #:close-key (or/c symbol? string?) handler-function?)
   (lambda (g e)
-<<<<<<< HEAD
-    (define backdrop          (get-component (game->tracking-entity g) backdrop?))
-    (define tile-index        (backdrop-current-tile backdrop))
-    (define mini-map          (mini-map-img backdrop tile-index))
-=======
-    (define backdrop   (get-component (get-backdrop-entity g) backdrop?))
+    (define backdrop   (get-component (game->tracking-entity g) backdrop?))
     (define tile-index (backdrop-current-tile backdrop))
     
     (define mini-map-l (mini-map-layout backdrop tile-index))
     (define mini-map-f (mini-map-frame backdrop tile-index mini-map-l))
     
     (define id         (backdrop-id backdrop))
-    
->>>>>>> elena-test
+
     (define mini-map-offset-x (* -0.05 (game-width g)))
     (define mini-map-offset-y (* -0.05 (game-height g)))
     
@@ -64,8 +58,10 @@
                                                       show))
                                    (on-key close-key die)
                                    (observe-change backdrop-r? (λ(g e1 e2)
-                                                                (define backdrop     (get-component (get-backdrop-entity g) backdrop?))
-                                                                (define current-tile (get-current-tile (get-backdrop-entity g)))
+                                                                 ;(get-component (game->tracking-entity g) backdrop?)
+                                                                 ;(define tile-index (backdrop-current-tile backdrop))
+                                                                (define backdrop     (get-component (game->tracking-entity g) backdrop?))
+                                                                (define current-tile (backdrop-current-tile backdrop))
                                                                 (if (backdrop-r? g e2)
                                                                     (update-entity e2 animated-sprite? (new-sprite (mini-map-layout backdrop current-tile)))
                                                                     (if (void? e1)
@@ -166,8 +162,10 @@
 (define/contract (update-mini-map-frame layout)
   (-> image? handler-function?)
   (lambda (g e)
-    (define backdrop     (get-component (get-backdrop-entity g) backdrop?))
-    (define current-tile (get-current-tile (get-backdrop-entity g)))
+    ;(get-component (game->tracking-entity g) backdrop?)
+    ;(define tile-index (backdrop-current-tile backdrop))
+    (define backdrop     (get-component (game->tracking-entity g) backdrop?))
+    (define current-tile (backdrop-current-tile backdrop))
     (if current-tile
         (update-entity e animated-sprite? (new-sprite (mini-map-frame backdrop current-tile layout)))
         e)
@@ -177,14 +175,8 @@
 (define/contract (update-mini-map-layout)
   (-> handler-function?)
   (lambda (g e)
-<<<<<<< HEAD
     (define backdrop     (get-component (game->tracking-entity g) backdrop?))
     (define current-tile (game->current-tile g))
-=======
-    (define backdrop     (get-component (get-backdrop-entity g) backdrop?))
-    (define current-tile (get-current-tile (get-backdrop-entity g)))
-    
->>>>>>> elena-test
     (if current-tile
         (update-entity e animated-sprite? (new-sprite (mini-map-layout backdrop current-tile)))
         e)
@@ -212,4 +204,6 @@
 
 ; Function for observe-rule change in backdrop id
 (define (backdrop-r? g e)
-  (backdrop-id (get-component (get-backdrop-entity g) backdrop?)))
+  ;(get-component (game->tracking-entity g) backdrop?)
+    ;(define tile-index (backdrop-current-tile backdrop))
+  (backdrop-id (get-component (game->tracking-entity g) backdrop?)))

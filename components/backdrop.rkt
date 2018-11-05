@@ -19,36 +19,27 @@
          backdrop?
          backdrop-current-tile
          backdrop-tiles
-<<<<<<< HEAD
          backdrop-columns
 
          game->tracking-entity
 
-=======
          backdrop-id
-         backdrop?
-         
-         bg->backdrop
-         create-backdrop
          
          next-tile
          change-backdrop
          change-tile-to
 
-         get-current-tile
+         ;get-current-tile
          ;??
-         get-total-tiles
-         get-backdrop-entity
-         render-tile
+         ;get-total-tiles
+         ;get-backdrop-entity
          
          backdrop-eq?
          more-tiles?
          
-         backdrop-edge-system
-         player-edge-system
-         spawn-all-from-backpack
-         spawn-active-from-backpack
->>>>>>> elena-test
+         ;backdrop-edge-system
+         ;spawn-all-from-backpack
+         ;spawn-active-from-backpack
          tile-changed?
 
          render-tile
@@ -399,31 +390,7 @@
   (-> image? #:rows integer? #:columns integer? #:start-tile integer? (listof any/c))
   (list
    (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns #f current '())
-<<<<<<< HEAD
    (backpack)))
-
-=======
-   (backpack)
-   (on-rule first-tile? track-entities)
-   (on-rule not-tile-changed? (do-many store-misplaced
-                                       destroy-misplaced))
-   (on-rule tile-changed? spawn-active-from-backpack)))
-
-(define (backdrop-width b)
-  (image-width  (first (backdrop-tiles (first b)))))
-
-(define (backdrop-height b)
-  (image-height  (first (backdrop-tiles (first b)))))
-
-(define (backdrop-length b)
-  (length (backdrop-tiles (first b))))
-
-; === COMPONENTS ===
-;separate create-backdrop component created to keep backdrop id field internal
-(define/contract (create-backdrop tiles columns current-tile)
-  (-> list? integer? integer? backdrop?)
-  (backdrop (random 1000000) tiles columns current-tile))
->>>>>>> elena-test
 
 ; === HANDLER FUNCTIONS ===
 (define/contract (next-tile direction)
@@ -439,8 +406,6 @@
                        animated-sprite? (new-sprite (pick-tile backdrop next-bg-index)))
         e)))
 
-<<<<<<< HEAD
-=======
 ;Updates bg-backdrop component. Inputs new background img. Num col and rows will stay the same for a new backdrop!
 ; Function only replaces list of tiles stored in the struct.
 (define (change-backdrop new-bg)
@@ -451,11 +416,15 @@
     (define columns     (backdrop-columns bg-backdrop))
     (define rows        (/ (length (backdrop-tiles bg-backdrop)) columns))
     (define new-tiles   (sheet->costume-list new-bg columns rows (* rows columns)))
->>>>>>> elena-test
-
     (define new-bg-backdrop   (struct-copy backdrop bg-backdrop [id (random 1000000)] [tiles new-tiles]))
     ((show-backdrop) g (update-entity e backdrop? new-bg-backdrop))))
- 
+
+;Renders start-tile from the bg-backdrop component
+(define (show-backdrop)
+  (lambda (g e)
+    (define bg-component (get-component e backdrop?))
+    ((change-sprite (new-sprite (render-tile bg-component))) g e)))
+
 ;Change backdrop tile 
 (define/contract (change-tile-to num)
   (-> integer? (-> game? entity? entity?))
