@@ -70,25 +70,32 @@
   (define progress-bar  (if (= max-val 0)
                                empty-image
                                (pad (rectangle (* amount (/ 50 max-val)) 10 "solid" "lightblue")4 4)))
-  (define max-progress-bar (pad (rectangle 50 10 "solid" "transparent") 0 0))
-  (overlay/align "left" "middle"
-                 progress-bar
-                 (overlay
-                  (rectangle (+ 4 (image-width max-progress-bar)) (+ 4 (image-height max-progress-bar)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
-                  (rectangle (+ 8 (image-width max-progress-bar)) (+ 8 (image-height max-progress-bar)) "solid"  (make-color 20 20 20 150)))))
+  (define max-progress-bar (if (= max-val 0)
+                               empty-image
+                               (pad (rectangle 50 10 "solid" "transparent") 0 0)))
+  (if (= max-val 0)
+      empty-image
+      (overlay/align "left" "middle"
+                     progress-bar
+                     (overlay
+                      (rectangle (+ 4 (image-width max-progress-bar)) (+ 4 (image-height max-progress-bar)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
+                      (rectangle (+ 8 (image-width max-progress-bar)) (+ 8 (image-height max-progress-bar)) "solid"  (make-color 20 20 20 150))))))
 
-(define (update-progress-bar #:max [max-val 100])
+(define (update-progress-bar #:max [max-val 50])
   (lambda (g e)
     (define count (get-counter e))
     (define progress-bar (draw-progress-bar count #:max max-val))
-    ((change-sprite (new-sprite progress-bar)) g e)))
+    (if (= max-val 0)
+        e
+        ((change-sprite (new-sprite progress-bar)) g e))))
 
-(define (change-progress-by amount #:min [min-val 0] #:max [max-val 100])
+(define (change-progress-by amount #:min [min-val 0] #:max [max-val 50])
   (lambda (g e)
     (define progress (+ (get-counter e) amount))
     ((do-many (set-counter progress)
               (update-progress-bar #:max max-val)
-              #;(display-counter #:prefix "Progress: ")) g e)))
+              #;(display-counter #:prefix "Progress: ")) g e)
+    ))
 
 (define (producer-of to-carry #:on-drop [on-drop display-entity] #:build-time [build-time 0])
   (define to-clone
