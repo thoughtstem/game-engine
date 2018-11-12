@@ -50,11 +50,11 @@
 (define (producer #:on-drop [on-drop display-entity])
    (on-start (add-producer-of-self #:on-drop on-drop)))
 
-(define (start-movable-and-locked e on-drop)
+(define (start-movable-and-locked e on-drop show-info?)
   (~> e
         (update-entity _ posn? (posn 0 0))
         (add-components _
-                        (movable #:carry-offset (posn 20 0) #:on-drop on-drop #:show-info? #t)
+                        (movable #:carry-offset (posn 20 0) #:on-drop on-drop #:show-info? show-info?)
                         (lock-to "player" #:offset (posn 20 0)))
         (remove-component _ physical-collider?)  ))
 
@@ -97,11 +97,11 @@
               #;(display-counter #:prefix "Progress: ")) g e)
     ))
 
-(define (producer-of to-carry #:on-drop [on-drop display-entity] #:build-time [build-time 0])
+(define (producer-of to-carry #:on-drop [on-drop display-entity] #:build-time [build-time 0] #:show-info? [show-info? #t] #:rule [rule #t])
   (define to-clone
     (if (procedure? to-carry)
-        (thunk (start-movable-and-locked (to-carry) on-drop))
-        (start-movable-and-locked to-carry on-drop)))
+        (thunk (start-movable-and-locked (to-carry) on-drop show-info?))
+        (start-movable-and-locked to-carry on-drop show-info?)))
   
   (define progress-entity-name (~a (get-name (if (procedure? to-clone)
                                                  (to-clone)
@@ -132,7 +132,8 @@
           e2)))
   (list
    (on-key 'z
-           #:rule (and/r (λ (g e) (not (get-entity progress-entity-name g)))
+           #:rule (and/r rule
+                         (λ (g e) (not (get-entity progress-entity-name g)))
                          near-player?
                          nearest-to-player? 
                          (not/r (other-entity-locked-to? "player")))
