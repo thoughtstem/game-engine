@@ -831,7 +831,8 @@
   (g/v state)
   #:methods gen:word
   [(define (word-fps w)
-     60.0)
+     30.0)  ;Changed from 60 to 30, which makes it more smooth on the Chromebooks we use in class.
+            ;   Not sure why we were seeing such dramatic framerate drops
    
    (define (word-label s ft)
      (lux-standard-label "Values" ft))
