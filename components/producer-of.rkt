@@ -1,7 +1,8 @@
 #lang racket
 
 (provide producer-of
-         producer) 
+         producer
+         crafter-of) 
 
 (require "../game-entities.rkt"
          "../entity-helpers/carry-util.rkt"
@@ -97,7 +98,7 @@
               #;(display-counter #:prefix "Progress: ")) g e)
     ))
 
-(define (producer-of to-carry #:on-drop [on-drop display-entity] #:build-time [build-time 0] #:show-info? [show-info? #t] #:rule [rule #t])
+(define (producer-of to-carry #:on-drop [on-drop display-entity] #:build-time [build-time 0] #:show-info? [show-info? #t] #:rule [rule (λ (g e) #t)])
   (define to-clone
     (if (procedure? to-carry)
         (thunk (start-movable-and-locked (to-carry) on-drop show-info?))
@@ -133,6 +134,67 @@
   (list
    (on-key 'z
            #:rule (and/r rule
+                         (λ (g e) (not (get-entity progress-entity-name g)))
+                         near-player?
+                         nearest-to-player? 
+                         (not/r (other-entity-locked-to? "player")))
+           ;(do-many (spawn to-clone))
+           (spawn progress-counter)
+           )
+   (observe-change build-ready? (spawn-if-ready to-clone))))
+
+(define (crafter-of to-carry
+                    #:on-drop    [on-drop display-entity]
+                    #:build-time [build-time 0]
+                    #:show-info? [show-info? #t]
+                    #:rule       [rule (λ (g e) #t)]
+                    #:selection  [selection 0])
+  (define to-clone
+    (if (procedure? to-carry)
+        (thunk (start-movable-and-locked (to-carry) on-drop show-info?))
+        (start-movable-and-locked to-carry on-drop show-info?)))
+  
+  (define progress-entity-name (~a (get-name (if (procedure? to-clone)
+                                                 (to-clone)
+                                                 to-clone)) "-progress-counter"))
+  
+  (define (build-ready? g e)
+    (define progress-bar (get-entity progress-entity-name g))
+    (and progress-bar
+         (>= (get-counter progress-bar) build-time)))
+  
+  (define progress-counter
+    (sprite->entity #;(draw-dialog "Progress: 0") (if (<= build-time 0)
+                                                      empty-image
+                                                      (draw-progress-bar 0 #:max build-time))
+                    #:position   (posn 0 0)
+                    #:name       progress-entity-name
+                    #:components (static)
+                                 (hidden)
+                                 (counter 0)
+                                 (on-start show)
+                                 (do-every 10 (change-progress-by 1 #:max build-time))
+                                 (on-rule (λ (g e) (> (get-counter e) build-time)) die)))
+
+  (define (spawn-if-ready to-spawn)
+    (lambda (g e1 e2)
+      (if (build-ready? g e2)
+          ((spawn to-spawn) g e2)
+          e2)))
+  (list
+   (on-key 'enter
+           #:rule (and/r rule
+                         (λ (g e)
+                           (if (get-entity "crafting list" g)
+                               (displayln "Crafting List Found")
+                               (displayln "Crafting List NOT Found"))
+                           (get-entity "crafting list" g))
+                         (λ (g e)
+                           (define sel (if (get-entity "crafting selection" g)
+                                           (get-counter (get-entity "crafting selection" g))
+                                           #f))
+                           (displayln (~a "Found selection: " sel))
+                           (eq? sel selection))
                          (λ (g e) (not (get-entity progress-entity-name g)))
                          near-player?
                          nearest-to-player? 

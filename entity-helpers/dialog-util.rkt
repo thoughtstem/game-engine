@@ -30,6 +30,7 @@
          player-dialog-open?
          last-dialog?
          not-last-dialog?
+         get-selection-offset
          )
 
 (require "../game-entities.rkt")
