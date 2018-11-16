@@ -835,8 +835,7 @@
             ;   Not sure why we were seeing such dramatic framerate drops
    
    (define (word-label s ft)
-     "My Cool Game"
-     #;(lux-standard-label "Values" ft))
+     (lux-standard-label "Values" ft))
    
    (define (word-output w)
      (match-define (demo g/v state) w)
