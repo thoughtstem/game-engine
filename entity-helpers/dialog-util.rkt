@@ -59,8 +59,11 @@
   (define h (image-height image))
   (define w-padding (* w-pad 2))
   (define h-padding (* h-pad 2))
-  (overlay image
+  (freeze (overlay (freeze image)
            (rectangle (+ w w-padding) (+ h h-padding) "solid" "transparent")))
+  #;(overlay image
+           (rectangle (+ w w-padding) (+ h h-padding) "solid" "transparent"))
+  )
 
 (define (animated-dialog msg game-width #:skip [skip 1])
   (sheet->sprite (draw-dialog-sheet-text msg game-width #:skip skip)
@@ -351,7 +354,8 @@
 ; === DIALOG RULES ===
 (define (all-dialog-closed? g e)
   (and (not (get-entity "player dialog" g))
-       (not (get-entity "npc dialog" g))))
+       (not (get-entity "npc dialog" g))
+       (not (get-entity "crafting list" g))))
 
 (define (npc-spoke-and-near? name)
   (lambda (g e)
