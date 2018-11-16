@@ -8,6 +8,7 @@
          draw-dialog-sheet
          draw-dialog-sheet-text
          draw-dialog-list
+         draw-crafting-list
          dialog->sprites
          dialog->response-sprites
          next-dialog
@@ -111,6 +112,27 @@
            (overlay/align "left" "middle"
                           (pad (text (list->string (take msg-list i)) 18 "yellow") 6 8)
                           (rectangle (/ (* game-width 3) 4) (+ 12 (image-height message)) "solid" "transparent")))))
+
+; ----- Added icon-list
+(define (draw-crafting-list msg-list icon-list font-size selection)
+  (define list-of-entries (map (λ (msg icon) (freeze (beside
+                                              (pad (scale-to-fit icon font-size) 4 2)
+                                              (pad (text msg font-size "yellow") 4 2)))) msg-list icon-list))
+    (define message-list (apply (curry above/align "left") list-of-entries))
+
+  #|  (foldr (lambda (icon new-text text-img)
+                                (above/align "left"
+                                             (pad (beside
+                                                   (pad (scale-to-fit icon font-size) 4 0)
+                                                   (text new-text font-size "yellow")) 4 4))
+                                             text-img))
+                              empty-image
+                              icon-list
+                              msg-list))|#
+  (overlay message-list
+           (rectangle (+ 12 (image-width message-list)) (+ 12 (image-height message-list)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
+           (rectangle (+ 16 (image-width message-list)) (+ 16 (image-height message-list)) "solid"  (make-color 20 20 20 150))))
+; -----
 
 (define (draw-dialog-list msg-list font-size selection)
   (define message-list (foldr (lambda (new-text text-img)
