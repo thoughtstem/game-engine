@@ -8,7 +8,7 @@
 (define deps '("threading"
                "drracket"
                "htdp-lib"
-               "https://github.com/jeapostrophe/lux.git#c3998a4"
+               "https://github.com/jeapostrophe/lux.git#f6edd2e"
                "jack-posn"
                ;"rsound"
                "https://github.com/thoughtstem/racket-chipmunk.git"
