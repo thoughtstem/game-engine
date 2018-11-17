@@ -143,6 +143,11 @@
            )
    (observe-change build-ready? (spawn-if-ready to-clone))))
 
+(define (ensure-entity procedure-or-entity)
+  (if (procedure? procedure-or-entity)
+      (procedure-or-entity)
+      procedure-or-entity))
+
 (define (crafter-of to-carry
                     #:on-drop    [on-drop display-entity]
                     #:build-time [build-time 0]
@@ -174,12 +179,18 @@
                                  (counter 0)
                                  (on-start show)
                                  (do-every 10 (change-progress-by 1 #:max build-time))
-                                 (on-rule (λ (g e) (> (get-counter e) build-time)) die)))
+                                 (on-rule (λ (g e) (or (> (get-counter e) build-time)
+                                                       (tile-changed? g e))) die)
+                                 ))
 
   (define (spawn-if-ready to-spawn)
     (lambda (g e1 e2)
+      (define current-tile (game->current-tile g))
+      (displayln (~a "Spawning on tile: " current-tile))
+      (define updated-to-spawn
+        (update-entity (ensure-entity to-spawn) active-on-bg? (active-on-bg current-tile)))
       (if (build-ready? g e2)
-          ((spawn to-spawn) g e2)
+          ((spawn updated-to-spawn) g e2)
           e2)))
   (list
    (on-key 'enter
