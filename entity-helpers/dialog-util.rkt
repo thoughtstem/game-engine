@@ -116,7 +116,7 @@
 ; ----- Added icon-list
 (define (draw-crafting-list msg-list icon-list font-size selection)
   (define list-of-entries (map (λ (msg icon) (freeze (beside
-                                              (pad (scale-to-fit icon font-size) 4 2)
+                                              (pad (scale-to-fit icon (image-height (text "" font-size "yellow"))) 4 2)
                                               (pad (text msg font-size "yellow") 4 2)))) msg-list icon-list))
     (define message-list (apply (curry above/align "left") list-of-entries))
 
@@ -238,6 +238,7 @@
                   #:position   pos ;(posn 0 -40)
                   #:components (static)
                                (hidden)
+                               (layer "ui")
                                (dialog dialog-list 0)
                                ;(on-key 'space die)
                                (on-key 'enter #:rule last-dialog? die)
@@ -273,6 +274,7 @@
                   #:position   (posn 0 0)
                   #:components (static)
                                (hidden)
+                               (layer "ui")
                                ;(on-key 'space die)
                                (on-key 'enter #:rule last-dialog? die)
                                (on-start (go-to-pos-inside 'bottom-center))
@@ -290,6 +292,7 @@
                   #:position   pos
                   #:components (static)
                                (hidden)
+                               (layer "ui")
                                (on-start (do-many (go-to-pos 'center)
                                                   show
                                                   (open-dialog (dialog-selection dialog-list
@@ -320,6 +323,7 @@
                   #:position   (posn 0 0) ;(posn (/ WIDTH 2) (+ (/ HEIGHT 2) (posn-y offset)))
                   #:components (static)
                                (hidden)
+                               (layer "ui")
                                (counter selection)
                                (on-start show)
                                (lock-to "player dialog" #:offset offset)
@@ -382,14 +386,14 @@
 (define (npc-spoke-and-near? name)
   (lambda (g e)
     (if (and (get-entity "npc dialog" g)
-             ((near-entity? name) g e))
+             ((near? name) g e))
         #t
         #f)))
 
 (define (player-spoke-and-near? name)
   (lambda (g e)
     (if (and (get-entity "player dialog" g)
-             ((near-entity? name) g e))
+             ((near? name) g e))
         #t
         #f)))
 
@@ -400,7 +404,7 @@
          (not (get-entity "npc dialog" g))
          (get-entity name g)
          (not (get-component (get-entity name g) disabled?))
-         ((near-entity? name) g e))))
+         ((near? name) g e))))
 
 (define (npc-dialog-open? g e)
   (get-entity "npc dialog" g))
@@ -438,7 +442,7 @@
                               (length dialog-sprites)
                               (length (list-ref dialog-sprites player-dialog-index))))
     (if (and ;(get-entity "npc dialog" g)
-             ;((near-entity? "player") g e)
+             ;((near? "player") g e)
              (not (= npc-dialog-index dialog-length)))
         #t
         #f)))

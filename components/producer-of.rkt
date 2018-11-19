@@ -195,16 +195,11 @@
   (list
    (on-key 'enter
            #:rule (and/r rule
-                         (λ (g e)
-                           (if (get-entity "crafting list" g)
-                               (displayln "Crafting List Found")
-                               (displayln "Crafting List NOT Found"))
-                           (get-entity "crafting list" g))
+                         (λ (g e)(get-entity "crafting list" g))
                          (λ (g e)
                            (define sel (if (get-entity "crafting selection" g)
                                            (get-counter (get-entity "crafting selection" g))
                                            #f))
-                           (displayln (~a "Found selection: " sel))
                            (eq? sel selection))
                          (λ (g e) (not (get-entity progress-entity-name g)))
                          near-player?

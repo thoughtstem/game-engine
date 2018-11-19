@@ -53,7 +53,8 @@
   (define p-width  (image-width  (render (get-component player animated-sprite?))))
   ;(define p-height (image-height (render (get-component player animated-sprite?))))
   (define range (+ (/ e-width 2) (/ p-width 2) 10))
-  ((near-entity? "player" range) g e))
+  ;(displayln (~a "MIN RANGE: " range))
+  ((near? "player" range) g e))
 
 (define (nearest-to-player? g e)
   (define all-es (game-entities g) #;(filter (has-component? carriable?)
@@ -61,10 +62,18 @@
 
   (define player (entity-with-name "player" g))
 
+  (define (ui? e)
+    (and ((has-component? layer?) e)
+         (eq? (get-layer e) "ui")))
+
+  (define (not-ui? e)
+    (not (ui? e)))
+  
   (define all-but-me-and-player
     (~> all-es
         (remove player _ entity-eq?)
-        (remove e      _ entity-eq?)))
+        (remove e      _ entity-eq?)
+        (filter not-ui? _)))
   
   (define my-dist (distance-between (get-posn e)
                                     (get-posn player))) 
