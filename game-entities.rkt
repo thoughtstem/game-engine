@@ -8,13 +8,16 @@
          (struct-out hidden)
          (struct-out disabled)
 
-
+         (struct-out layer)
          
          (struct-out game) 
          (struct-out bb)
 
          draw-entities
          draw-entity
+
+         set-layer
+         get-layer
 
          entity-eq?
          entity-animation
@@ -87,7 +90,6 @@
 (require 2htdp/image)
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
-
 
 (require threading)
 
@@ -515,12 +517,22 @@
                      x y
                      (draw-entities (rest es))))))
 
+(define (ui? e)
+    (and ((has-component? layer?) e)
+         (eq? (get-layer e) "ui")))
+
+  (define (not-ui? e)
+    (not (ui? e)))
 
 (define #;/contract (draw g)
   #;(-> game? image?)
   (define (not-hidden e) (and (not (get-component e hidden?))
                               (not (get-component e disabled?))))
-  (define entities (filter not-hidden (game-entities g)))
+  (define not-hidden-entities (filter not-hidden (game-entities g)))
+  (define regular-entities (filter not-ui? not-hidden-entities))
+  (define ui-entities (filter ui? not-hidden-entities))
+  (define entities (append ui-entities regular-entities))
+  ;(define entities (filter not-hidden (game-entities g)))
   (draw-entities entities))
 
 
@@ -736,6 +748,16 @@
 ;HIDDEN
 
 (struct disabled ())
+
+
+(struct layer (name))
+
+(define (set-layer name)
+ (lambda (g e)
+     (update-entity e layer? (layer name))))
+
+(define (get-layer e)
+  (layer-name (get-component e layer?)))
 
 ;END HIDDEN
 

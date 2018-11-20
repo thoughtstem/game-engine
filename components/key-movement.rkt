@@ -9,7 +9,8 @@
          get-speed
          (struct-out on-no-key-movement)
          (struct-out on-key-movement)
-         set-player-speed)
+         set-player-speed
+         stop-movement)
 
 (struct key-movement (speed mode rule?) #:transparent)
 
@@ -89,4 +90,8 @@
 (define (set-player-speed n)
   (lambda (g e)
     (update-entity e key-movement? (key-movement n))))
+
+(define (stop-movement)
+  (lambda (g e)
+    (set-velocity e (posn 0 0))))
 
