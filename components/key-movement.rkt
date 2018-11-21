@@ -10,7 +10,10 @@
          (struct-out on-no-key-movement)
          (struct-out on-key-movement)
          set-player-speed
-         stop-movement)
+         moving?
+         player-is-moving?
+         stop-movement
+         )
 
 (struct key-movement (speed mode rule?) #:transparent)
 
@@ -95,3 +98,10 @@
   (lambda (g e)
     (set-velocity e (posn 0 0))))
 
+(define (moving? g e)
+  (define vel (get-current-velocity g e))
+  (not (equal? vel (posn 0 0))))
+
+(define (player-is-moving? g e)
+  (define vel (get-current-velocity g (get-entity "player" g)))
+  (not (equal? vel (posn 0 0))))
