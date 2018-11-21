@@ -17,15 +17,17 @@
 
 (define (drop-last-item)
   (lambda (g e)
-    (define item-list (get-items e))
+    ;(displayln "DROPPING LAST ITEM")
+    (define target-ent (get-last-item e))
     (define current-tile (game->current-tile g))
-    (if (not (empty? item-list))
+    (if (not (empty? (get-items e)))
         (let ([new-entity (update-entity
                            (update-entity
-                            (item-entity (last item-list))
+                            target-ent
                             active-on-bg? (active-on-bg current-tile))
                            posn? (posn 0 0))])
-          ((spawn new-entity) g (update-entity e backpack? (apply backpack (remove (last item-list) item-list)))))
+          ((spawn new-entity #:relative? #t) g
+                                             ((remove-item target-ent) g e)))
         e)))
 
 ; ==== SYSTEMS ====

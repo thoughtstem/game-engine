@@ -8,10 +8,16 @@
          (struct-out hidden)
          (struct-out disabled)
 
-
+         (struct-out layer)
          
          (struct-out game) 
          (struct-out bb)
+
+         draw-entities
+         draw-entity
+
+         set-layer
+         get-layer
 
          entity-eq?
          entity-animation
@@ -55,20 +61,35 @@
 
          component-is?
          set-velocity
-         chipmunkify
+         ;chipmunkify
+         uniqify-id
 
          has-component?
+         is-component?
 
          id
          id?
 
-         new-game-function-f)
+         new-game-function-f
+
+         and/r
+         or/r
+         not/r
+
+         entity-with-name
+         replace-entity-in-list
+         entity-in-list?
+         union-entities
+         die-if-member-of
+         handler
+         f-handler
+         simple-handler
+         )
 
 (require posn)
 (require 2htdp/image)
 (require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
-
 
 (require threading)
 
@@ -84,6 +105,18 @@
               [prev-input #:mutable]
               [collisions #:mutable]) #:transparent)
 
+(define-syntax-rule (handler g e body)
+  (lambda (g e)
+    body ))
+
+(define-syntax-rule (f-handler g e f)
+  (lambda (g e)
+    (f e)))
+
+(define-syntax-rule (simple-handler body)
+  (lambda (g e)
+    body
+    e))
 
 (struct bb [w h])
 
@@ -113,7 +146,7 @@
   (posn-y (get-posn e)))
 
 
-(struct id [id])
+(struct id [id] #:transparent)
 
 
 
@@ -145,6 +178,21 @@
 (define (component? x)
   (get-handler-for-component x))
 
+(define (and/r . rs)
+  (λ(g e)
+    (define bs (map (λ(r) (r g e)) rs))
+    (define b (not (member #f bs)))
+    b))
+
+(define (or/r . rs)
+  (λ(g e)
+    (define bs (map (λ(r) (r g e)) rs))
+    (define b (member #t bs))
+    b))
+
+(define (not/r r)
+  (λ(g e)
+    (not (r g e))))
 
 (define game-functions (list))
 
@@ -174,6 +222,10 @@
   (if n
       (entity-name-string n)
       #f))
+
+
+(define (entity-with-name n g)
+  (findf (λ(x) (string=? n (get-name x))) (game-entities g)))
 
 (define (get-id e)
   (id-id (get-component e id?)))
@@ -227,8 +279,8 @@
                                 (posn-y p))))
 
 ;You can pass in a predicate or an actual component
-(define #;/contract (get-component e maybe-pred)
-  #;(-> entity? any/c any/c)
+(define/contract (get-component e maybe-pred)
+  (-> entity? any/c any/c)
   (define component-pred
     (if (procedure? maybe-pred)
         maybe-pred
@@ -247,7 +299,39 @@
 
 (define (remove-component e c?)
   (match-define (entity components) e)
+
+  ;Just a quick little side-effect here,
+  ;  Nobody will notice...
+  (maybe-clean-up-physical-collider! e c?)
+  
   (entity (filter (lambda (c) (not (c? c))) components)))
+
+  
+(define (replace-entity-in-list updated-entity current-entities)
+  (define (f entity)
+    (if (entity-eq? entity updated-entity)
+        updated-entity
+        entity))
+  (map f current-entities))
+
+(define (entity-in-list? e l)
+  (not (member e l entity-eq?)))
+
+(define (union-entities a b) ;Versions of entities in a take presidence 
+  (define in-a-not-b (filter (λ (o) (not (member o b entity-eq?))) a))
+  (define in-a-and-b (filter (λ (o)      (member o b entity-eq?)) a))
+  (define in-b-not-a (filter (λ (o) (not (member o a entity-eq?))) b))
+  (append in-a-not-b
+          in-a-and-b
+          in-b-not-a))
+
+
+(define (maybe-clean-up-physical-collider! e c?)
+  (and (or (physical-collider? c?)
+           (eq? physical-collider? c?))
+       (get-component e physical-collider?)
+       (already-chipmunkified? (get-component e physical-collider?))
+       (phys:destroy-chipmunk (physical-collider-chipmunk (get-component e physical-collider?)))))
 
 (define (add-components e . cs)
   (define flattened (flatten cs))
@@ -257,7 +341,7 @@
              (rest flattened))))
 
 (define (basic-entity p s)
-  (entity (list (id (random 10000000))
+  (entity (list (id #f)
                 p
                 (image->bb (render s))
                 s)))
@@ -433,12 +517,22 @@
                      x y
                      (draw-entities (rest es))))))
 
+(define (ui? e)
+    (and ((has-component? layer?) e)
+         (eq? (get-layer e) "ui")))
+
+  (define (not-ui? e)
+    (not (ui? e)))
 
 (define #;/contract (draw g)
   #;(-> game? image?)
   (define (not-hidden e) (and (not (get-component e hidden?))
                               (not (get-component e disabled?))))
-  (define entities (filter not-hidden (game-entities g)))
+  (define not-hidden-entities (filter not-hidden (game-entities g)))
+  (define regular-entities (filter not-ui? not-hidden-entities))
+  (define ui-entities (filter ui? not-hidden-entities))
+  (define entities (append ui-entities regular-entities))
+  ;(define entities (filter not-hidden (game-entities g)))
   (draw-entities entities))
 
 
@@ -495,7 +589,7 @@
 
 
 (define (tick-entity g e)
-  (main-tick-entity g e))
+  (main-tick-entity g (chipmunkify e)))
 
 (define (tick-entities g)
   (define es (game-entities g))
@@ -506,7 +600,9 @@
 (define (do-game-functions g)
   (define pipeline (lambda (a-fun a-game)
                      (with-handlers ([exn:fail?
-                                      (λ (e) (error (~a "Error running " (first a-fun) ": " e)))])
+                                      (λ (e)
+                                        (displayln e)
+                                        (error (~a "Error running " (first a-fun) ": " e)))])
                        ((second a-fun) a-game))))
   (foldl pipeline g game-functions))
 
@@ -520,21 +616,35 @@
 
 
 (define (find-entity-by-id i g)
-  (findf (λ(e) (= i (get-id e)))
+  (findf (λ(e) (eq? i (get-id e)))
          (game-entities g)))
 
 (define (current-version-of e g)
   (find-entity-by-id (get-id e) g))
 
-
-
 (define last-game-snapshot #f)
+
+(define (uniqify-id g e)
+  (if (or (not (get-id e))
+          (member (get-id e)
+                  (map get-id (remove e (game-entities g) entity-eq?))))
+      (begin
+       ;(displayln (~a "Setting new id"))
+       (update-entity e id? (id (random 1000000))))
+      e))
+
+(define (uniqify-ids g)
+  (struct-copy game g
+               [entities (map (curry uniqify-id g)
+                              (game-entities g))]))
 
 (define tick
   (lambda (g)
-    (set! last-game-snapshot g)
+    (define new-g (uniqify-ids g))
     
-    (define new-game (~> g
+    (set! last-game-snapshot new-g)
+    
+    (define new-game (~> new-g
                          ;Just a note for the future.  This is not slow.  Do not move to a different thread in a misguided effort to optimize...
                          ;  However, maybe we should consider moving this to its own physics module...?
                          physics-tick 
@@ -556,6 +666,12 @@
 (define (handle-killed-entities g)
   (handle-dead g #f))
 
+
+(define (die-if-member-of e doomed)
+  (if (member e doomed entity-eq?)
+      (add-component e (dead))
+      e))
+
 (define (handle-dead g self-killed?)
   (define is-alive? (lambda (e) (not (get-component e dead?))))
 
@@ -565,7 +681,8 @@
                                    (map entity->chipmunk doomed)))
 
   (for ([d doomed-chipmunks])
-    (phys:destroy-chipmunk d))
+    (or (phys:destroyed-chipmunk? d)
+        (phys:destroy-chipmunk d)))
   
   (set-game-entities! g (filter is-alive? (game-entities g)))
   
@@ -632,6 +749,16 @@
 
 (struct disabled ())
 
+
+(struct layer (name))
+
+(define (set-layer name)
+ (lambda (g e)
+     (update-entity e layer? (layer name))))
+
+(define (get-layer e)
+  (layer-name (get-component e layer?)))
+
 ;END HIDDEN
 
 
@@ -650,6 +777,12 @@
     (get-component e pred?)))
 
 
+(define (is-component? c)
+  (lambda(o)
+    (or
+     (eq? o c)
+     (and (list? c)
+          (member o c)))))
 
 (struct bake ())
 
@@ -695,7 +828,7 @@
 
   (define g
     (bake-in
-     (physics-start larger-state)))
+     (physics-start (uniqify-ids larger-state))))
 
   
   (final-state
@@ -720,7 +853,8 @@
   (g/v state)
   #:methods gen:word
   [(define (word-fps w)
-     60.0)
+     30.0)  ;Changed from 60 to 30, which makes it more smooth on the Chromebooks we use in class.
+            ;   Not sure why we were seeing such dramatic framerate drops
    
    (define (word-label s ft)
      (lux-standard-label "Values" ft))
@@ -823,7 +957,8 @@
   (define (physics-tick-entity e)
     (define pc (get-component e physical-collider?))
     
-    (if (not pc)
+    (if (or (not pc)
+            (not (already-chipmunkified? pc)))
         e
         (let ([f (physical-collider-force pc)]
               [c (physical-collider-chipmunk pc)])
@@ -847,14 +982,16 @@
 
 
 
+(define (already-chipmunkified? pc)
+  (and (physical-collider-chipmunk pc)
+       (not (phys:destroyed-chipmunk? (physical-collider-chipmunk pc)))))
 
 
 (define (chipmunkify e)
-
-
   (define pc (get-component e physical-collider?))
  
-  (if (not pc)
+  (if (or (not pc)
+          (already-chipmunkified? pc))
       e
       (let ([chipmunk ((if (get-component e static?) phys:box-kinematic phys:box)
                        (x e)
@@ -876,6 +1013,10 @@
 (define (vel-func chipmunk gravity damping dt)
 
   (define e (find-entity-by-id (phys:chipmunk-meta chipmunk) last-game-snapshot))
+
+  ;(displayln (~a "Find by id " (phys:chipmunk-meta chipmunk)))
+  ;(displayln e)
+
 
   #;(phys:cpBodyUpdateVelocity body gravity damping dt)
 
@@ -916,7 +1057,7 @@
      (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
      (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
 
-     #;(display (~a "Colliding" (get-name e1) (get-name e2)))
+     #;(displayln (~a "Colliding " (get-name e1) " " (get-name e2)))
 
      (set-game-collisions! last-game-snapshot
                            (cons (list e1 e2)

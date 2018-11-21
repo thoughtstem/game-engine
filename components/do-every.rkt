@@ -25,8 +25,8 @@
 
 (define (update-do-every g e c)
   (if (do-every-ready? c)
-      (update-entity ((do-every-func c) g e) do-every? reset-do-every)
-      (update-entity e                     do-every? inc-do-every)))
+      (update-entity ((do-every-func c) g e) (is-component? c) reset-do-every)
+      (update-entity e                       (is-component? c) inc-do-every)))
 
 (new-component do-every?
                update-do-every)

@@ -8,7 +8,8 @@
 
 ;(displayln "LOADING ON START")
 
-(provide spawn-once-spawn
+(provide spawn-many-from
+         spawn-once-spawn
          spawn-once-speed
          spawn-once-accum
          spawn-once-next
@@ -36,8 +37,10 @@
 
 (define (spawn-once-do-spawn e) 
   (lambda (s)
+    
     (define to-spawn (next-spawn s))
-    (define relative? (spawn-once-relative? (get-component e spawn-once?)))
+    (define relative? (spawn-once-relative? s #;(get-component e spawn-once?)))
+    ;(displayln (~a "Spawning from: " (get-name e) ", Relative: " relative?))
     (define pos (get-component e posn?))
     (define dir (if (get-component e direction?)
                     (get-direction e)
@@ -66,9 +69,9 @@
     
     (if relative?
         (struct-copy spawn-once s
-                 [next new-entity])
+                     [next new-entity])
         (struct-copy spawn-once s
-                 [next to-spawn]))))
+                     [next to-spawn]))))
 
 (define (spawn-once-inc s)
   (struct-copy spawn-once s
@@ -105,13 +108,22 @@
   (and (not (empty? new-es))
        (displayln (~a "Spawning: " (map get-name new-es))))
   
-  (define all    (append (map chipmunkify new-es)
+  (define all    (append #;new-es
+                         (map (curry uniqify-id g) new-es)
                          (reset-spawn-once es)))
   
   (struct-copy game g
                [entities all]))
 
+
+(define (spawn-many-from source to-spawn #:relative (r #t))
+  (add-components source (map (curry make-spawn-once #:relative? r) to-spawn)))
+
+
 (new-component spawn-once?
                update-spawn-once)
 
 (new-game-function handle-spawn-once)
+
+
+

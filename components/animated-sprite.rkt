@@ -18,15 +18,20 @@
 
 ;Convenience methods for going from sheets to sprites
 
-(define (sheet->sprite sheet #:rows    r
-                             #:columns c
-                             #:row-number  n
-                             #:speed   s)
+(define (sheet->sprite sheet #:rows        (r 1)
+                             #:columns     (c 1)
+                             #:row-number  (n 1)
+                             #:speed       (speed #f)
+                             #:delay       (delay #f)
+                             )
+  
+  (define actual-delay (or delay speed 1))
+  
   (~> sheet
       (sheet->costume-list _ c r (* r c))
       (drop _ (* (- n 1) c))
       (take _ c)
-      (new-sprite _ s)))  
+      (new-sprite _ actual-delay)))  
 
 
 (struct animated-sprite

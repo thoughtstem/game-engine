@@ -4,7 +4,9 @@
 (require posn)
 
 (provide (rename-out (make-lock-to lock-to))
-         lock-to?)
+         lock-to-name
+         lock-to?
+         other-entity-locked-to?)
 
 (struct lock-to (name offset))
 
@@ -20,3 +22,12 @@
 
 (new-component lock-to?
                update-lock-to)
+
+(define (other-entity-locked-to? s)
+  (λ(g e)
+    (define other-lock-tos
+      (filter identity
+              (map (λ(e) (get-component e lock-to?))
+                   (game-entities g))))
+
+    (member s (map lock-to-name other-lock-tos))  ))

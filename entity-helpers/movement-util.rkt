@@ -18,9 +18,8 @@
          un-freeze-entity
          distance-between
          get-entities-near
-         near-entity?
-         near-ent?
-         near?)
+         near?
+         player-is-near?)
 
 (require "../game-entities.rkt"
          "../components/direction.rkt"
@@ -182,18 +181,6 @@
   (define p (posn-subtract pos2 pos1))
   (sqrt (+ (expt (posn-x p) 2) (expt (posn-y p) 2))))
 
-(define (near-entity? name [range 80])
-  (lambda (g e)
-    (define pos (get-component e posn?))
-    (define target-pos (get-component (get-entity name g) posn?))
-    (< (distance-between target-pos pos) range)))
-
-(define (near-ent? target-e [range 80])
-  (lambda (g e)
-    (define pos (get-component e posn?))
-    (define target-pos (get-component target-e posn?))
-    (< (distance-between target-pos pos) range)))
-
 (define (close? range source-e target-e)
   (define source-pos (get-component source-e posn?))
   (define target-pos (get-component target-e posn?))
@@ -202,11 +189,15 @@
 (define (get-entities-near e g [range 80])
   (filter (curry close? range e) (game-entities g)))
 
-(define (near? name)
+(define (near? name [range 80])
   (lambda (g e)
-    (define (not-disabled? ent)
-      (not (get-component ent disabled?)))
     (define (name-eq? name e)
       (eq? (get-name e) name))
-    (define nearby-ents (filter (curry name-eq? name) (filter not-disabled? (get-entities-near e g))))
+    (define nearby-ents (filter (curry name-eq? name) (get-entities-near e g range)))
     (not (empty? nearby-ents))))
+
+(define (player-is-near? item [range 80])
+  (lambda (g e)
+    (define player (get-entity "player" g))
+    ((near? item range) g player)))
+
