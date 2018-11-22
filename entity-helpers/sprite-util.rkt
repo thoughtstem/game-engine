@@ -36,7 +36,7 @@
                        (sprite-or-func)
                        sprite-or-func))
     (define new-bb (image->bb (render sprite)))
-    (update-entity (update-entity e animated-sprite? sprite)
+    (update-entity (update-entity e animated-sprite? (set-has-changed sprite))
                    bb?
                    new-bb)))
 

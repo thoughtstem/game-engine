@@ -63,8 +63,8 @@
     (set-uncompiled-things! current-entities)
 
     ;Recompile the database if we added anything:
-    (and (not (empty? uncompiled))
-         (recompile! W H))
+    (recompile! W H)
+    
 
     ;Create our sprites
     (define dynamic-sprites (game->mode-lambda-sprite-list current-entities))
@@ -123,17 +123,69 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+(require 2htdp/image)
+
+(define temp-storage '())
+
+(define (remember-image! f)
+  (set! temp-storage
+        (cons (image->id f)
+              temp-storage)))
+
+(define (seen-image-before f)
+  (member (image->id f) temp-storage))
+
+(define (image->id f)
+  #;(define id (hash-ref temp-storage f #f))
+
+  #;(define n
+    (if id
+        id
+        (begin
+          (hash-set! temp-storage f (length (hash-keys temp-storage)))
+
+          (sub1 (length (hash-keys temp-storage))))))
+
+  (string->symbol (~a "id" (image-width f))))
+
+(define (entity+animated-sprite+image->id e as f i)
+  #;(string->symbol
+     (~a "entity:" (get-id e) "-animation:" (animated-sprite-id as) "-frame:" i))
+
+  (image->id f)
+  )
+
+(define (add-animated-sprite-frame-new! db f)
+  (define id-sym (image->id f))
+  
+  (ml:add-sprite!/value db id-sym f))
+
+(define (add-animated-sprite-frame! db e as f i)
+  (define id-sym (entity+animated-sprite+image->id e as f i))
+  
+  (ml:add-sprite!/value db id-sym f))
+
+(define (add-animated-sprite! db e as)
+  (define frames (animated-sprite-frames as))
+  (for ([f (in-vector frames)]
+        [i (in-range (vector-length frames))])
+    (add-animated-sprite-frame! db e as f i)))
+
 (define (add-entity! db e)
-  (define frames (animated-sprite-frames (get-component e animated-sprite?)))
-  (for ([i (in-range (vector-length frames))])
-    (define id-sym (id->symbol #:prefix (~a "sprite" i) (get-id e)))
-    (ml:add-sprite!/value db
-                          id-sym
-                          (vector-ref frames i))
-
-    (displayln (~a "Compiling sprite " (get-name e) " id: " id-sym ))))
-
-
+  (add-animated-sprite! db e (get-component e animated-sprite?)))
 
 (define (entities->compiled-sprite-database entities)
   (define sd (ml:make-sprite-db))
@@ -167,58 +219,62 @@
   '() ;List? Hash? WTF?
   )
 
+(define should-recompile? #f)
+
 (define csd       #f)  ;Mode Lambda's representation of our compiled sprites
 (define ml:render #f)  ;Graphics card render function
 
 (define (setup-already-compiled-list! entities)
-  (begin
-    (set! compiled-sprites (entities->sprites-to-compile entities))
-    
-    (set! compiled entities)))
+  (void))
 
 (define (entities->sprites-to-compile entities)
-  (~> entities
-      (map (curryr get-component animated-sprite?) _)
-      (filter animated-sprite-changed-since-last-frame? _)
-      (map animated-sprite-frames _)))
+  (flatten
+   (~> entities
+       (map (curryr get-component animated-sprite?) _)
+       (filter animated-sprite-changed-since-last-frame? _)
+       (map    set-has-not-changed! _)
+       (map (compose vector->list animated-sprite-frames) _))))
 
 
+(define compiled-images '())
 
 (define (set-uncompiled-things! entities)
-  (define all-sprites-to-render (entities->sprites-to-compile entities))
-  
-  (set! uncompiled-sprites
-        (filter-not (curryr member compiled-sprites equal?)
-                    all-sprites-to-render))
+  ;Trigger recompile if any of the frames haven't been remembered
+  (define images (entities->sprites-to-compile entities))
+  (define uncompiled-images (filter-not seen-image-before images))
 
-  (begin
-    (displayln (~a "# entities in frame: "   (length entities)))
-    (displayln (~a "# sprites in frame: "    (length all-sprites-to-render)))
-    (displayln (~a "# compiled-sprites: "    (length compiled-sprites)))
-    (displayln (~a "# uncompiled-sprites: "  (length uncompiled-sprites))))
+  (for ([image (in-list uncompiled-images)])
+    (remember-image! image))
 
-  (set! uncompiled
-        (filter-not (curryr member compiled entity-eq?)
-                    entities)))
+  (and (not (empty? uncompiled-images))
+       (set! compiled-images (append compiled-images uncompiled-images ))
+       (set! should-recompile? #t))
+  )
 
 
 (define (recompile! W H)
-  (let ([sd2 (ml:make-sprite-db)])
-    (for ([sprite-entity (in-list (append compiled uncompiled))])
-      (and (get-component sprite-entity animated-sprite?)
-           (add-entity! sd2 sprite-entity)))
-    (set! csd (ml:compile-sprite-db sd2))
-    ;(ml:save-csd! csd (build-path "/Users/thoughtstem/Desktop/sprite-db") #:debug? #t)
-    (set! compiled (append compiled uncompiled))
-    (displayln (ml:compiled-sprite-db-spr->idx csd))
-    (set! ml:render (gl:stage-draw/dc csd W H 8))))
+  (and should-recompile?
+       (let ([sd2 (ml:make-sprite-db)])
+         (for ([image (in-list compiled-images)])
+           (add-animated-sprite-frame-new! sd2 image))
+         (set! csd (ml:compile-sprite-db sd2))
+
+         (displayln (ml:compiled-sprite-db-spr->idx csd))
+         (set! ml:render (gl:stage-draw/dc csd W H 8))
+         (set! should-recompile? #f))))
 
 (define (game->mode-lambda-sprite-list entities)
   (flatten
    (filter identity
            (for/list ([e (in-list (reverse entities))])
-             (define frame-i   (animated-sprite-current-frame (get-component e animated-sprite?)))
-             (define id-sym    (id->symbol #:prefix (~a "sprite" frame-i) (get-id e)))
+             (define as (get-component e animated-sprite?))
+             
+             (define f   (render as))
+
+             
+             (define id-sym    (entity+animated-sprite+image->id e as f (animated-sprite-current-frame as)))
+
+             
              (define sprite-id (ml:sprite-idx csd id-sym))
 
              ; (displayln (~a (get-name e) " id: " id-sym " sprite-id: " sprite-id))
