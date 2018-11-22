@@ -38,7 +38,7 @@
   (define W (w bg-entity))
   (define H (h bg-entity))
   (define W/2 (/ W 2))
-  (define H/2 (/ W 2))
+  (define H/2 (/ H 2))
 
 
   ;Use the entities, plus their sprites, to determine the initial sprite database
@@ -46,8 +46,10 @@
 
   ;Define that we'll have one layer of sprites (for now).
   ;  Fix it's position at the width and height of the game (WHY NOT 0,0?)
-  (define layers (vector (ml:layer (real->double-flonum W)
-                                   (real->double-flonum H))))
+  (define layers (vector (ml:layer (real->double-flonum W/2)
+                                   (real->double-flonum H/2))))
+
+  
 
   (define compiled original-entities)
 
@@ -91,7 +93,13 @@
                      (if (not sprite-id)
                            #f
                            (ml:sprite #:layer 0
-                                      (real->double-flonum (- (x e) W/2)) (real->double-flonum (- (y e) H/2))
+                                      (real->double-flonum (x e))
+                                      (real->double-flonum (y e))
+                                      
+                                      #;(real->double-flonum (- (x e) W/2))
+                                      #;(real->double-flonum (- (y e) H/2))
+
+                                      
                                       sprite-id)))))))
 
     
