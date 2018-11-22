@@ -11,7 +11,8 @@
          sprite-map
          pick-frame
          pick-frame-original
-         sprite-map-original)
+         sprite-map-original
+         animated-sprite-image-eq?)
 
 (require 2htdp/image)
 (require threading)
@@ -31,11 +32,15 @@
       (sheet->costume-list _ c r (* r c))
       (drop _ (* (- n 1) c))
       (take _ c)
-      (new-sprite _ actual-delay)))  
+      (new-sprite _ actual-delay)))
+
+
 
 
 (struct animated-sprite
         (
+         image-id         ;Only changes when the image changes, makes for fast image comparisions, animated-sprite-image-eq?
+         
          o-frames         ;List of original images
          frames           ;List of images
          total-frames
@@ -45,22 +50,43 @@
          animate?         ;Set true to animate frames
          ) #:transparent)
 
+(define sprite-ids (make-weak-hash))
+(define (id-for image-vector)
+  (if (hash-has-key? sprite-ids image-vector)
+      (hash-ref sprite-ids image-vector)
+      (begin
+        (hash-set! sprite-ids image-vector (length (hash-keys sprite-ids)))
+        (hash-ref  sprite-ids image-vector))))
+
+(define (animated-sprite-image-eq? s1 s2)
+  (= (animated-sprite-image-id s1)
+     (animated-sprite-image-id s2)))
+
 (define (sprite-map f s)
+  (define new-frames (vector-map f (animated-sprite-frames s)))
+  
   (struct-copy animated-sprite s
-               [frames (vector-map f (animated-sprite-frames s))]))
+               [image-id (id-for new-frames)]
+               [frames new-frames]))
 
 (define (sprite-map-original f s)
+  (define new-frames (vector-map f (animated-sprite-o-frames s)))
   (struct-copy animated-sprite s
-               [frames (vector-map f (animated-sprite-o-frames s))]))
+               [image-id (id-for new-frames)]
+               [frames new-frames]))
 
 (define/contract (new-sprite costumes (rate 1) #:animate [animate? #t])
   (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
   (define list-costumes (if (list? costumes)
                             costumes
                             (list costumes)))
+
+  (define frames (map bake list-costumes))
+  
   (animated-sprite
-   (list->vector (map bake list-costumes))
-   (list->vector (map bake list-costumes))
+   (id-for frames)
+   (list->vector frames)
+   (list->vector frames)
    (length list-costumes)
    0
    rate

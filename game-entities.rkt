@@ -88,7 +88,7 @@
 
 (require posn)
 (require 2htdp/image)
-(require 2htdp/universe)
+;(require 2htdp/universe)
 (require "./components/animated-sprite.rkt")
 
 (require threading)
@@ -159,6 +159,8 @@
   (and
    (entity? e1)
    (entity? e2)
+   (get-id e1)
+   (get-id e2)
    (= (get-id e1)
       (get-id e2))))
 
@@ -842,52 +844,170 @@
 
 
 (require racket/match
-         racket/fixnum         
+         racket/fixnum
+         racket/flonum
          lux
          lux/chaos/gui
          lux/chaos/gui/val
          (prefix-in lux: lux/chaos/gui/key)
-         (prefix-in lux: lux/chaos/gui/mouse))
+         (prefix-in lux: lux/chaos/gui/mouse)
+
+         (prefix-in ml: mode-lambda)
+         (prefix-in ml: mode-lambda/static)
+         (prefix-in gl: mode-lambda/backend/gl))
+
+
 
 (struct demo
-  (g/v state)
+  ( state render-tick)
   #:methods gen:word
   [(define (word-fps w)
-     30.0)  ;Changed from 60 to 30, which makes it more smooth on the Chromebooks we use in class.
+     60.0)  ;Changed from 60 to 30, which makes it more smooth on the Chromebooks we use in class.
             ;   Not sure why we were seeing such dramatic framerate drops
    
    (define (word-label s ft)
      (lux-standard-label "Values" ft))
    
    (define (word-output w)
-     (match-define (demo g/v state) w)
-     (g/v (draw state)))
+     (match-define (demo  state render-tick) w)
+     #;(g/v (draw state)) ;Old, slower drawing method.  For reference...
+     (render-tick)
+     )
    
    (define (word-event w e)
-     (match-define (demo g/v state) w)
+     (match-define (demo  state render-tick) w)
      (define closed? #f)
      (cond
-       [(eq? e 'close)
-        #f]
+       [(eq? e 'close)  #f]
        [(lux:key-event? e)
 
        
         (if (not (eq? 'release (send e get-key-code)))
-            (demo g/v (handle-key-down state (format "~a" (send e get-key-code))))
-            (demo g/v (handle-key-up state (format "~a" (send e get-key-release-code)))))
+            (demo  (handle-key-down state (format "~a" (send e get-key-code))) render-tick)
+            (demo  (handle-key-up state (format "~a" (send e get-key-release-code))) render-tick))
          
         ]
-       [else
-        (demo g/v state)]))
+       [else w]))
    
    (define (word-tick w)
-     (match-define (demo g/v state) w)
-     (demo g/v (tick state)))])
+     (match-define (demo  state render-tick) w)
+     (demo  (tick state) render-tick)
+     )])
 
 (define (lux-start larger-state)
+  (define render-tick (get-mode-lambda-render-tick (game-entities larger-state)))
+
+  
   (call-with-chaos
-   (make-gui #:start-fullscreen? #f)
-   (λ () (fiat-lux (demo (make-gui/val) larger-state)))))
+   (make-gui #:start-fullscreen? #f #:mode gl:gui-mode)
+   (λ () (fiat-lux (demo larger-state render-tick)))))
+
+(define (id->symbol #:prefix (prefix "") n)
+  (string->symbol (~a prefix "id" n)))
+
+(define (sprite-eq? e1 e2)
+  (animated-sprite-image-eq? (get-component e1 animated-sprite?)
+                             (get-component e2 animated-sprite?)))
+ 
+(define (get-mode-lambda-render-tick original-entities)
+  (define sprite-entities
+    (filter (has-component? animated-sprite?) original-entities))
+  
+  (define W (w (last original-entities)))
+  (define H (h (last original-entities)))
+  (define W/2 (/ W 2.0))
+  (define H/2 (/ W 2.0))
+
+  (define sd (ml:make-sprite-db))
+
+  (define (add-entity! db e)
+    (define frames (animated-sprite-frames (get-component e animated-sprite?)))
+    (for ([i (in-range (vector-length frames))])
+      (define id-sym (id->symbol #:prefix (~a "sprite" i) (get-id e)))
+      (ml:add-sprite!/value db
+                            id-sym
+                            (vector-ref frames i))
+
+      (displayln (~a "Compiling sprite " (get-name e) " id: " id-sym ))
+      
+      ))
+  
+
+  (for ([sprite-entity (in-list sprite-entities)])
+    (add-entity! sd sprite-entity))
+  
+  (define csd (ml:compile-sprite-db sd))
+
+  (displayln (ml:compiled-sprite-db-spr->idx csd))
+ ; (ml:save-csd! csd (build-path "/Users/thoughtstem/Desktop/sprite-db") #:debug? #t)
+
+  
+
+  (define start (current-milliseconds))
+
+  (define (time-since-start)
+    (- start (current-milliseconds)))
+
+  (define layers
+    (vector
+     (ml:layer (* W 1.0) (* H 1.0))))
+
+  (define compiled original-entities)
+
+  (define ml:render (gl:stage-draw/dc csd W H 8))
+  
+  (define (ticky-tick)
+    
+    ;Find uncompiled entities...
+    (define uncompiled (if (not last-game-snapshot)
+                           '()
+                           (filter-not (curryr member compiled entity-eq? #;sprite-eq?)
+                                       (game-entities last-game-snapshot))))
+
+
+    ;Recompile the database if we added anything:
+    (and (not (empty? uncompiled))
+         (let ([sd2 (ml:make-sprite-db)])
+           (for ([sprite-entity (in-list (append compiled uncompiled))])
+             (and (get-component sprite-entity animated-sprite?)
+                  (add-entity! sd2 sprite-entity)))
+           (set! csd (ml:compile-sprite-db sd2))
+           ;(ml:save-csd! csd (build-path "/Users/thoughtstem/Desktop/sprite-db") #:debug? #t)
+           (set! compiled (append compiled uncompiled))
+           (displayln (ml:compiled-sprite-db-spr->idx csd))
+           (set! ml:render (gl:stage-draw/dc csd W H 8))))
+
+
+
+    (define (sprites-to-render)
+      (if (not last-game-snapshot)
+          '()
+          (flatten
+           (filter identity
+                   (for/list ([e (in-list (reverse (game-entities last-game-snapshot)))])
+                     (define frame-i   (animated-sprite-current-frame (get-component e animated-sprite?)))
+                     (define id-sym    (id->symbol #:prefix (~a "sprite" frame-i) (get-id e)))
+                     (define sprite-id (ml:sprite-idx csd id-sym))
+
+                    ; (displayln (~a (get-name e) " id: " id-sym " sprite-id: " sprite-id))
+
+                     (if (not sprite-id)
+                           #f
+                           (ml:sprite #:layer 0
+                                      (real->double-flonum (- (x e) W/2)) (real->double-flonum (- (y e) H/2))
+                                      sprite-id)))))))
+
+    
+    
+    (ml:render layers
+               (sprites-to-render)
+               '()))
+
+  ticky-tick)
+
+
+
+
 
  
 (define (change-name name)
@@ -1093,4 +1213,23 @@
    (get-component e physical-collider?)
    (entity->chipmunk e)
    (phys:chipmunk-body (entity->chipmunk e))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
