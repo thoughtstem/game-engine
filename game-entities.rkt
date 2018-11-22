@@ -5,6 +5,7 @@
 (provide (all-from-out "./engine/core.rkt"))
 
 (require "./engine/core.rkt")
+(require "./engine/rendering.rkt")
 
 (require threading)
 
@@ -28,7 +29,6 @@
         button-states
         '()))
 
-
 (define (game->game:start-physics game)
   (physics-start (uniqify-ids game)))
 
@@ -38,17 +38,3 @@
 
 (define (game++->game:postprocess lux-game)
   (final-state lux-game))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
