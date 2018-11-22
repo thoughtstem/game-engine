@@ -48,7 +48,10 @@
          rate             ;How many ticks before switching frames (integer)
          ticks            ;How many ticks have passed since last frame change (integer)
          animate?         ;Set true to animate frames
-         ) #:transparent)
+         
+         [changed-since-last-frame? #:mutable]
+         )
+  #:transparent)
 
 (define sprite-ids (make-weak-hash))
 (define (id-for image-vector)
@@ -65,15 +68,17 @@
 (define (sprite-map f s)
   (define new-frames (vector-map f (animated-sprite-frames s)))
   
-  (struct-copy animated-sprite s
-               [image-id (id-for new-frames)]
-               [frames new-frames]))
+  (set-has-changed
+   (struct-copy animated-sprite s
+                [image-id (id-for new-frames)]
+                [frames new-frames])))
 
 (define (sprite-map-original f s)
   (define new-frames (vector-map f (animated-sprite-o-frames s)))
-  (struct-copy animated-sprite s
-               [image-id (id-for new-frames)]
-               [frames new-frames]))
+  (set-has-changed
+   (struct-copy animated-sprite s
+                [image-id (id-for new-frames)]
+                [frames new-frames])))
 
 (define/contract (new-sprite costumes (rate 1) #:animate [animate? #t])
   (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
@@ -91,7 +96,15 @@
    0
    rate
    0
-   animate?))
+   animate?
+   #t))
+
+(define (set-has-changed s)
+  (struct-copy animated-sprite s
+               [changed-since-last-frame? #t]))
+
+(define (set-has-not-changed! s)
+  (set-animated-sprite-changed-since-last-frame?! s #f))
 
 (define (bake i)
   (define w (image-width i))
@@ -107,6 +120,10 @@
 
 (define/contract (render s)
   (-> animated-sprite? image?)
+
+  (displayln "Render getting called")
+  (set-has-not-changed! s)
+
   (pick-frame s
               (animated-sprite-current-frame s)))
 
@@ -120,30 +137,34 @@
 
 (define/contract (reset-animation s)
   (-> animated-sprite? animated-sprite?)
-  (struct-copy animated-sprite s
-               [ticks 0]
-               [current-frame 0]))
+  (set-has-changed
+   (struct-copy animated-sprite s
+                [ticks 0]
+                [current-frame 0])))
 
 (define/contract (next-frame s)
   (-> animated-sprite? animated-sprite?)
-  (if (animated-sprite-animate? s)
-      (if (= (animated-sprite-ticks s) (animated-sprite-rate s))
-          (increase-current-frame s)
-          (increase-ticks s))
-      s))
+  (set-has-changed
+   (if (animated-sprite-animate? s)
+       (if (= (animated-sprite-ticks s) (animated-sprite-rate s))
+           (increase-current-frame s)
+           (increase-ticks s))
+       s)))
 
 (define/contract (increase-ticks s)
   (-> animated-sprite? animated-sprite?)
-  (struct-copy animated-sprite s
-               [ticks (+ (animated-sprite-ticks s) 1)]))
+  (set-has-changed
+   (struct-copy animated-sprite s
+               [ticks (+ (animated-sprite-ticks s) 1)])))
 
 (define/contract (increase-current-frame s)
   (-> animated-sprite? animated-sprite?)
-  (struct-copy animated-sprite s
+  (set-has-changed
+   (struct-copy animated-sprite s
                [current-frame
                 (inc-wrap (animated-sprite-current-frame s)
                           (animated-sprite-total-frames s))]
-               [ticks 0]))
+               [ticks 0])))
 
 (define (inc-wrap n max)
   (remainder (+ 1 n) max))

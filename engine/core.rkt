@@ -2,7 +2,8 @@
 
 ;Stuff for start-game
 (provide physics-start
-         uniqify-ids)
+         uniqify-ids
+         initialize-game)
 
 
 ;Stuff for rendering
@@ -778,12 +779,29 @@
 
 ; END ACTIVE
 
+(define W 640)
+(define H 480)
+
+(define (initialize-game entities)
+  (set! W (w (last entities)))
+  (set! H (h (last entities)))
+
+  (game (flatten entities)
+        '()
+        button-states
+        button-states
+        '()))
+
 (define (game-width g)
-  (image-width (draw g)))
+  W
+  #;(image-width (draw g))
+  )
 
 
 (define (game-height g)
-  (image-height (draw g)))
+  H
+  #;(image-height (draw g))
+  )
 
 (define (has-component? pred?)
   (lambda(e)

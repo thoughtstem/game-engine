@@ -23,11 +23,7 @@
 
 
 (define (entities->game:preprocess-entities entities)
-  (game (flatten entities)
-        '()
-        button-states
-        button-states
-        '()))
+  (initialize-game entities))
 
 (define (game->game:start-physics game)
   (physics-start (uniqify-ids game)))

@@ -52,7 +52,7 @@
 
   ;Save our compiled entities, so we can update it later as new entities are spawned and need to be compiled
   ;   NOTE:  Should we really be storing entities?  Probably makes more sense to store sprites instead...
-  (set! compiled (setup-already-compiled-list original-entities))
+  (setup-already-compiled-list! original-entities)
 
   ;Set up our open gl render function with the current sprite database
   (set! ml:render (gl:stage-draw/dc csd W H 8))
@@ -60,17 +60,14 @@
   (define (ticky-tick current-entities)
     
     ;Find uncompiled entities...
-    (define uncompiled (find-uncompiled-things current-entities compiled))
+    (set-uncompiled-things! current-entities)
 
     ;Recompile the database if we added anything:
     (and (not (empty? uncompiled))
-         (recompile uncompiled W H))
+         (recompile! W H))
 
     ;Create our sprites
-    (define dynamic-sprites
-      (if (not current-entities) ;First frame?  
-          '()                      ;No sprites
-          (game->mode-lambda-sprite-list current-entities)))
+    (define dynamic-sprites (game->mode-lambda-sprite-list current-entities))
 
     (define static-sprites '())
 
@@ -93,8 +90,9 @@
    (define (word-output w)
      (match-define (demo  state render-tick) w)
      #;(g/v (draw state)) ;Old, slower drawing method.  For reference...
-     (render-tick last-game-snapshot)
-     )
+     (if last-game-snapshot
+         (render-tick (game-entities last-game-snapshot))
+         (render-tick '())))
    
    (define (word-event w e)
      (match-define (demo  state render-tick) w)
@@ -156,23 +154,55 @@
 
 
 
-
+(require threading)
 
 ;List of previously compiled sprites (actually entities at the moment...)
 (define compiled '())
+(define uncompiled '())
+
+(define compiled-sprites
+  '() ;List? Hash? WTF?
+  )
+(define uncompiled-sprites
+  '() ;List? Hash? WTF?
+  )
+
 (define csd       #f)  ;Mode Lambda's representation of our compiled sprites
 (define ml:render #f)  ;Graphics card render function
 
-(define (setup-already-compiled-list entities)
-  entities)
+(define (setup-already-compiled-list! entities)
+  (begin
+    (set! compiled-sprites (entities->sprites-to-compile entities))
+    
+    (set! compiled entities)))
 
-(define (find-uncompiled-things game previously-compiled)
-  (if (not game)
-      '()
-      (filter-not (curryr member previously-compiled entity-eq? #;sprite-eq?)
-                  (game-entities game))))
+(define (entities->sprites-to-compile entities)
+  (~> entities
+      (map (curryr get-component animated-sprite?) _)
+      (filter animated-sprite-changed-since-last-frame? _)
+      (map animated-sprite-frames _)))
 
-(define (recompile uncompiled W H)
+
+
+(define (set-uncompiled-things! entities)
+  (define all-sprites-to-render (entities->sprites-to-compile entities))
+  
+  (set! uncompiled-sprites
+        (filter-not (curryr member compiled-sprites equal?)
+                    all-sprites-to-render))
+
+  (begin
+    (displayln (~a "# entities in frame: "   (length entities)))
+    (displayln (~a "# sprites in frame: "    (length all-sprites-to-render)))
+    (displayln (~a "# compiled-sprites: "    (length compiled-sprites)))
+    (displayln (~a "# uncompiled-sprites: "  (length uncompiled-sprites))))
+
+  (set! uncompiled
+        (filter-not (curryr member compiled entity-eq?)
+                    entities)))
+
+
+(define (recompile! W H)
   (let ([sd2 (ml:make-sprite-db)])
     (for ([sprite-entity (in-list (append compiled uncompiled))])
       (and (get-component sprite-entity animated-sprite?)
@@ -183,19 +213,19 @@
     (displayln (ml:compiled-sprite-db-spr->idx csd))
     (set! ml:render (gl:stage-draw/dc csd W H 8))))
 
-(define (game->mode-lambda-sprite-list game)
+(define (game->mode-lambda-sprite-list entities)
   (flatten
-           (filter identity
-                   (for/list ([e (in-list (reverse (game-entities game)))])
-                     (define frame-i   (animated-sprite-current-frame (get-component e animated-sprite?)))
-                     (define id-sym    (id->symbol #:prefix (~a "sprite" frame-i) (get-id e)))
-                     (define sprite-id (ml:sprite-idx csd id-sym))
+   (filter identity
+           (for/list ([e (in-list (reverse entities))])
+             (define frame-i   (animated-sprite-current-frame (get-component e animated-sprite?)))
+             (define id-sym    (id->symbol #:prefix (~a "sprite" frame-i) (get-id e)))
+             (define sprite-id (ml:sprite-idx csd id-sym))
 
-                    ; (displayln (~a (get-name e) " id: " id-sym " sprite-id: " sprite-id))
+             ; (displayln (~a (get-name e) " id: " id-sym " sprite-id: " sprite-id))
 
-                     (if (not sprite-id)
-                           #f
-                           (ml:sprite #:layer 0
-                                      (real->double-flonum (x e))
-                                      (real->double-flonum (y e))
-                                      sprite-id))))))
+             (if (not sprite-id)
+                 #f
+                 (ml:sprite #:layer 0
+                            (real->double-flonum (x e))
+                            (real->double-flonum (y e))
+                            sprite-id))))))
