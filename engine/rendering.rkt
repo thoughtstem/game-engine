@@ -27,46 +27,27 @@
    (make-gui #:start-fullscreen? #f #:mode gl:gui-mode)
    (λ () (fiat-lux (demo larger-state render-tick)))))
 
+
+
+
 (define (get-mode-lambda-render-tick original-entities)
-  (define sprite-entities
-    (filter (has-component? animated-sprite?) original-entities))
-  
-  (define W (w (last original-entities)))
-  (define H (h (last original-entities)))
-  (define W/2 (/ W 2.0))
-  (define H/2 (/ W 2.0))
+  ;Assume the last entity is the background entity
+  (define bg-entity (last original-entities))
 
-  (define sd (ml:make-sprite-db))
+  ;Use the background to setup some helpful constants
+  (define W (w bg-entity))
+  (define H (h bg-entity))
+  (define W/2 (/ W 2))
+  (define H/2 (/ W 2))
 
-  (define (add-entity! db e)
-    (define frames (animated-sprite-frames (get-component e animated-sprite?)))
-    (for ([i (in-range (vector-length frames))])
-      (define id-sym (id->symbol #:prefix (~a "sprite" i) (get-id e)))
-      (ml:add-sprite!/value db
-                            id-sym
-                            (vector-ref frames i))
 
-      (displayln (~a "Compiling sprite " (get-name e) " id: " id-sym ))))
-  
+  ;Use the entities, plus their sprites, to determine the initial sprite database
+  (define csd (entities->compiled-sprite-database original-entities))
 
-  (for ([sprite-entity (in-list sprite-entities)])
-    (add-entity! sd sprite-entity))
-  
-  (define csd (ml:compile-sprite-db sd))
-
-  (displayln (ml:compiled-sprite-db-spr->idx csd))
- ; (ml:save-csd! csd (build-path "/Users/thoughtstem/Desktop/sprite-db") #:debug? #t)
-
-  
-
-  (define start (current-milliseconds))
-
-  (define (time-since-start)
-    (- start (current-milliseconds)))
-
-  (define layers
-    (vector
-     (ml:layer (* W 1.0) (* H 1.0))))
+  ;Define that we'll have one layer of sprites (for now).
+  ;  Fix it's position at the width and height of the game (WHY NOT 0,0?)
+  (define layers (vector (ml:layer (real->double-flonum W)
+                                   (real->double-flonum H))))
 
   (define compiled original-entities)
 
@@ -165,6 +146,33 @@
   (demo-state d))
 
 
+
+
+(define (add-entity! db e)
+  (define frames (animated-sprite-frames (get-component e animated-sprite?)))
+  (for ([i (in-range (vector-length frames))])
+    (define id-sym (id->symbol #:prefix (~a "sprite" i) (get-id e)))
+    (ml:add-sprite!/value db
+                          id-sym
+                          (vector-ref frames i))
+
+    (displayln (~a "Compiling sprite " (get-name e) " id: " id-sym ))))
+
+
+
+(define (entities->compiled-sprite-database entities)
+  (define sd (ml:make-sprite-db))
+
+  (for ([e (in-list entities)])
+    (and (get-component e animated-sprite?)
+         (add-entity! sd e)))
+  
+  (define csd (ml:compile-sprite-db sd))
+
+  (displayln (ml:compiled-sprite-db-spr->idx csd))
+  ; (ml:save-csd! csd (build-path "/Users/thoughtstem/Desktop/sprite-db") #:debug? #t)
+
+  csd)
 
 
 
