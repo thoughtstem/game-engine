@@ -13,6 +13,7 @@
 (require "../components/on-key.rkt")
 (require "../components/on-start.rkt")
 (require "../components/sound-stream.rkt")
+(require "../components/observe-change.rkt")
 (require posn)
 
 (define (drop-last-item)
@@ -37,7 +38,9 @@
                          #:backpack-key   [backpack-key "b"]
                          #:pickup-sound   [pickup-sound #f]
                          #:drop-sound     [drop-sound    #f]
-                         #:backpack-sound [backpack-sound #f])
+                         #:backpack-sound [backpack-sound #f]
+                         #:components     [c #f]
+                                          . custom-components)
   (define backpack-entity
     (sprite->entity (draw-backpack '())
                     #:name       "backpack"
@@ -49,7 +52,9 @@
                                                     show))
                                  (on-key store-key die)
                                  (on-key drop-key die)
-                                 (on-key backpack-key die)))
+                                 (on-key backpack-key die)
+                                 (observe-change backpack-changed? update-backpack)
+                                 (cons c custom-components)))
   (define (storable-item item-name key)
     (on-key key #:rule storable-items-nearby? (if pickup-sound
                                                   (do-many (store-nearby-item item-name)

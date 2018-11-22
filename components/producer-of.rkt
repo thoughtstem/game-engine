@@ -2,7 +2,8 @@
 
 (provide producer-of
          producer
-         crafter-of) 
+         crafter-of
+         crafting?) 
 
 (require "../game-entities.rkt"
          "../entity-helpers/carry-util.rkt"
@@ -209,6 +210,12 @@
            (spawn progress-counter)
            )
    (observe-change build-ready? (spawn-if-ready to-clone))))
+
+(define (crafting? name)
+  (lambda (g e)
+    (if (get-entity (~a name "-progress-counter") g)
+        #t
+        #f)))
 
 
 

@@ -20,6 +20,7 @@
          get-layer
 
          entity-eq?
+         entity-name-eq?
          entity-animation
          sprite->entity
          sprite->bb
@@ -161,6 +162,13 @@
    (entity? e2)
    (= (get-id e1)
       (get-id e2))))
+
+(define (entity-name-eq? e1 e2)
+  (and
+   (entity? e1)
+   (entity? e2)
+   (eq? (get-name e1)
+        (get-name e2))))
 
 (define component-handlers (hash))
 
