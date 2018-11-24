@@ -138,48 +138,22 @@
 
 (require 2htdp/image)
 
-(define temp-storage '())
 
-(define (remember-image! f)
-  (set! temp-storage
-        (cons (image->id f)
-              temp-storage)))
-
-(define (seen-image-before f)
-  (member (image->id f) temp-storage))
-
-(define (image->id f)
-  #;(define id (hash-ref temp-storage f #f))
-
-  #;(define n
-    (if id
-        id
-        (begin
-          (hash-set! temp-storage f (length (hash-keys temp-storage)))
-
-          (sub1 (length (hash-keys temp-storage))))))
-
-  (string->symbol (~a "id" (image-width f))))
-
-(define (entity+animated-sprite+image->id e as f i)
-  #;(string->symbol
-     (~a "entity:" (get-id e) "-animation:" (animated-sprite-id as) "-frame:" i))
-
-  (image->id f)
-  )
+(define (fast-image->id f)
+  (string->symbol (~a "id" (fast-image-id f))))
 
 (define (add-animated-sprite-frame-new! db f)
-  (define id-sym (image->id f))
+  (define id-sym (fast-image->id f))
   
-  (ml:add-sprite!/value db id-sym f))
+  (ml:add-sprite!/value db id-sym (fast-image-data f)))
 
 (define (add-animated-sprite-frame! db e as f i)
-  (define id-sym (entity+animated-sprite+image->id e as f i))
+  (define id-sym (fast-image->id f))
   
-  (ml:add-sprite!/value db id-sym f))
+  (ml:add-sprite!/value db id-sym (fast-image-data f)))
 
 (define (add-animated-sprite! db e as)
-  (define frames (animated-sprite-frames as))
+  (define frames (animated-sprite-fast-frames as))
   (for ([f (in-vector frames)]
         [i (in-range (vector-length frames))])
     (add-animated-sprite-frame! db e as f i)))
@@ -208,18 +182,22 @@
 
 (require threading)
 
-;List of previously compiled sprites (actually entities at the moment...)
-(define compiled '())
-(define uncompiled '())
 
-(define compiled-sprites
-  '() ;List? Hash? WTF?
-  )
-(define uncompiled-sprites
-  '() ;List? Hash? WTF?
-  )
+
+(define temp-storage '())
+
+(define (remember-image! f)
+  (set! temp-storage
+        (cons f
+              temp-storage)))
+
+(define (seen-image-before f)
+  (member f temp-storage fast-equal?))
+
+
 
 (define should-recompile? #f)
+(define compiled-images '())
 
 (define csd       #f)  ;Mode Lambda's representation of our compiled sprites
 (define ml:render #f)  ;Graphics card render function
@@ -233,10 +211,7 @@
        (map (curryr get-component animated-sprite?) _)
        (filter animated-sprite-changed-since-last-frame? _)
        (map    set-has-not-changed! _)
-       (map (compose vector->list animated-sprite-frames) _))))
-
-
-(define compiled-images '())
+       (map (compose vector->list animated-sprite-fast-frames) _))))
 
 (define (set-uncompiled-things! entities)
   ;Trigger recompile if any of the frames haven't been remembered
@@ -269,15 +244,14 @@
            (for/list ([e (in-list (reverse entities))])
              (define as (get-component e animated-sprite?))
              
-             (define f   (render as))
+             (define f   (current-fast-frame as))
 
-             
-             (define id-sym    (entity+animated-sprite+image->id e as f (animated-sprite-current-frame as)))
+             (define id-sym    (fast-image->id f))
 
              
              (define sprite-id (ml:sprite-idx csd id-sym))
 
-             ; (displayln (~a (get-name e) " id: " id-sym " sprite-id: " sprite-id))
+             ;(displayln (~a (get-name e) " id: " id-sym " f: " (animated-sprite-current-frame as)))
 
              (if (not sprite-id)
                  #f

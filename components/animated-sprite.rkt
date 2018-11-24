@@ -14,7 +14,14 @@
          sprite-map-original
          animated-sprite-image-eq?
          set-has-not-changed!
-         set-has-changed)
+         set-has-changed
+
+         fast-equal?
+         fast-image-data
+         fast-image-id
+
+         current-fast-frame
+         get-image-id)
 
 (require 2htdp/image)
 (require threading)
@@ -45,6 +52,7 @@
          
          o-frames         ;List of original images
          frames           ;List of images
+         fast-frames
          total-frames
          current-frame    ;Frame to show currently (integer)
          rate             ;How many ticks before switching frames (integer)
@@ -54,6 +62,10 @@
          [changed-since-last-frame? #:mutable]
          )
   #:transparent)
+
+(define (current-fast-frame as)
+  (vector-ref (animated-sprite-fast-frames as)
+              (animated-sprite-current-frame as)))
 
 (define sprite-ids (make-weak-hash))
 (define (id-for image-vector)
@@ -69,14 +81,16 @@
   (set-has-changed
    (struct-copy animated-sprite s
                 [id (id-for new-frames)]
-                [frames new-frames])))
+                [frames new-frames]
+                [fast-frames (vector-map make-fast-image new-frames)])))
 
 (define (sprite-map-original f s)
   (define new-frames (vector-map f (animated-sprite-o-frames s)))
   (set-has-changed
    (struct-copy animated-sprite s
                 [id (id-for new-frames)]
-                [frames new-frames])))
+                [frames new-frames]
+                [fast-frames (vector-map make-fast-image new-frames)])))
 
 (define/contract (new-sprite costumes (rate 1) #:animate [animate? #t])
   (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
@@ -90,6 +104,7 @@
    (id-for frames)
    (list->vector frames)
    (list->vector frames)
+   (vector-map make-fast-image (list->vector frames))
    (length list-costumes)
    0
    rate
@@ -180,3 +195,15 @@
   (take (flatten (sheet->costume-grid sheet tiles-across tiles-down))
         total))
 
+
+(struct fast-image (id data))
+
+(define (fast-equal? i1 i2)
+  (equal? (fast-image-id i1)
+          (fast-image-id i2)))
+
+(define (make-fast-image i)
+  (fast-image (get-image-id i) i))
+
+(define (get-image-id i)
+  (equal-hash-code (~a (image->color-list i))))
