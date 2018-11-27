@@ -19,6 +19,7 @@
          fast-equal?
          fast-image-data
          fast-image-id
+         (rename-out [make-fast-image fast-image])
 
          current-fast-frame
          get-image-id)
@@ -32,8 +33,7 @@
                              #:columns     (c 1)
                              #:row-number  (n 1)
                              #:speed       (speed #f)
-                             #:delay       (delay #f)
-                             )
+                             #:delay       (delay #f))
   
   (define actual-delay (or delay speed 1))
   

@@ -1,7 +1,8 @@
 #lang racket
 
 (provide lux-start
-         final-state)
+         final-state
+         asset-precompiler)
 
 (require racket/match
          racket/fixnum
@@ -41,6 +42,8 @@
   (define W/2 (/ W 2))
   (define H/2 (/ H 2))
 
+  ;Initialize the compiled sprite database
+  (register-sprites-from-entities! original-entities)
 
   ;Use the entities, plus their sprites, to determine the initial sprite database
   (set! csd (entities->compiled-sprite-database original-entities))
@@ -50,20 +53,17 @@
   (define layers (vector (ml:layer (real->double-flonum W/2)
                                    (real->double-flonum H/2))))
 
-  ;Save our compiled entities, so we can update it later as new entities are spawned and need to be compiled
-  ;   NOTE:  Should we really be storing entities?  Probably makes more sense to store sprites instead...
-  (setup-already-compiled-list! original-entities)
-
   ;Set up our open gl render function with the current sprite database
-  (set! ml:render (gl:stage-draw/dc csd W H 8))
+  (define ml:render (gl:stage-draw/dc csd W H 8))
   
   (define (ticky-tick current-entities)
     
     ;Find uncompiled entities...
-    (set-uncompiled-things! current-entities)
+    (register-sprites-from-entities! current-entities)
 
     ;Recompile the database if we added anything:
-    (recompile! W H)
+    (and (recompile!)
+         (set! ml:render (gl:stage-draw/dc csd W H 8)))
     
 
     ;Create our sprites
@@ -182,8 +182,6 @@
 
 (require threading)
 
-
-
 (define temp-storage '())
 
 (define (remember-image! f)
@@ -194,16 +192,22 @@
 (define (seen-image-before f)
   (member f temp-storage fast-equal?))
 
+(define (asset-precompiler . is)
+  (define images
+    (flatten
+     (append
+       (map fast-image (filter image? is))
+       (entities->sprites-to-compile (filter entity? is)))))
+  
+  (register-sprites-from-images! images)
 
+  #f)
 
 (define should-recompile? #f)
 (define compiled-images '())
 
 (define csd       #f)  ;Mode Lambda's representation of our compiled sprites
-(define ml:render #f)  ;Graphics card render function
 
-(define (setup-already-compiled-list! entities)
-  (void))
 
 (define (entities->sprites-to-compile entities)
   (flatten
@@ -213,30 +217,39 @@
        (map    set-has-not-changed! _)
        (map (compose vector->list animated-sprite-fast-frames) _))))
 
-(define (set-uncompiled-things! entities)
-  ;Trigger recompile if any of the frames haven't been remembered
-  (define images (entities->sprites-to-compile entities))
+
+(define (register-sprites-from-images! images)
   (define uncompiled-images (filter-not seen-image-before images))
 
   (for ([image (in-list uncompiled-images)])
     (remember-image! image))
 
   (and (not (empty? uncompiled-images))
-       (set! compiled-images (append compiled-images uncompiled-images ))
-       (set! should-recompile? #t))
-  )
+       (set! compiled-images (append compiled-images uncompiled-images))
+       (set! should-recompile? #t)))
 
 
-(define (recompile! W H)
+(define (register-sprites-from-entities! entities)
+  ;Trigger recompile if any of the frames haven't been remembered
+  (define images (entities->sprites-to-compile entities))
+
+  (register-sprites-from-images! images))
+
+
+(define (recompile!)
   (and should-recompile?
        (let ([sd2 (ml:make-sprite-db)])
+         (displayln "Recompile!")
+         
          (for ([image (in-list compiled-images)])
            (add-animated-sprite-frame-new! sd2 image))
+         
          (set! csd (ml:compile-sprite-db sd2))
 
          (displayln (ml:compiled-sprite-db-spr->idx csd))
-         (set! ml:render (gl:stage-draw/dc csd W H 8))
-         (set! should-recompile? #f))))
+         (set! should-recompile? #f)
+         #t)))
+
 
 (define (game->mode-lambda-sprite-list entities)
   (flatten
@@ -250,8 +263,6 @@
 
              
              (define sprite-id (ml:sprite-idx csd id-sym))
-
-             ;(displayln (~a (get-name e) " id: " id-sym " f: " (animated-sprite-current-frame as)))
 
              (if (not sprite-id)
                  #f
