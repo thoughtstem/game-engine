@@ -21,10 +21,24 @@
 (require "./core.rkt")
 (require "../components/animated-sprite.rkt")
 
-(struct precompiler (sprites))
+(struct precompiler (sprites) #:transparent)
 
-(define (make-precompiler . sprites) 
-  (precompiler (map fast-image sprites)))
+(define (make-precompiler . animated-sprites-or-images)
+  (define entities (filter entity? (flatten animated-sprites-or-images)))
+
+  
+  
+  (define animated-sprites (flatten
+                            (append
+                             (map (lambda(e) (get-component e animated-sprite?)) entities)
+                             (filter animated-sprite? (flatten animated-sprites-or-images)))))
+  
+  (define images (filter image? (flatten animated-sprites-or-images)))
+  
+  (precompiler (flatten
+                (append (map fast-image images)
+                        (map vector->list (map animated-sprite-frames (flatten animated-sprites)))))))
+
 
 (define (lux-start larger-state)
   (define render-tick (get-mode-lambda-render-tick (game-entities larger-state)))
@@ -66,8 +80,9 @@
     (register-sprites-from-entities! current-entities)
 
     ;Recompile the database if we added anything:
-    (and (recompile!)
-         (set! ml:render (gl:stage-draw/dc csd W H 8)))
+    (thread (thunk
+             (and (recompile!)
+                  (set! ml:render (gl:stage-draw/dc csd W H 8)))))
     
 
     ;Create our sprites
@@ -174,7 +189,7 @@
   
   (define csd (ml:compile-sprite-db sd))
 
-  (displayln (ml:compiled-sprite-db-spr->idx csd))
+  ;(displayln (ml:compiled-sprite-db-spr->idx csd))
   ; (ml:save-csd! csd (build-path "/Users/thoughtstem/Desktop/sprite-db") #:debug? #t)
 
   csd)
@@ -226,7 +241,7 @@
      (~> entities
          (map (curryr get-components precompiler?) _)
          flatten
-         (map precompiler-sprites _) ;These are images.  Probably want to also support animated-sprites
+         (map precompiler-sprites _) 
          flatten)))
 
   
@@ -242,6 +257,8 @@
     (remember-image! image))
 
   (and (not (empty? uncompiled-images))
+       (displayln "Recompile! Because:")
+       (displayln (map fast-image-data uncompiled-images))
        (set! compiled-images (append compiled-images uncompiled-images))
        (set! should-recompile? #t)))
 
@@ -255,19 +272,20 @@
 
 (define (recompile!)
   (and should-recompile?
+       (set! should-recompile? #f)
        (let ([sd2 (ml:make-sprite-db)])
-         (displayln "Recompile!")
-         
          (for ([image (in-list compiled-images)])
            (add-animated-sprite-frame-new! sd2 image))
          
          (set! csd (ml:compile-sprite-db sd2))
 
-         (displayln (ml:compiled-sprite-db-spr->idx csd))
-         (set! should-recompile? #f)
+         ;(displayln (ml:compiled-sprite-db-spr->idx csd))
+         
+         
          #t)))
 
 
+(require racket/math)
 (define (game->mode-lambda-sprite-list entities)
   (flatten
    (filter identity
@@ -286,4 +304,12 @@
                  (ml:sprite #:layer 0
                             (real->double-flonum (x e))
                             (real->double-flonum (y e))
-                            sprite-id))))))
+                            sprite-id
+                            #:mx (animated-sprite-x-scale as)
+                            #:my (animated-sprite-y-scale as)
+                            #:theta (real->double-flonum (animated-sprite-rotation as))
+                            ))))))
+
+
+
+

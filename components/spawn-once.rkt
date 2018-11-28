@@ -4,6 +4,7 @@
 ;(require "../components/after-time.rkt")
 (require "./direction.rkt")
 (require "./rotation-style.rkt")
+(require "./animated-sprite.rkt")
 (require posn)
 
 ;(displayln "LOADING ON START")
@@ -51,9 +52,14 @@
     (define m (if rs?
                   (rotation-style-mode rs?)
                   #f))
-    (define facing-right? (if (eq? m 'left-right)
-                              (rotation-style-facing-right? rs?)
-                              #t))
+
+    
+    (define facing-right?
+      (if (eq? m 'left-right)
+          (negative? (animated-sprite-x-scale (get-component e animated-sprite?)))
+          #t))
+
+    
     (define new-posn (cond
                        [(and (eq? m 'left-right) (eq? facing-right? #t)) (posn (+ (posn-x pos) (posn-x offset))
                                                                                (+ (posn-y pos) (posn-y offset)))]

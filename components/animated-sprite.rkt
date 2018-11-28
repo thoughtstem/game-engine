@@ -7,6 +7,7 @@
          animation-finished?
          reset-animation
          (struct-out animated-sprite)
+         animated-sprite-x-scale
          sheet->sprite
          sprite-map
          pick-frame
@@ -20,7 +21,12 @@
          animated-sprite-total-frames
 
          current-fast-frame
-         get-image-id)
+         get-image-id
+         set-x-scale
+         set-y-scale
+         scale-xy
+         set-angle
+         set-scale-xy)
 
 (require 2htdp/image)
 (require threading)
@@ -51,6 +57,9 @@
          rate             ;How many ticks before switching frames (integer)
          ticks            ;How many ticks have passed since last frame change (integer)
          animate?         ;Set true to animate frames
+         x-scale
+         y-scale
+         rotation         ;radians
          )
   #:transparent)
 
@@ -59,16 +68,40 @@
               (animated-sprite-current-frame as)))
 
 (define (sprite-map f s)
-  (displayln "Mapping.  Slow...")
+  (displayln "Mapping over a sprite.  Slow...  Don't do this at runtime.")
   (define new-frames (vector-map (compose f fast-image-data) (animated-sprite-frames s)))
   
   (struct-copy animated-sprite s
                [frames (vector-map make-fast-image new-frames)]))
 
-#;(define (sprite-map-original f s)
-    (define new-frames (vector-map f (animated-sprite-o-frames s)))
-    (struct-copy animated-sprite s
-                 [frames (vector-map make-fast-image new-frames)]))
+(define/contract (set-x-scale s as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  (struct-copy animated-sprite as
+               [x-scale (* 1.0 s)]))
+
+(define/contract (set-y-scale s as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  (struct-copy animated-sprite as
+               [y-scale (* 1.0 s)]))
+
+(define/contract (set-scale-xy v as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  (~> as
+      (set-x-scale v _)
+      (set-y-scale v _)))
+
+(define (scale-xy v as)
+  (struct-copy animated-sprite as
+               [x-scale (* 1.0 v (animated-sprite-x-scale as))]
+               [y-scale (* 1.0 v (animated-sprite-y-scale as))]))
+
+(define (set-angle v as)
+  (struct-copy animated-sprite as
+               [rotation (* 1.0 (degrees->radians v))]))
+
 
 (define/contract (new-sprite costumes (rate 1) #:animate [animate? #t])
   (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
@@ -83,7 +116,11 @@
    0
    rate
    0
-   animate?))
+   animate?
+   1.0 ;x-scale
+   1.0 ;y-scale
+   0.0 ;theta (in radians)
+   ))
 
 
 (define (animated-sprite-total-frames s)
@@ -157,7 +194,7 @@
         total))
 
 
-(struct fast-image (id data))
+(struct fast-image (id data) #:transparent)
 
 (define (fast-equal? i1 i2)
   (equal? (fast-image-id i1)

@@ -42,34 +42,13 @@
 
 (define (set-size amount)
   (lambda (g e)
-    (define s (get-component e animated-sprite?))
-    (define frames (animated-sprite-o-frames s))
-    (define new-list (map (curry scale amount) (vector->list frames)))
-    (define resized-sprite (struct-copy animated-sprite s [frames (list->vector new-list)]))
-    (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? resized-sprite)
-                   bb?
-                   new-bb)))
+    (update-entity e animated-sprite?
+                   (curry set-scale-xy amount))))
 
 (define (scale-sprite amount)
-  (lambda (g e) e) ;Disabling for now...
-
-  ;Maybe something like this, instead???
-  #;(lambda (g e)
-    (update-entity e scale? (scale amount)))
-
-  ;Not this.  Shouldn't be changing images at runtime like this...
-  #;(lambda (g e)
-      (define s (get-component e animated-sprite?))
-      (define frames (animated-sprite-o-frames s))
-      (define new-list (map (curry scale amount) (vector->list frames)))
-      (define resized-sprite (struct-copy animated-sprite s
-                                          [frames   (list->vector new-list)]
-                                          [o-frames (list->vector new-list)]))
-      (define new-bb (image->bb (render resized-sprite)))
-      (update-entity (update-entity e animated-sprite? resized-sprite)
-                     bb?
-                     new-bb)))
+  (lambda (g e)  
+     (update-entity e animated-sprite?
+                    (curry scale-xy amount))))
 
 (define (random-dec min max)
   (define new-min (exact-round (* min 100)))
@@ -78,17 +57,10 @@
 
 (define (random-size min max)
   (lambda (g e)
-    (define s (get-component e animated-sprite?))
-    (define frames (animated-sprite-o-frames s))
-    (define new-min (exact-round (* min 100)))
-    (define new-max (exact-round (* max 100)))
-    (define new-list (map (curry scale (/ (random new-min (add1 new-max)) 100)) (vector->list frames)))
-    (define resized-sprite (struct-copy animated-sprite s [frames (list->vector new-list)]))
-    (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? resized-sprite)
-                   bb?
-                   new-bb)))
+    (update-entity e animated-sprite?
+                   (curry set-scale-xy (+ min (* (random) (- max min)))))))
 
+;This is broken...
 (define (change-color-by amount)
   (lambda (g e)
     (define s (get-component e animated-sprite?))
