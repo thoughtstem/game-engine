@@ -23,7 +23,7 @@
 
 (struct precompiler (sprites))
 
-(define (make-precompiler . sprites)
+(define (make-precompiler . sprites) 
   (precompiler (map fast-image sprites)))
 
 (define (lux-start larger-state)
@@ -157,7 +157,7 @@
   (ml:add-sprite!/value db id-sym (fast-image-data f)))
 
 (define (add-animated-sprite! db e as)
-  (define frames (animated-sprite-fast-frames as))
+  (define frames (animated-sprite-frames as))
   (for ([f (in-vector frames)]
         [i (in-range (vector-length frames))])
     (add-animated-sprite-frame! db e as f i)))
@@ -217,9 +217,7 @@
   (define fast-images-from-animated-sprite
     (~> entities
         (map (curryr get-component animated-sprite?) _)
-        (filter animated-sprite-changed-since-last-frame? _)
-        (map    set-has-not-changed! _) ;Do we need this???
-        (map (compose vector->list animated-sprite-fast-frames) _)
+        (map (compose vector->list animated-sprite-frames) _)
         flatten))
 
 

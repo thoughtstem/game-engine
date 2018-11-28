@@ -293,14 +293,15 @@
   ;If the animated-sprite ever changes to a new animated-sprite,
   ;  We may have new, uncompiled sprites that the render system needs to know about.
   ;  So we'll tag the animated-sprite component.
-  (and
-   (eq? component-pred animated-sprite?)
-   (animated-sprite? f)
-   (set! f (set-has-changed f)))
-  (and
-   (eq? component-pred animated-sprite?)
-   (procedure? f)
-   (set! f (compose set-has-changed f)))
+  ;UPDATE: Commenting out because maybe we don't need this optimization...
+  #;(and
+     (eq? component-pred animated-sprite?)
+     (animated-sprite? f)
+     (set! f (set-has-changed f)))
+  #;(and
+     (eq? component-pred animated-sprite?)
+     (procedure? f)
+     (set! f (compose set-has-changed f)))
 
   (entity (update-component components component-pred f)))
 
@@ -849,18 +850,11 @@
 (define (id->symbol #:prefix (prefix "") n)
   (string->symbol (~a prefix "id" n)))
 
-(define (sprite-eq? e1 e2)
-  (animated-sprite-image-eq? (get-component e1 animated-sprite?)
-                             (get-component e2 animated-sprite?)))
- 
-
-
-
-
 
 
  
-(define (change-name name)
+ 
+(define (change-name name) 
   (lambda (g e)
     (update-entity e entity-name? (entity-name name))))
 

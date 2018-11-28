@@ -31,10 +31,12 @@
 
 (define (key-animator-system)
   (list (direction 0)
-        (rotation-style 'left-right)
         (on-key 'right (set-direction 0))
         (on-key 'left  (set-direction 180))
-        (observe-change moving? start-stop-animation)))
+        (observe-change moving? start-stop-animation)
+        (rotation-style 'left-right)
+        
+        )) 
 
 (define (player-info-closed? g e)
   (not (get-entity "player info" g)))

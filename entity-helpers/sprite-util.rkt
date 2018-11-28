@@ -36,7 +36,7 @@
                        (sprite-or-func)
                        sprite-or-func))
     (define new-bb (image->bb (render sprite)))
-    (update-entity (update-entity e animated-sprite? (set-has-changed sprite))
+    (update-entity (update-entity e animated-sprite? sprite)
                    bb?
                    new-bb)))
 
@@ -52,17 +52,24 @@
                    new-bb)))
 
 (define (scale-sprite amount)
-  (lambda (g e)
-    (define s (get-component e animated-sprite?))
-    (define frames (animated-sprite-o-frames s))
-    (define new-list (map (curry scale amount) (vector->list frames)))
-    (define resized-sprite (struct-copy animated-sprite s
-                                        [frames   (list->vector new-list)]
-                                        [o-frames (list->vector new-list)]))
-    (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? resized-sprite)
-                   bb?
-                   new-bb)))
+  (lambda (g e) e) ;Disabling for now...
+
+  ;Maybe something like this, instead???
+  #;(lambda (g e)
+    (update-entity e scale? (scale amount)))
+
+  ;Not this.  Shouldn't be changing images at runtime like this...
+  #;(lambda (g e)
+      (define s (get-component e animated-sprite?))
+      (define frames (animated-sprite-o-frames s))
+      (define new-list (map (curry scale amount) (vector->list frames)))
+      (define resized-sprite (struct-copy animated-sprite s
+                                          [frames   (list->vector new-list)]
+                                          [o-frames (list->vector new-list)]))
+      (define new-bb (image->bb (render resized-sprite)))
+      (update-entity (update-entity e animated-sprite? resized-sprite)
+                     bb?
+                     new-bb)))
 
 (define (random-dec min max)
   (define new-min (exact-round (* min 100)))
@@ -149,3 +156,4 @@
                                 [current-frame 0]
                                 [ticks 0]
                                 [animate? #f]))))
+
