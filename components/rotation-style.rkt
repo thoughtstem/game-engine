@@ -26,21 +26,27 @@
   (define f (animated-sprite-o-frames sprite))
   ;(define rate (animated-sprite-rate sprite))
   (define rot-func (λ(i) (rotate (- dir) i)))
+
+
+  ;Hmmm.  Okay, something in here is not working with mode-lambda.  Gotta fix...
   (cond
     [(eq? mode 'left-right) (cond
                               [(and fr? (< dir 270)(> dir 90))
                                (update-entity (update-entity e
                                                              animated-sprite?
-                                                             (struct-copy animated-sprite sprite [frames (list->vector (flip-frames f))]))
+                                                             (struct-copy animated-sprite sprite
+                                                                          [frames (list->vector (flip-frames f))]))
                                               rotation-style?
                                               (rotation-style 'left-right (not fr?)))]
                               [(and (not fr?) (or (> dir 270) (< dir 90)))
                                (update-entity (update-entity e
                                                              animated-sprite?
-                                                             (struct-copy animated-sprite sprite [frames f]))
+                                                             (struct-copy animated-sprite sprite
+                                                                          [frames f]))
                                               rotation-style?
                                               (rotation-style 'left-right (not fr?)))]
                               [else e])]
+    
     [(eq? mode 'face-direction) (update-entity e animated-sprite? (curry sprite-map-original rot-func))]))
 
 (new-component rotation-style?

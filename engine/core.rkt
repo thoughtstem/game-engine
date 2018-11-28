@@ -36,6 +36,7 @@
          get-layer
 
          entity-eq?
+         entity-name-eq?
          entity-animation
          sprite->entity
          sprite->bb
@@ -176,6 +177,13 @@
    (= (get-id e1)
       (get-id e2))))
 
+(define (entity-name-eq? e1 e2)
+  (and
+   (entity? e1)
+   (entity? e2)
+   (eq? (get-name e1)
+        (get-name e2))))
+
 (define component-handlers (hash))
 
 (define (new-component struct? update)
@@ -281,6 +289,18 @@
    (eq? component-pred posn?)
    (has-chipmunk-body? e)
    (update-chipmunk-posn! e f))
+
+  ;If the animated-sprite ever changes to a new animated-sprite,
+  ;  We may have new, uncompiled sprites that the render system needs to know about.
+  ;  So we'll tag the animated-sprite component.
+  (and
+   (eq? component-pred animated-sprite?)
+   (animated-sprite? f)
+   (set! f (set-has-changed f)))
+  (and
+   (eq? component-pred animated-sprite?)
+   (procedure? f)
+   (set! f (compose set-has-changed f)))
 
   (entity (update-component components component-pred f)))
 

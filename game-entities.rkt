@@ -8,7 +8,8 @@
 (require "./engine/core.rkt")
 (require "./engine/rendering.rkt")
 
-(require threading)
+(require threading
+         posn)
 
 (define (start-game . entities)
   (~> (filter identity entities)
@@ -27,7 +28,16 @@
 
 
 (define (entities->game:preprocess-entities entities)
-  (initialize-game entities))
+  ;A bit of a hack.  We've been assuming that the last entity is
+  ;  the background entity -- sets the width and height of the game.
+  ;  But we've also been assuming it's positioned by its top-left corner (posn 0 0).
+  ;  Everything else is positioned by its center.  So we'll just hack it to have
+  ;  the right position here.
+  (define bg (last entities))
+  (define adjusted-bg (update-entity bg posn? (posn (/ (w bg) 2)
+                                                    (/ (h bg) 2))))
+  
+  (initialize-game (list-set entities (sub1 (length entities)) adjusted-bg)))
 
 (define (game->game:start-physics game)
   (physics-start (uniqify-ids game)))

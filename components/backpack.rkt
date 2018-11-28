@@ -11,15 +11,19 @@
 (require "./on-key.rkt")
 (require "../component-util.rkt")
 
-(require 2htdp/image)
+(require 2htdp/image
+         threading)
 
 (require posn)
 (provide (rename-out (make-backpack backpack))
          backpack?
+         ;entity->item ; provided for dev only
+         ;item->entity ; provided for dev only
          get-items
          set-items
          add-item
          remove-item
+         remove-item-by-name
          get-last-item
          display-items
          store-item
@@ -35,7 +39,9 @@
          set-backpack-entities
          get-backpack-entities
          draw-backpack
-         update-backpack-sprite)
+         update-backpack-sprite
+         backpack-changed?
+         update-backpack)
 
 (struct item (entity amount))
 
@@ -45,9 +51,12 @@
   (-> entity? item?)
   (item e 1))
 
+(define/contract (item->entity i)
+  (-> item? entity?)
+  (item-entity i))
 
 (define/contract (make-backpack . entities)
-  (->* () () #:rest (listof entity?) backpack?)
+  (->* () () #:rest (or/c (listof entity?) empty?) backpack?)
   (define new-items (map (lambda (e) (item e 1)) entities))
   (backpack new-items))
 
@@ -183,66 +192,35 @@
     (define name-list (map get-name entity-list))
     (member name name-list)))
 
-#|
-(define (drop-last-item)
+(define/contract (remove-item-by-name name [amount 1])
+  (->* (string?) (number?) procedure?)
   (lambda (g e)
-    (define item-list (get-items e))
-    ;(define current-tile (get-current-tile (get-entity "bg" g)))
-    (if (not (empty? item-list))
-        (let ([new-entity (update-entity
-                           (item-entity (last item-list))
-                            #;(update-entity (item-entity (last item-list))
-                                           active-on-bg? (active-on-bg current-tile))
-                            posn? (posn 0 0))])
-          ((spawn new-entity) g (update-entity e backpack? (backpack (remove (last item-list) item-list)))))
-        e)))
+    (define old-items (get-items e))
+    (define target-ent (sprite->entity empty-image
+                                       #:name     name
+                                       #:position (posn 0 0)))
+    (define new-items (remove (entity->item target-ent) old-items item-name-eq?))
+    ;(define new-entity-list (map item->entity new-items)) ; warning: loses amount data
+    ;(update-entity e backpack? (apply backpack new-entity-list))
+    (update-entity e backpack? (backpack new-items))
+    ))
 
-; ==== SYSTEMS ====
-(define (backpack-system #:storable-items [storable-item-list #f]
-                         #:store-key      [store-key "z"]
-                         #:drop-key       [drop-key "x"]
-                         #:backpack-key   [backpack-key "b"]
-                         #:pickup-sound   [pickup-sound #f]
-                         #:drop-sound     [drop-sound    #f]
-                         #:backpack-sound [backpack-sound #f])
-  (define backpack-entity
-    (sprite->entity (draw-backpack '())
-                    #:name       "backpack"
-                    #:position   (posn 0 0) ;(posn 12 (/ HEIGHT 2))
-                    #:components (static)
-                                 (hidden)
-                                 (on-start (do-many update-backpack-sprite
-                                                    (go-to-pos-inside 'top-right)
-                                                    show))
-                                 (on-key store-key die)
-                                 (on-key drop-key die)
-                                 (on-key backpack-key die)))
-  (define (storable-item item-name key)
-    (on-key key #:rule storable-items-nearby? (if pickup-sound
-                                                  (do-many (store-nearby-item item-name)
-                                                           (open-dialog backpack-entity)
-                                                           (play-sound pickup-sound))
-                                                  (do-many (store-nearby-item item-name)
-                                                           (open-dialog backpack-entity)))))
-  (append (list (make-backpack)
-                (on-key backpack-key #:rule backpack-not-open? (if backpack-sound
-                                                                   (do-many (display-items)
-                                                                            (open-dialog backpack-entity)
-                                                                            (play-sound backpack-sound))
-                                                                   (do-many (display-items)
-                                                                            (open-dialog backpack-entity))))
-                (on-key drop-key #:rule backpack-not-empty? (if drop-sound
-                                                                (do-many (drop-last-item)
-                                                                         (open-dialog backpack-entity)
-                                                                         (play-sound drop-sound))
-                                                                (do-many (drop-last-item)
-                                                                         (open-dialog backpack-entity)))))
-          (if storable-item-list
-              (map (curryr storable-item store-key) storable-item-list)
-              (list (on-key store-key #:rule storable-items-nearby? (if pickup-sound
-                                                                        (do-many (store-nearby-item)
-                                                                                 (open-dialog backpack-entity)
-                                                                                 (play-sound pickup-sound))
-                                                                        (do-many (store-nearby-item)
-                                                                                 (open-dialog backpack-entity))))))))
-|#
+(define (item-name-eq? item1 item2)
+  (displayln (~a "Item1: " (get-name (item->entity item1))
+                " Item2: " (get-name (item->entity item2)))) 
+  (entity-name-eq? (item->entity item1)
+                   (item->entity item2)))
+
+(define (backpack-changed? g e)
+  (length (get-items (get-entity "player" g))))
+
+(define (update-backpack g e1 e2)
+  (if (void? e1)
+      e2
+      (begin
+        (displayln "UPDATING BACKPACK")
+        (~> e2
+            (update-backpack-sprite g _)
+            ((go-to-pos-inside 'top-right) g _)))))
+
+

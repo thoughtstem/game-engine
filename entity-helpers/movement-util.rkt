@@ -18,8 +18,6 @@
          un-freeze-entity
          distance-between
          get-entities-near
-         ;near-entity?       ;DO WE NEED THIS?
-         ;near-ent?
          near?
          player-is-near?)
 
@@ -183,21 +181,6 @@
   (define p (posn-subtract pos2 pos1))
   (sqrt (+ (expt (posn-x p) 2) (expt (posn-y p) 2))))
 
-; === ARE THESE NEEDED ANYMORE? ====
-(define (near-entity? name [range 80])
-  (lambda (g e)
-    (define pos (get-component e posn?))
-    (define target-pos (get-component (get-entity name g) posn?))
-    (< (distance-between target-pos pos) range)))
-
-(define (near-ent? target-e [range 80])
-  (lambda (g e)
-    (define pos (get-component e posn?))
-    (define target-pos (get-component target-e posn?))
-    (< (distance-between target-pos pos) range)))
-
-; ===================================
-
 (define (close? range source-e target-e)
   (define source-pos (get-component source-e posn?))
   (define target-pos (get-component target-e posn?))
@@ -217,3 +200,4 @@
   (lambda (g e)
     (define player (get-entity "player" g))
     ((near? item range) g player)))
+

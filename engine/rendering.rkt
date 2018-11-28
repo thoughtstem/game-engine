@@ -2,7 +2,8 @@
 
 (provide lux-start
          final-state
-         asset-precompiler)
+         precompiler-entity
+         (rename-out [make-precompiler precompiler]))
 
 (require racket/match
          racket/fixnum
@@ -20,7 +21,10 @@
 (require "./core.rkt")
 (require "../components/animated-sprite.rkt")
 
+(struct precompiler (sprites))
 
+(define (make-precompiler . sprites)
+  (precompiler (map fast-image sprites)))
 
 (define (lux-start larger-state)
   (define render-tick (get-mode-lambda-render-tick (game-entities larger-state)))
@@ -192,7 +196,7 @@
 (define (seen-image-before f)
   (member f temp-storage fast-equal?))
 
-(define (asset-precompiler . is)
+(define (precompiler-entity . is)
   (define images
     (flatten
      (append
@@ -210,12 +214,27 @@
 
 
 (define (entities->sprites-to-compile entities)
-  (flatten
-   (~> entities
-       (map (curryr get-component animated-sprite?) _)
-       (filter animated-sprite-changed-since-last-frame? _)
-       (map    set-has-not-changed! _)
-       (map (compose vector->list animated-sprite-fast-frames) _))))
+  (define fast-images-from-animated-sprite
+    (~> entities
+        (map (curryr get-component animated-sprite?) _)
+        (filter animated-sprite-changed-since-last-frame? _)
+        (map    set-has-not-changed! _) ;Do we need this???
+        (map (compose vector->list animated-sprite-fast-frames) _)
+        flatten))
+
+
+  (define fast-images-from-precompile-component
+    (flatten
+     (~> entities
+         (map (curryr get-components precompiler?) _)
+         flatten
+         (map precompiler-sprites _) ;These are images.  Probably want to also support animated-sprites
+         flatten)))
+
+  
+
+  (append fast-images-from-animated-sprite
+          fast-images-from-precompile-component))
 
 
 (define (register-sprites-from-images! images)

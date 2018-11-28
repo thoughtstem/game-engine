@@ -132,6 +132,7 @@
 
 (define (start-animation)
   (lambda (g e)
+    ;(displayln (~a (get-name e) ": STARTING ANIMATION"))
     (define as (get-component e animated-sprite?))
     (update-entity e
                    animated-sprite?
@@ -140,6 +141,7 @@
 
 (define (stop-animation)
   (lambda (g e)
+    ;(displayln (~a (get-name e) ": STOPPING ANIMATION"))
     (define as (get-component e animated-sprite?))
     (update-entity e
                    animated-sprite?

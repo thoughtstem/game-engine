@@ -50,7 +50,7 @@
         (
          id         
          
-         o-frames         ;List of original images
+         o-frames         ;List of original images.  This should be fast-images???
          frames           ;List of images
          fast-frames
          total-frames
@@ -102,9 +102,12 @@
   
   (animated-sprite
    (id-for frames)
-   (list->vector frames)
-   (list->vector frames)
-   (vector-map make-fast-image (list->vector frames))
+
+   ;Umm we don't need to be storing this three times...
+   (list->vector (map make-fast-image frames))
+   (list->vector (map make-fast-image frames))
+   (list->vector (map make-fast-image frames))
+   
    (length list-costumes)
    0
    rate
@@ -112,9 +115,11 @@
    animate?
    #t))
 
+;Called any time (update-entity e animated-sprite? as) happens
+;  Is that a good idea?  That happens a lot probably...
 (define (set-has-changed s)
   (struct-copy animated-sprite s
-               [changed-since-last-frame? #t]))
+               [fast-frames (vector-map make-fast-image (animated-sprite-frames s))]))
 
 (define (set-has-not-changed! s)
   (set-animated-sprite-changed-since-last-frame?! s #f)
@@ -140,7 +145,7 @@
 
 (define/contract (pick-frame s i)
   (-> animated-sprite? integer? image?)
-  (vector-ref (animated-sprite-frames s) i))
+  (fast-frame-data (vector-ref (animated-sprite-frames s) i)))
 
 (define/contract (pick-frame-original s i)
   (-> animated-sprite? integer? image?)
@@ -203,7 +208,9 @@
           (fast-image-id i2)))
 
 (define (make-fast-image i)
-  (fast-image (get-image-id i) i))
+  (if (fast-image? i)
+      i
+      (fast-image (get-image-id i) i)))
 
 (define (get-image-id i)
   (equal-hash-code (~a (image->color-list i))))

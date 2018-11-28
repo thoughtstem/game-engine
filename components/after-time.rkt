@@ -21,8 +21,8 @@
 
 (define (update-after-time g e c)
   (if (after-time-ready? c)
-      (remove-component ((after-time-func c) g e) after-time?)
-      (update-entity    e                         after-time? inc-after-time)))
+      (remove-component ((after-time-func c) g e) (is-component? c))
+      (update-entity    e                         (is-component? c) inc-after-time)))
 
 (new-component after-time?
                update-after-time)

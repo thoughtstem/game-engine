@@ -295,11 +295,12 @@
                                (layer "ui")
                                (on-start (do-many (go-to-pos 'center)
                                                   show
-                                                  (open-dialog (dialog-selection dialog-list
-                                                                                 (image-width dialog-list-sprite)
-                                                                                 font-size
-                                                                                 selection
-                                                                                 rsound))))
+                                                  (spawn (dialog-selection dialog-list
+                                                                           (image-width dialog-list-sprite)
+                                                                           font-size
+                                                                           selection
+                                                                           rsound)
+                                                         #:relative? #f)))
                                (on-key 'enter die)
                                ))
 
