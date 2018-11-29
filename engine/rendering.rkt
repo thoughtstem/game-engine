@@ -205,11 +205,11 @@
 
 (define (remember-image! f)
   (set! temp-storage
-        (cons f
+        (cons (fast-image-id f)
               temp-storage)))
 
 (define (seen-image-before f)
-  (member f temp-storage fast-equal?))
+  (member (fast-image-id f) temp-storage =))
 
 (define (precompiler-entity . is)
   (define images
