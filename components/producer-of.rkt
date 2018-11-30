@@ -137,7 +137,7 @@
            #:rule (and/r rule
                          (λ (g e) (not (get-entity progress-entity-name g)))
                          near-player?
-                         nearest-to-player? 
+                         (nearest-to-player? #:filter (has-component? on-key?))
                          (not/r (other-entity-locked-to? "player")))
            ;(do-many (spawn to-clone))
            (spawn progress-counter)
@@ -194,6 +194,7 @@
           ((spawn updated-to-spawn) g e2)
           e2)))
   (list
+   (precompiler (map (λ (t) (draw-progress-bar t #:max build-time)) (range 0 (add1 build-time))))
    (on-key 'enter
            #:rule (and/r rule
                          (λ (g e)(get-entity "crafting list" g))
@@ -204,7 +205,7 @@
                            (eq? sel selection))
                          (λ (g e) (not (get-entity progress-entity-name g)))
                          near-player?
-                         nearest-to-player? 
+                         (nearest-to-player? #:filter (has-component? on-key?))
                          (not/r (other-entity-locked-to? "player")))
            ;(do-many (spawn to-clone))
            (spawn progress-counter)
