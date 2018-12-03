@@ -118,7 +118,9 @@
   (define list-of-entries (map (λ (msg icon) (freeze (beside
                                               (pad (scale-to-fit icon (image-height (text "" font-size "yellow"))) 4 2)
                                               (pad (text msg font-size "yellow") 4 2)))) msg-list icon-list))
-    (define message-list (apply (curry above/align "left") list-of-entries))
+    (define message-list (if (= 1 (length list-of-entries))
+                             (first list-of-entries)
+                             (apply (curry above/align "left") list-of-entries)))
 
   #|  (foldr (lambda (icon new-text text-img)
                                 (above/align "left"

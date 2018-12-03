@@ -56,35 +56,36 @@
   ;(displayln (~a "MIN RANGE: " range))
   ((near? "player" range) g e))
 
-(define (nearest-to-player? g e)
-  (define all-es (game-entities g) #;(filter (has-component? carriable?)
-                                             (game-entities g)))
+(define (nearest-to-player? #:filter [f identity]) 
+  (lambda (g e)
+    (define all-es (filter f (game-entities g)) #;(filter (has-component? carriable?)
+                                               (game-entities g)))
 
-  (define player (entity-with-name "player" g))
+    (define player (entity-with-name "player" g))
 
-  (define (ui? e)
-    (and ((has-component? layer?) e)
-         (eq? (get-layer e) "ui")))
+    (define (ui? e)
+      (and ((has-component? layer?) e)
+           (eq? (get-layer e) "ui")))
 
-  (define (not-ui? e)
-    (not (ui? e)))
+    (define (not-ui? e)
+      (not (ui? e)))
   
-  (define all-but-me-and-player
-    (~> all-es
-        (remove player _ entity-eq?)
-        (remove e      _ entity-eq?)
-        (filter not-ui? _)))
+    (define all-but-me-and-player
+      (~> all-es
+          (remove player _ entity-eq?)
+          (remove e      _ entity-eq?)
+          (filter not-ui? _)))
   
-  (define my-dist (distance-between (get-posn e)
-                                    (get-posn player))) 
+    (define my-dist (distance-between (get-posn e)
+                                      (get-posn player))) 
 
-  (define other-distances (map (curry distance-between (get-posn player))
-                               (map get-posn all-but-me-and-player)))
+    (define other-distances (map (curry distance-between (get-posn player))
+                                 (map get-posn all-but-me-and-player)))
 
-  #;(displayln (list (get-name e) (get-id e) my-dist other-distances))
+    #;(displayln (list (get-name e) (get-id e) my-dist other-distances))
 
-  (or (empty? other-distances)
-      (< my-dist (apply min other-distances))))
+    (or (empty? other-distances)
+        (< my-dist (apply min other-distances)))))
 
 (define (carried? g e)
   (get-component e lock-to?))
@@ -183,7 +184,7 @@
                  #:show-info?     [show-info? #f]
                  #:on-drop        [on-drop display-entity])
   (list (carriable)
-        (on-key pickup-key #:rule (and/r nearest-to-player?
+        (on-key pickup-key #:rule (and/r (nearest-to-player? #:filter (has-component? on-key?))
                                          near-player?
                                          (not/r carried?)
                                          (not/r (other-entity-locked-to? "player")))

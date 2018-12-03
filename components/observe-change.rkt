@@ -1,6 +1,7 @@
 #lang racket
 
-(provide (rename-out [make-observe-change observe-change]))
+(provide (rename-out [make-observe-change observe-change])
+         observe-change?)
 
 (require "../game-entities.rkt"
          ;"../component-util.rkt"
