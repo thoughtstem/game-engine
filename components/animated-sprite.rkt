@@ -9,6 +9,7 @@
          (struct-out animated-sprite)
          animated-sprite-x-scale
          sheet->sprite
+         row->sprite
          sprite-map
          pick-frame
          pick-frame-original
@@ -46,6 +47,17 @@
       (drop _ (* (- n 1) c))
       (take _ c)
       (new-sprite _ actual-delay)))
+
+(define (row->sprite sheet
+                     #:columns     (c 4)
+                     #:row-number  (n 1)
+                     #:delay       (delay 1))
+  
+  (sheet->sprite sheet
+                 #:rows 1
+                 #:columns c
+                 #:row-number n
+                 #:delay delay))
 
 
 ;Struct to encapsulate what an animation is

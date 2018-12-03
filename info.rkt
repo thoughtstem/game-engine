@@ -6,6 +6,7 @@
 (define scribblings '(("game-engine.scrbl" ())))
 
 (define deps '("threading"
+               "mode-lambda"
                "drracket"
                "htdp-lib"
                "https://github.com/jeapostrophe/lux.git#f6edd2e"
