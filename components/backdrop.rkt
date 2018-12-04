@@ -381,7 +381,8 @@
   (-> image? #:rows integer? #:columns integer? #:start-tile integer? (listof any/c))
   (list
    (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns #f current '())
-   (backpack)))
+   (backpack)
+   ))
 
 ; === HANDLER FUNCTIONS ===
 (define/contract (next-tile direction)
