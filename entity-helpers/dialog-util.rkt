@@ -9,6 +9,8 @@
          draw-dialog-sheet-text
          draw-dialog-list
          draw-crafting-list
+         draw-dialog-lg
+         draw-avatar-box
          dialog->sprites
          dialog->response-sprites
          next-dialog
@@ -148,6 +150,15 @@
            (rectangle (+ 16 (image-width message-list)) (+ 16 (image-height message-list)) "solid"  (make-color 20 20 20 150))))
 
 
+(define (draw-avatar-box e)
+  (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
+  (freeze (overlay (rectangle 56 56 "outline" (pen "white" 2 "solid" "butt" "bevel"))
+                       (rectangle 58 58 "outline" (pen "black" 2 "solid" "butt" "bevel"))
+                       (place-image
+                        (freeze (scale 2 avatar-img))
+                        30 30
+                        (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
+
 (define (next-dialog dialog-list #:sound [rsound #f])
   (lambda (g e)
     (define WIDTH (game-width g))
@@ -156,14 +167,7 @@
     ;(displayln (~a "CURRENT DIALOG: " dialog-index))
     (define dialog-length (length dialog-list))
     (define name (get-name e))
-    (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
-    (define avatar-box
-      (freeze (overlay (rectangle 56 56 "outline" (pen "white" 2 "solid" "butt" "bevel"))
-                       (rectangle 58 58 "outline" (pen "black" 2 "solid" "butt" "bevel"))
-                       (place-image
-                        (freeze (scale-to-fit avatar-img 80))
-                        20 40
-                        (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
+    (define avatar-box (draw-avatar-box e))
     (define message-entity (create-dialog dialog-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
     (update-entity (add-component e
                                   (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 5)))
@@ -178,14 +182,7 @@
     (define npc-dialog-index (get-counter e))
     (define response-length (length (list-ref response-list player-dialog-index)))
     (define name (get-name e))
-    (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
-    (define avatar-box
-      (freeze (overlay (rectangle 56 56 "outline" (pen "white" 2 "solid" "butt" "bevel"))
-                       (rectangle 58 58 "outline" (pen "black" 2 "solid" "butt" "bevel"))
-                       (place-image
-                        (freeze (scale 2 avatar-img))
-                        30 30
-                        (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
+    (define avatar-box (draw-avatar-box e))
     (define message-entity (create-dialog response-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
     (add-component (update-entity e counter? (counter (add1 npc-dialog-index)))
                    (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 10)))))
@@ -259,19 +256,22 @@
                                                           (do-many (change-dialog-sprite) ;(change-sprite dialog-sprite)
                                                                    show)))
                   ))
-     
-(define (dialog-lg avatar name message-entity game-width #:delay [delay-time 0])
+
+(define (draw-dialog-lg name avatar game-width)
   (define padded-name (~a name
                           #:min-width 18
                           #:max-width 80
                           #:limit-marker "..."
                           #:align 'center))
-  (sprite->entity (above/align "left"
-                               (draw-dialog padded-name)
-                               (place-image/align (pad avatar 16 16)
-                                                  0 40 "left" "center"
-                                                  (overlay (rectangle (- game-width 4) 76 "outline" (pen "white" 2 "solid" "butt" "bevel"))
-                                                           (rectangle game-width       80 "solid"  (make-color 20 20 20 150)))))
+  (above/align "left"
+               (draw-dialog padded-name)
+               (place-image/align (pad avatar 16 16)
+                                  0 40 "left" "center"
+                                  (overlay (rectangle (- game-width 4) 76 "outline" (pen "white" 2 "solid" "butt" "bevel"))
+                                           (rectangle game-width       80 "solid"  (make-color 20 20 20 150))))))
+     
+(define (dialog-lg avatar name message-entity game-width #:delay [delay-time 0])
+  (sprite->entity (draw-dialog-lg name avatar game-width)
                   #:name       "dialog bg"
                   #:position   (posn 0 0)
                   #:components (static)
