@@ -379,8 +379,12 @@
                                   #:start-tile [current 0])
   ; #:mini-map (yes/no) #:key
   (-> image? #:rows integer? #:columns integer? #:start-tile integer? (listof any/c))
+  (define backdrop-component
+    (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns #f current '()))
   (list
-   (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns #f current '())
+   backdrop-component
+   (precompiler
+    (backdrop-tiles backdrop-component))
    (backpack)
    ))
 

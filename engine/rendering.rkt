@@ -3,7 +3,8 @@
 (provide lux-start
          final-state
          precompiler-entity
-         (rename-out [make-precompiler precompiler]))
+         (rename-out [make-precompiler precompiler])
+         precompiler?)
 
 (require racket/match
          racket/fixnum
@@ -70,6 +71,10 @@
   ;Define that we'll have one layer of sprites (for now).
   ;Fix its position at the center of the screen
   (define layers (vector (ml:layer (real->double-flonum W/2)
+                                   (real->double-flonum H/2))
+                         (ml:layer (real->double-flonum W/2)
+                                   (real->double-flonum H/2))
+                         (ml:layer (real->double-flonum W/2)
                                    (real->double-flonum H/2))))
 
   ;Set up our open gl render function with the current sprite database
@@ -345,9 +350,22 @@
              
              (define sprite-id (ml:sprite-idx csd id-sym))
 
-             (if (not sprite-id)
+             (define (ui? e)
+               (and (get-component e layer?)
+                    (eq? (get-layer e) "ui")))
+
+             (define (tops? e)  ; for treetops and rooftops
+               (and (get-component e layer?)
+                    (eq? (get-layer e) "tops")))
+
+             (define layer (cond [(ui? e)   2]
+                                 [(tops? e) 1]
+                                 [else      0]))
+
+             (if (or (get-component e hidden?)
+                     (not sprite-id))
                  #f
-                 (ml:sprite #:layer 0
+                 (ml:sprite #:layer layer
                             (real->double-flonum (x e))
                             (real->double-flonum (y e))
                             sprite-id

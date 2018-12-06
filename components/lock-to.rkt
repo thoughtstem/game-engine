@@ -11,10 +11,13 @@
 (struct lock-to (name offset))
 
 (define (make-lock-to name #:offset [offset (posn 0 0)])
+  ;(displayln (~a "LOCKING TO: " name))
   (lock-to name offset))
 
 (define (update-lock-to g e c)
-  (define target-pos (get-component (get-entity (lock-to-name c) g) posn?))
+  (define target-pos (if (get-entity (lock-to-name c) g)
+                         (get-component (get-entity (lock-to-name c) g) posn?)
+                         (posn 0 0)))
   (define offset-pos (lock-to-offset c))
   (define new-posn (posn (+ (posn-x target-pos) (posn-x offset-pos))
                          (+ (posn-y target-pos) (posn-y offset-pos))))
