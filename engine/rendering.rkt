@@ -184,7 +184,6 @@
 
       ;Ignores render-tick -- which is the mode-lambda rendering function
       (and last-game-snapshot
-           (displayln (length (game-entities last-game-snapshot)))
            (g/v (draw last-game-snapshot))) ;Old, slower drawing method.  For reference...
 
       ;Uses render-tick -- as it should.
