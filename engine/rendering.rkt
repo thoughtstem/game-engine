@@ -3,8 +3,7 @@
 (provide lux-start
          final-state
          precompiler-entity
-         (rename-out [make-precompiler precompiler])
-         precompiler?)
+         (rename-out [make-precompiler precompiler]))
 
 (require racket/match
          racket/fixnum
@@ -71,10 +70,6 @@
   ;Define that we'll have one layer of sprites (for now).
   ;Fix its position at the center of the screen
   (define layers (vector (ml:layer (real->double-flonum W/2)
-                                   (real->double-flonum H/2))
-                         (ml:layer (real->double-flonum W/2)
-                                   (real->double-flonum H/2))
-                         (ml:layer (real->double-flonum W/2)
                                    (real->double-flonum H/2))))
 
   ;Set up our open gl render function with the current sprite database
@@ -161,13 +156,12 @@
 
 (define (computer-number)
   (define s (with-output-to-string
-              (thunk (system "whoami"))))
+              (thunk (system "hostname"))))
 
   (~> s
       (string-replace _ "ts" "")
-      (string-replace _ "\n" ""))
-
-  (string->number s))
+      (string-replace _ "\n" "")
+      (string->number _)))
 
 
 (define rendering-mode
@@ -350,22 +344,9 @@
              
              (define sprite-id (ml:sprite-idx csd id-sym))
 
-             (define (ui? e)
-               (and (get-component e layer?)
-                    (eq? (get-layer e) "ui")))
-
-             (define (tops? e)  ; for treetops and rooftops
-               (and (get-component e layer?)
-                    (eq? (get-layer e) "tops")))
-
-             (define layer (cond [(ui? e)   2]
-                                 [(tops? e) 1]
-                                 [else      0]))
-
-             (if (or (get-component e hidden?)
-                     (not sprite-id))
+             (if (not sprite-id)
                  #f
-                 (ml:sprite #:layer layer
+                 (ml:sprite #:layer 0
                             (real->double-flonum (x e))
                             (real->double-flonum (y e))
                             sprite-id
