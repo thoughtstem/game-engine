@@ -17,6 +17,7 @@
          
          fast-equal?
          fast-image-data
+         fast-image?
          fast-image-id
          (rename-out [make-fast-image fast-image])
          animated-sprite-total-frames
