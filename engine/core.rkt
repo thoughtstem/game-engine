@@ -96,8 +96,7 @@
          die-if-member-of
          handler
          f-handler
-         simple-handler
-         )
+         simple-handler)
 
 (require posn)
 (require 2htdp/image)
@@ -538,8 +537,11 @@
 
 (define (draw-entity e)
   (define s (get-component e animated-sprite?))
+
   (if s
-      (render s)
+      (scale/xy (animated-sprite-x-scale s)
+                (animated-sprite-y-scale s)
+                (render s))
       empty-image))
 
 (define (draw-entities es)

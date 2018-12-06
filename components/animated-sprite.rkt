@@ -18,7 +18,9 @@
          fast-equal?
          fast-image-data
          fast-image?
-         fast-image-id
+         
+         finalize-fast-image
+         (rename-out [get-fast-image-id fast-image-id])
          (rename-out [make-fast-image fast-image])
          animated-sprite-total-frames
 
@@ -207,18 +209,37 @@
         total))
 
 
-(struct fast-image (id data) #:transparent)
+(struct fast-image ([id #:mutable] data) #:transparent)
+
+(define (get-fast-image-id fi)
+  (if (procedure? (fast-image-id fi))
+      (fast-image-id (finalize-fast-image fi))
+      (fast-image-id fi)))
+
+(define (finalize-fast-image fi)
+  (displayln "Finalizing a fast image")
+  (set-fast-image-id! fi ((fast-image-id fi)))
+  (displayln "Done finalizing a fast image")
+  fi)
 
 (define (fast-equal? i1 i2)
-  (equal? (fast-image-id i1)
-          (fast-image-id i2)))
+  (equal? (get-fast-image-id i1)
+          (get-fast-image-id i2))
+
+  )
 
 (define (make-fast-image i)
-  
-  (if (fast-image? i)
-      i
-      (begin
-        (fast-image (get-image-id i) i))))
+  (displayln (~a "Making fast image for image sized: " (image-width i) "x" (image-height i)))
+  (define ret
+    (if (fast-image? i)
+        i
+        (begin
+          (fast-image (thunk (get-image-id i)) i))))
+
+
+  (displayln "Done making fast image")
+
+  ret)
 
 (define (get-image-id i)
   (equal-hash-code (~a (image->color-list i))))
