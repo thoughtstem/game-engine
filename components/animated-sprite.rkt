@@ -18,6 +18,8 @@
          
          fast-equal?
          fast-image-data
+         fast-image?
+         
          finalize-fast-image
          (rename-out [get-fast-image-id fast-image-id])
          (rename-out [make-fast-image fast-image])

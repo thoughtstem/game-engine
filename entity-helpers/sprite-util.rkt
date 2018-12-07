@@ -61,11 +61,18 @@
                    (curry set-scale-xy (+ min (* (random) (- max min)))))))
 
 ;This is broken...
+;Not broken anymore, but recompiles each color change.
+;todo: use mode lambda for color changing
 (define (change-color-by amount)
   (lambda (g e)
     (define s (get-component e animated-sprite?))
     (define frames (animated-sprite-o-frames s))
-    (define new-list (map (curry change-img-hue amount) (vector->list frames)))
+    (define (ensure-image image-or-fast-image)
+      (if (fast-image? image-or-fast-image)
+          (fast-image-data image-or-fast-image)
+          image-or-fast-image))
+    (define image-frames (map ensure-image (vector->list frames)))
+    (define new-list (map fast-image (map (curry change-img-hue amount) image-frames)))
     (update-entity e animated-sprite? (struct-copy animated-sprite s
                                                    [frames   (list->vector new-list)]
                                                    [o-frames (list->vector new-list)]
