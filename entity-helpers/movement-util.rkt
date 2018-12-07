@@ -196,8 +196,14 @@
     (define nearby-ents (filter (curry name-eq? name) (get-entities-near e g range)))
     (not (empty? nearby-ents))))
 
-(define (player-is-near? item [range 80])
+(define (player-is-near? name [range 80])
   (lambda (g e)
     (define player (get-entity "player" g))
-    ((near? item range) g player)))
+    (define p-width  (image-width  (render (get-component player animated-sprite?))))
+    (define target (get-entity name g))
+    (define target-width  (if target
+                              (image-width (render (get-component target animated-sprite?)))
+                              0))
+    (define set-range (+ (/ target-width 2) (/ p-width 2) 20))
+    ((near? name set-range) g player)))
 
