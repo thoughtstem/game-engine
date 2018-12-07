@@ -3,6 +3,7 @@
 (provide new-sprite
          render
          next-frame
+         set-frame
          sheet->costume-list
          animation-finished?
          reset-animation
@@ -39,7 +40,8 @@
                              #:columns     (c 1)
                              #:row-number  (n 1)
                              #:speed       (speed #f)
-                             #:delay       (delay #f))
+                             #:delay       (delay #f)
+                             #:animate?     [animate? #t])
   
   (define actual-delay (or delay speed 1))
   
@@ -47,7 +49,7 @@
       (sheet->costume-list _ c r (* r c))
       (drop _ (* (- n 1) c))
       (take _ c)
-      (new-sprite _ actual-delay)))
+      (new-sprite _ actual-delay #:animate animate?)))
 
 (define (row->sprite sheet
                      #:columns     (c 4)
@@ -117,7 +119,7 @@
 
 
 (define/contract (new-sprite costumes (rate 1) #:animate [animate? #t])
-  (->* ((or/c image? (listof image?))) (number?) animated-sprite?)
+  (->* ((or/c image? (listof image?))) (number? #:animate boolean?) animated-sprite?)
   (define list-costumes (if (list? costumes)
                             costumes
                             (list costumes)))
@@ -146,8 +148,13 @@
 (define/contract (render s)
   (-> animated-sprite? image?)
 
-  (pick-frame s
-              (animated-sprite-current-frame s)))
+  (scale/xy
+   (abs (animated-sprite-x-scale s)) ;Breaks on negatives...
+   (abs (animated-sprite-y-scale s)) ;Breaks on negatives...
+   (pick-frame s
+               (animated-sprite-current-frame s)))
+
+  )
 
 (define/contract (pick-frame s i)
   (-> animated-sprite? integer? image?)
@@ -170,6 +177,11 @@
            (increase-current-frame s)
            (increase-ticks s))
        s))
+
+(define/contract (set-frame s i)
+  (-> animated-sprite? number? animated-sprite?)
+  (struct-copy animated-sprite s
+               [current-frame i]))
 
 (define/contract (increase-ticks s)
   (-> animated-sprite? animated-sprite?)
@@ -207,7 +219,7 @@
         total))
 
 
-(struct fast-image ([id #:mutable] data) #:transparent)
+(struct fast-image (data [id #:mutable]) #:transparent)
 
 (define (get-fast-image-id fi)
   (if (procedure? (fast-image-id fi))
@@ -215,27 +227,27 @@
       (fast-image-id fi)))
 
 (define (finalize-fast-image fi)
-  (displayln "Finalizing a fast image")
+  (displayln (~a "Finalizing a fast image sized: " (image-width (fast-image-data fi)) "x" (image-height (fast-image-data fi))))
+  
   (set-fast-image-id! fi ((fast-image-id fi)))
-  (displayln "Done finalizing a fast image")
+  (displayln "Done finalizing fast image:")
+
+  (displayln fi)
+  
   fi)
 
 (define (fast-equal? i1 i2)
   (equal? (get-fast-image-id i1)
-          (get-fast-image-id i2))
-
-  )
+          (get-fast-image-id i2)))
 
 (define (make-fast-image i)
   (displayln (~a "Making fast image for image sized: " (image-width i) "x" (image-height i)))
+  
   (define ret
     (if (fast-image? i)
         i
         (begin
-          (fast-image (thunk (get-image-id i)) i))))
-
-
-  (displayln "Done making fast image")
+          (fast-image i (thunk (get-image-id i)) ))))
 
   ret)
 

@@ -96,7 +96,9 @@
          die-if-member-of
          handler
          f-handler
-         simple-handler)
+         simple-handler
+
+         tick-entity)
 
 (require posn)
 (require 2htdp/image)
@@ -539,9 +541,7 @@
   (define s (get-component e animated-sprite?))
 
   (if s
-      (scale/xy (animated-sprite-x-scale s)
-                (animated-sprite-y-scale s)
-                (render s))
+      (render s)
       empty-image))
 
 (define (draw-entities es)
@@ -814,6 +814,7 @@
         button-states
         button-states
         '()))
+
 
 (define (game-width g)
   W

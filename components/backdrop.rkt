@@ -1,5 +1,64 @@
 #lang racket
 
+;Some examples...
+(module+ test
+  ;Trying to expose how backdrops get rendered and swap tiles...
+  (require rackunit)
+  (require "./on-start.rkt")
+
+  (define red   (rectangle 10 10 'solid 'red))
+  (define green (rectangle 10 10 'solid 'green))
+
+  (define grid (above (beside red red   red)
+                      (beside red green red)
+                      (beside red red   red)))
+
+  ;Old way
+  (let ()
+
+    (define b (bg->backdrop grid
+                            #:rows       3
+                            #:columns    3
+                            #:start-tile 0))
+
+    (define be (sprite->entity (render-tile b)  
+                               #:name       "bg"
+                               #:position   (posn 0 0)
+                               #:components
+                               (static)
+                               b
+                               (on-start (change-tile-to 4)) ;Swap to green tile on start...
+                               ))
+
+    (define g (initialize-game (list be)))
+
+
+    (check-equal? red   (draw-entity be))
+    (check-equal? green (draw-entity (tick-entity g be))))
+
+
+  ;New way
+  (let ()
+    
+    (define be (add-components
+                (bg->backdrop-entity grid
+                                     #:rows       3
+                                     #:columns    3
+                                     #:start-tile 0
+                                     #:scale 2)
+                (on-start (change-tile-to 4))))
+
+    (define g (initialize-game (list be)))
+
+    (check-equal?  (efficient-backdrop? be) #t)
+    (check-equal? (scale 2 red)   (draw-entity be))
+    (check-equal? (scale 2 green) (draw-entity (tick-entity g be)))
+
+    ;(start-game be)
+    )
+  
+  )
+
 (require "../game-entities.rkt")
 (require "./animated-sprite.rkt")
 (require "./detect-edge.rkt")
@@ -38,6 +97,7 @@
          backdrop-height
          backdrop-length
          bg->backdrop
+         bg->backdrop-entity
          game->current-tile
          player-edge-system)
 
@@ -48,7 +108,61 @@
 (struct backdrop (id tiles columns last-tile current-tile misplaced-entities))
 (struct active-on-bg (bg-list) #:transparent)
 
-;The above structs have the following associated entity predicates
+; === POWERTOOLS ===
+(define/contract (bg->backdrop bg #:rows       rows
+                                  #:columns    columns
+                                  #:start-tile [current 0]
+                                  #:scaler     (scaler 1))
+  ; #:mini-map (yes/no) #:key
+  (-> image? #:rows integer? #:columns integer? #:start-tile integer? (listof any/c))
+  (define backdrop-component
+    (backdrop (random 1000000)
+              (sheet->costume-list bg columns rows (* rows columns))
+              columns #f current '()))
+  (list
+   backdrop-component
+   (precompiler
+    (backdrop-tiles backdrop-component))
+   (backpack)))
+
+
+
+(define (bg->backdrop-entity i
+                             #:rows       (rows 3)
+                             #:columns    (cols 3)
+                             #:start-tile (start-tile 0)
+                             #:scale      (scale 1))
+  
+  (define b (bg->backdrop i
+                          #:rows       rows
+                          #:columns    cols
+                          #:start-tile start-tile))
+
+
+  (define backdrop-animated-sprite
+    (set-scale-xy scale
+                  (sheet->sprite (apply beside (backdrop-tiles (first b)))
+                                 #:rows 1
+                                 #:columns    (* rows cols)
+                                 #:row-number (add1 start-tile)
+                                 #:animate?    #f)))
+  
+  (define be (sprite->entity backdrop-animated-sprite
+                             #:name       "bg"
+                             #:position   (posn 0 0)
+                             #:components
+                             (static)
+                             b))
+  
+  be)
+
+
+
+
+
+
+
+;The backdrop structs have the following associated entity predicates
 (define trackable-entity? (has-component? active-on-bg?))
 (define tracking-entity?  (and/c (has-component? backdrop?)
                                  (has-component? backpack?)))
@@ -373,20 +487,7 @@
 (new-game-function backdrop-end-of-frame)
 
 
-; === POWERTOOLS ===
-(define/contract (bg->backdrop bg #:rows       rows
-                                  #:columns    columns
-                                  #:start-tile [current 0])
-  ; #:mini-map (yes/no) #:key
-  (-> image? #:rows integer? #:columns integer? #:start-tile integer? (listof any/c))
-  (define backdrop-component
-    (backdrop (random 1000000) (sheet->costume-list bg columns rows (* rows columns)) columns #f current '()))
-  (list
-   backdrop-component
-   (precompiler
-    (backdrop-tiles backdrop-component))
-   (backpack)
-   ))
+
 
 ; === HANDLER FUNCTIONS ===
 (define/contract (next-tile direction)
@@ -398,7 +499,8 @@
     (define current-bg-index (tracking-entity->current-tile e))
     (define next-bg-index    (next-backdrop-index direction total-tiles col current-bg-index))
     (if  next-bg-index
-        (update-entity ((set-current-tile next-bg-index) g e) ;(update-entity e counter? (counter next-bg-index))
+         ((change-tile-to next-bg-index) g e)
+        #;(update-entity ((set-current-tile next-bg-index) g e) ;(update-entity e counter? (counter next-bg-index))
                        animated-sprite? (new-sprite (pick-tile backdrop next-bg-index)))
         e)))
 
@@ -427,7 +529,24 @@
   (lambda (g e)
     (define bg-entity (get-entity "bg" g))
     (define backdrop  (get-component bg-entity backdrop?))
-    (update-entity ((set-current-tile num) g e) animated-sprite? (new-sprite (pick-tile backdrop num)))))
+
+
+    (define new-e ((set-current-tile num) g e))
+
+    (define current-sprite (get-component e animated-sprite?))
+
+    (define the-new-sprite
+      (if (efficient-backdrop? e)                  ;Check if it's our new way of managing backdrops
+          (set-frame current-sprite num)           ;Update animation frame...
+          (new-sprite (pick-tile backdrop num))))  ;If not, do it the old (SLOOOW) way
+
+    (displayln (~a "Changing tiles.  Effiient backdrop? " (efficient-backdrop? e)))
+    
+    (update-entity new-e animated-sprite? the-new-sprite)))
+
+
+(define (efficient-backdrop? e)
+  (< 1 (vector-length (animated-sprite-frames (get-component e animated-sprite?)))))
 
 
 (define/contract (set-current-tile num)
