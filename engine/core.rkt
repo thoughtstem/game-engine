@@ -43,7 +43,8 @@
          update-entity 
          get-component
          get-components
-         add-component 
+         add-component
+         add-component-at-end
          remove-component
          add-components
          get-name
@@ -333,6 +334,11 @@
   (match-define (entity components) e)
   (entity (cons c components)))
 
+(define (add-component-at-end e c)
+  (match-define (entity components) e)
+  (entity (append components
+                  (list  c))))
+
 (define (remove-component e c?)
   (match-define (entity components) e)
 
@@ -538,11 +544,28 @@
 
 
 (define (draw-entity e)
-  (define s (get-component e animated-sprite?))
+  (define ss (get-components e animated-sprite?))
 
-  (if s
-      (render s)
-      empty-image))
+  (if (empty? ss)
+      empty-image
+      (overlay-sprites ss)))
+
+
+(define/contract (overlay-sprites ss)
+  (-> (listof animated-sprite?)
+      image?)
+
+  (define current-image
+    (render (first ss)))
+
+  (if (= 1 (length ss))
+      current-image
+      (overlay/offset
+       current-image
+       (- (animated-sprite-x-offset (first ss)))
+       (- (animated-sprite-y-offset (first ss)))
+       (overlay-sprites (rest ss)))))
+
 
 (define (draw-entities es)
   (if (= 1 (length es))
@@ -625,8 +648,11 @@
 
 
 
-(define (tick-entity g e)
-  (main-tick-entity g (chipmunkify e)))
+(define (tick-entity g e #:ticks (t 1))
+  (define ticked (main-tick-entity g (chipmunkify e)))
+  (if (<= t 1)
+      ticked
+      (tick-entity g ticked #:ticks (sub1 t))))
 
 (define (tick-entities g)
   (define es (game-entities g))

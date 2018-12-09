@@ -29,6 +29,8 @@
          get-image-id
          set-x-scale
          set-y-scale
+         set-x-offset
+         set-y-offset
          scale-xy
          set-angle
          set-scale-xy)
@@ -77,6 +79,8 @@
          x-scale
          y-scale
          rotation         ;radians
+         x-offset
+         y-offset
          )
   #:transparent)
 
@@ -90,6 +94,21 @@
   
   (struct-copy animated-sprite s
                [frames (vector-map make-fast-image new-frames)]))
+
+
+(define/contract (set-x-offset v as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  (struct-copy animated-sprite as
+               [x-offset v]))
+
+(define/contract (set-y-offset v as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  (struct-copy animated-sprite as
+               [y-offset v]))
+
+
 
 (define/contract (set-x-scale s as)
   (-> number? animated-sprite? animated-sprite?)
@@ -137,6 +156,8 @@
    1.0 ;x-scale
    1.0 ;y-scale
    0.0 ;theta (in radians)
+   0.0 ;x offset
+   0.0 ;y offset
    ))
 
 

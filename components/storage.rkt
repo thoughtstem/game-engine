@@ -18,5 +18,7 @@
   (get-component e (storage-with-name? name) ))
 
 (define (get-storage-data name e)
-  (storage-data
-   (get-storage name e)))
+  (if (get-storage name e)
+      (storage-data
+       (get-storage name e))
+      #f))

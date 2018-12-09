@@ -336,41 +336,46 @@
 
 (require racket/math)
 (define (game->mode-lambda-sprite-list entities)
-  (flatten
-   (filter identity
+  (filter identity
+          (flatten
            (for/list ([e (in-list (reverse entities))])
-             (define as (get-component e animated-sprite?))
+             (define ass (reverse (get-components e animated-sprite?)))
+
+
+
+             (for/list ([as (in-list ass)])
+               (define f   (current-fast-frame as))
+
+               (define id-sym    (fast-image->id f))
+
              
-             (define f   (current-fast-frame as))
+               (define sprite-id (ml:sprite-idx csd id-sym))
 
-             (define id-sym    (fast-image->id f))
+               (define (ui? e)
+                 (and (get-component e layer?)
+                      (eq? (get-layer e) "ui")))
 
-             
-             (define sprite-id (ml:sprite-idx csd id-sym))
+               (define (tops? e)  ; for treetops and rooftops
+                 (and (get-component e layer?)
+                      (eq? (get-layer e) "tops")))
 
-             (define (ui? e)
-               (and (get-component e layer?)
-                    (eq? (get-layer e) "ui")))
+               (define layer (cond [(ui? e)   2]
+                                   [(tops? e) 1]
+                                   [else      0]))
 
-             (define (tops? e)  ; for treetops and rooftops
-               (and (get-component e layer?)
-                    (eq? (get-layer e) "tops")))
-
-             (define layer (cond [(ui? e)   2]
-                                 [(tops? e) 1]
-                                 [else      0]))
-
-             (if (or (get-component e hidden?)
-                     (not sprite-id))
-                 #f
-                 (ml:sprite #:layer layer
-                            (real->double-flonum (x e))
-                            (real->double-flonum (y e))
-                            sprite-id
-                            #:mx (animated-sprite-x-scale as)
-                            #:my (animated-sprite-y-scale as)
-                            #:theta (real->double-flonum (animated-sprite-rotation as))
-                            ))))))
+               (if (or (get-component e hidden?)
+                       (not sprite-id))
+                   #f
+                   (ml:sprite #:layer layer
+                              (+ (real->double-flonum (x e))
+                                 (animated-sprite-x-offset as))
+                              (+ (real->double-flonum (y e))
+                                 (animated-sprite-y-offset as))
+                              sprite-id
+                              #:mx (animated-sprite-x-scale as)
+                              #:my (animated-sprite-y-scale as)
+                              #:theta (real->double-flonum (animated-sprite-rotation as))
+                              )))))))
 
 
 
