@@ -75,8 +75,8 @@
                  #:row-number 1
                  #:speed      1))
 
-(define (draw-title msg)
-  (define message (text msg 24 "yellow"))
+(define (draw-title msg #:font-size (font-size 24))
+  (define message (text msg font-size "yellow"))
   (overlay message
            (rectangle (+ 12 (image-width message)) (+ 12 (image-height message)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
            (rectangle (+ 16 (image-width message)) (+ 16 (image-height message)) "solid" (make-color 20 20 20 150))))

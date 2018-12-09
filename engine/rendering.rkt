@@ -17,12 +17,18 @@
 
          (prefix-in ml: mode-lambda)
          (prefix-in ml: mode-lambda/static)
-         (prefix-in gl: mode-lambda/backend/gl))
+         (prefix-in gl: mode-lambda/backend/gl)
+         (prefix-in ml: mode-lambda/text/static)
+         (prefix-in ml: mode-lambda/text/runtime))
 
 (require "./core.rkt")
 (require "../components/animated-sprite.rkt")
 
 (struct precompiler (sprites) #:transparent)
+
+(define debug-message
+  #f
+  #;"This is a debug message.  Renders on top of any game...")
 
 (define (make-precompiler . animated-sprites-or-images)
   (define entities (filter entity? (flatten animated-sprites-or-images)))
@@ -75,11 +81,14 @@
                          (ml:layer (real->double-flonum W/2)
                                    (real->double-flonum H/2))
                          (ml:layer (real->double-flonum W/2)
+                                   (real->double-flonum H/2))
+                         (ml:layer (real->double-flonum W/2)
                                    (real->double-flonum H/2))))
 
   ;Set up our open gl render function with the current sprite database
   (define ml:render (gl:stage-draw/dc csd W H 8))
-  
+
+
   (define (ticky-tick current-entities)
     
     ;Find uncompiled entities...
@@ -94,10 +103,24 @@
     ;Create our sprites
     (define dynamic-sprites (game->mode-lambda-sprite-list current-entities))
 
-    (define static-sprites '())
+    (define static-sprites (list))
+
+    (define debug-sprites
+      (if (and debug-text-renderer debug-message)
+          (list (debug-text-renderer debug-message
+                            #:b 255 #:g 255
+                            100.0
+                            0.0
+                            #:layer 3))
+          '()))
+
 
     ;Actually render them
-    (ml:render layers dynamic-sprites static-sprites))
+    (ml:render layers
+               static-sprites
+
+
+               (append debug-sprites dynamic-sprites)))
 
   ticky-tick)
 
@@ -238,6 +261,8 @@
   
   (define csd (ml:compile-sprite-db sd))
 
+
+
   ;(displayln (ml:compiled-sprite-db-spr->idx csd))
   ; (ml:save-csd! csd (build-path "/Users/thoughtstem/Desktop/sprite-db") #:debug? #t)
 
@@ -275,7 +300,7 @@
 (define compiled-images '())
 
 (define csd       #f)  ;Mode Lambda's representation of our compiled sprites
-
+(define debug-text-renderer #f)
 
 (define (entities->sprites-to-compile entities)
   (define fast-images-from-animated-sprite
@@ -325,8 +350,23 @@
        (let ([sd2 (ml:make-sprite-db)])
          (for ([image (in-list compiled-images)])
            (add-animated-sprite-frame-new! sd2 image))
+
+         
+  
+         (define the-font
+           (ml:load-font! sd2
+                          #:size 24.0)
+    
+           #;(ml:load-font! sd
+                            #:size 24.0
+                            #:face "THISDOESNTWORK"
+                            #:smoothing 'smoothed
+                            #:family 'modern))
+         
+
          
          (set! csd (ml:compile-sprite-db sd2))
+         (set! debug-text-renderer (ml:make-text-renderer the-font csd))
 
          ;(displayln (ml:compiled-sprite-db-spr->idx csd))
          
@@ -334,10 +374,14 @@
          #t)))
 
 
+
+
 (require racket/math)
 (define (game->mode-lambda-sprite-list entities)
-  (filter identity
-          (flatten
+
+
+   (filter identity
+           (flatten
            (for/list ([e (in-list (reverse entities))])
              (define ass (reverse (get-components e animated-sprite?)))
 
@@ -367,13 +411,15 @@
                        (not sprite-id))
                    #f
                    (ml:sprite #:layer layer
-                              (+ (real->double-flonum (x e))
-                                 (animated-sprite-x-offset as))
-                              (+ (real->double-flonum (y e))
-                                 (animated-sprite-y-offset as))
+                              (real->double-flonum
+                               (+ (x e)
+                                  (animated-sprite-x-offset as)))
+                              (real->double-flonum
+                               (+ (y e)
+                                  (animated-sprite-y-offset as)))
                               sprite-id
-                              #:mx (animated-sprite-x-scale as)
-                              #:my (animated-sprite-y-scale as)
+                              #:mx (real->double-flonum (animated-sprite-x-scale as))
+                              #:my (real->double-flonum (animated-sprite-y-scale as))
                               #:theta (real->double-flonum (animated-sprite-rotation as))
                               )))))))
 
