@@ -1,7 +1,80 @@
 #lang racket
 
+(module+ test
+  (require rackunit)
+
+
+  ;Example of animating images
+  (let ()
+    (define s (new-sprite (list (circle 10 'solid 'red)
+                                (circle 10 'solid 'green))))
+
+    (check-equal? (image-animated-sprite? s) #t)
+    
+    (check-equal? (render s)
+                  (circle 10 'solid 'red))
+
+    (check-equal? (render (increase-current-frame s))
+                  (circle 10 'solid 'green))
+
+    ;And back to the beginning
+    (check-equal? (render (increase-current-frame (increase-current-frame s)))
+                  (circle 10 'solid 'red)))
+
+
+  ;Example of animating text
+  (let ()
+    (define s (new-sprite (list "Hello"
+                                "Goodbye")))
+
+    (check-equal? (string-animated-sprite? s) #t)
+
+    (check-equal? (animated-sprite-rgb s)
+                  (list 255 255 255))
+
+    (check-equal? (render s)
+                  (text "Hello" 24 'white))
+
+    (check-equal? (render-string s)
+                  "Hello")
+
+    (check-equal? (render (increase-current-frame s))
+                  (text "Goodbye" 24 'white))
+
+    ;And back to the beginning
+    (check-equal? (render (increase-current-frame (increase-current-frame s)))
+                  (text "Hello" 24 'white))
+
+    (check-equal? (render-string (set-text "New Text" s))
+                  "New Text")
+    )
+
+
+  ;Example of animating fancier text
+  ;  (NOT yet implemented in rendering.rkt.)
+  (let ()
+    (define s (new-sprite (list (text-frame "Hello"   14 'red)
+                                (text-frame "Goodbye" 14 'green))))
+
+    (check-equal? (string-animated-sprite? s) #t)
+
+    (check-equal? (render s)
+                  (text "Hello" 14 'red))
+
+    (check-equal? (render (increase-current-frame s))
+                  (text "Goodbye" 14 'green))
+
+    ;And back to the beginning
+    (check-equal? (render (increase-current-frame (increase-current-frame s)))
+                  (text "Hello" 14 'red))
+    )
+  )
+
 (provide new-sprite
+         
          render
+         render-string
+         
          next-frame
          set-frame
          sheet->costume-list
@@ -33,10 +106,18 @@
          set-y-offset
          scale-xy
          set-angle
-         set-scale-xy)
+         set-scale-xy
+         set-text
+
+         string-animated-sprite?
+         image-animated-sprite?
+
+         animated-sprite-rgb)
 
 (require 2htdp/image)
 (require threading)
+(require (only-in racket/draw
+                  the-color-database))
 
 ;Convenience methods for going from sheets to sprites
 
@@ -66,6 +147,14 @@
                  #:row-number n
                  #:delay delay))
 
+(struct text-frame (string size color))
+
+(define (make-text-frame s)
+  (text-frame s 14 'white))
+
+
+(struct fast-image (data [id #:mutable]) #:transparent)
+
 
 ;Struct to encapsulate what an animation is
 (struct animated-sprite
@@ -81,8 +170,27 @@
          rotation         ;radians
          x-offset
          y-offset
+         color
          )
   #:transparent)
+
+
+
+(define/contract (image-animated-sprite? as)
+  (-> any/c boolean?)
+
+  ;Is this not right?
+  (and (animated-sprite? as)
+       (fast-image? (vector-ref (animated-sprite-frames as) 
+                                (animated-sprite-current-frame as)))))
+
+
+(define/contract (string-animated-sprite? as)
+  (-> any/c boolean?)
+  (and (animated-sprite? as)
+       (text-frame? (vector-ref (animated-sprite-frames as) 
+                                (animated-sprite-current-frame as)))))
+
 
 (define (current-fast-frame as)
   (vector-ref (animated-sprite-frames as)
@@ -94,6 +202,22 @@
   
   (struct-copy animated-sprite s
                [frames (vector-map make-fast-image new-frames)]))
+
+
+(define/contract (set-text v as)
+  (-> string? string-animated-sprite? string-animated-sprite?)
+
+  (define f (vector-ref (animated-sprite-frames as)
+                        (animated-sprite-current-frame as)))
+
+
+  ;Does this really need mutation??
+  (vector-set! (animated-sprite-frames as)
+               (animated-sprite-current-frame as)
+               (struct-copy text-frame f
+                            [string v]))
+  
+  as)
 
 
 (define/contract (set-x-offset v as)
@@ -139,26 +263,55 @@
                [rotation (* 1.0 (degrees->radians v))]))
 
 
-(define/contract (new-sprite costumes (rate 1) #:animate [animate? #t])
-  (->* ((or/c image? (listof image?))) (number? #:animate boolean?) animated-sprite?)
+(define/contract (new-sprite costumes (rate 1)
+                             #:animate [animate? #t]
+                             #:x-offset (x-offset 0)
+                             #:y-offset (y-offset 0)
+                             #:color    (color 'white)
+                             #:scale    (scale 1))
+  (->* ((or/c image? (listof image?)
+              string?     (listof string?)
+              text-frame? (listof text-frame?)))
+       (number? #:animate boolean?
+                #:x-offset number?
+                #:y-offset number?
+                #:color    symbol?
+                #:scale    number?) animated-sprite?)
   (define list-costumes (if (list? costumes)
                             costumes
                             (list costumes)))
 
   (animated-sprite
-   ;Umm we don't need to be storing this three times...
-   (list->vector (map make-fast-image list-costumes))
-   (list->vector (map make-fast-image list-costumes))
+   ;Umm we don't need to be storing this two times do we?
+   (list->vector (map prep-costumes list-costumes)) 
+   (list->vector (map prep-costumes list-costumes))
    0
    rate
    0
    animate?
-   1.0 ;x-scale
-   1.0 ;y-scale
+   scale ;x-scale
+   scale ;y-scale
    0.0 ;theta (in radians)
-   0.0 ;x offset
-   0.0 ;y offset
+   x-offset ;x offset
+   y-offset ;y offset
+   color
    ))
+
+(define (animated-sprite-rgb as)
+  (-> animated-sprite? (listof byte?))
+
+  (define c (send the-color-database find-color (~a (animated-sprite-color as))))
+
+  (list
+   (send c red)
+   (send c green)
+   (send c blue)))
+
+(define (prep-costumes thing)
+  (cond [(image? thing)  (make-fast-image thing)]
+        [(string? thing) (make-text-frame thing)]
+        [(text-frame? thing) thing]
+        [else (error "What is this?")]))
 
 
 (define (animated-sprite-total-frames s)
@@ -175,17 +328,34 @@
    (max 1 (animated-sprite-x-scale s)) ;Breaks on negatives...
    (max 1 (animated-sprite-y-scale s)) ;Breaks on negatives...
    (pick-frame s
-               (animated-sprite-current-frame s)))
+               (animated-sprite-current-frame s))))
 
-  )
+
+(define/contract (render-string as)
+  (-> string-animated-sprite? string?)
+
+  (text-frame-string
+   (vector-ref (animated-sprite-frames as)
+               (animated-sprite-current-frame as))))
 
 (define/contract (pick-frame s i)
   (-> animated-sprite? integer? image?)
-  (fast-image-data (vector-ref (animated-sprite-frames s) i)))
+  (frame->image (vector-ref (animated-sprite-frames s) i)))
 
 (define/contract (pick-frame-original s i)
   (-> animated-sprite? integer? image?)
-  (fast-image-data (vector-ref (animated-sprite-o-frames s) i)))
+  (frame->image (vector-ref (animated-sprite-o-frames s) i)))
+
+(define/contract (frame->image thing)
+  (-> (or/c fast-image? text-frame?) image?)
+  (cond [(fast-image? thing)  (fast-image-data thing)]
+        [(text-frame? thing)  (text-frame->image thing)]
+        [else (error "What is this?")]))
+
+(define (text-frame->image thing)
+  (text (text-frame-string thing)
+        (text-frame-size thing)
+        (text-frame-color thing)))
 
 (define/contract (reset-animation s)
   (-> animated-sprite? animated-sprite?)
@@ -242,12 +412,11 @@
         total))
 
 
-(struct fast-image (data [id #:mutable]) #:transparent)
-
 (define (get-fast-image-id fi)
-  (if (procedure? (fast-image-id fi))
-      (fast-image-id (finalize-fast-image fi))
-      (fast-image-id fi)))
+  (cond [(not (fast-image? fi)) #f]
+        [(procedure? (fast-image-id fi))
+         (fast-image-id (finalize-fast-image fi))]
+        [else (fast-image-id fi)]))
 
 (define (finalize-fast-image fi)
   (displayln (~a "Finalizing a fast image sized: " (image-width (fast-image-data fi)) "x" (image-height (fast-image-data fi))))
@@ -276,3 +445,5 @@
 
 (define (get-image-id i)
   (equal-hash-code (~a (image->color-list i))))
+
+

@@ -4,6 +4,7 @@
          pad
          draw-title
          draw-dialog
+         draw-dialog-background
          draw-dialog-text
          draw-dialog-sheet
          draw-dialog-sheet-text
@@ -84,8 +85,15 @@
 (define (draw-dialog msg)
   (define message (text msg 12 "yellow"))
   (overlay message
-           (rectangle (+ 12 (image-width message)) (+ 8  (image-height message)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
-           (rectangle (+ 16 (image-width message)) (+ 12 (image-height message)) "solid"  (make-color 20 20 20 150))))
+           (draw-dialog-background msg)))
+
+(define (draw-dialog-background msg)
+  
+  (define message (text msg 12 "yellow"))
+  
+  (overlay
+   (rectangle (+ 12 (image-width message)) (+ 8  (image-height message)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
+   (rectangle (+ 16 (image-width message)) (+ 12 (image-height message)) "solid"  (make-color 20 20 20 150))))
 
 (define (draw-dialog-text msg game-width)
   (define message (text msg 18 "yellow"))

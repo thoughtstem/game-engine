@@ -250,13 +250,13 @@
     (add-animated-sprite-frame! db e as f i)))
 
 (define (add-entity! db e)
-  (add-animated-sprite! db e (get-component e animated-sprite?)))
+  (add-animated-sprite! db e (get-component e image-animated-sprite?)))
 
 (define (entities->compiled-sprite-database entities)
   (define sd (ml:make-sprite-db))
 
   (for ([e (in-list entities)])
-    (and (get-component e animated-sprite?)
+    (and (get-component e image-animated-sprite?)
          (add-entity! sd e)))
   
   (define csd (ml:compile-sprite-db sd))
@@ -305,7 +305,9 @@
 (define (entities->sprites-to-compile entities)
   (define fast-images-from-animated-sprite
     (~> entities
-        (map (curryr get-component animated-sprite?) _)
+        (map (curryr get-components image-animated-sprite?) _)
+        flatten
+        (filter identity _)
         (map (compose vector->list animated-sprite-frames) _)
         flatten))
 
@@ -325,7 +327,9 @@
 
 
 (define (register-sprites-from-images! images)
-  (define uncompiled-images (filter-not seen-image-before images))
+  (define uncompiled-images
+    (filter-not seen-image-before
+                images))
 
   (for ([image (in-list uncompiled-images)])
     (remember-image! image))
@@ -355,10 +359,10 @@
   
          (define the-font
            (ml:load-font! sd2
-                          #:size 24.0)
+                          #:size 14.0)
     
            #;(ml:load-font! sd
-                            #:size 24.0
+                            #:size 14.0
                             #:face "THISDOESNTWORK"
                             #:smoothing 'smoothed
                             #:family 'modern))
@@ -385,44 +389,76 @@
            (for/list ([e (in-list (reverse entities))])
              (define ass (reverse (get-components e animated-sprite?)))
 
-
-
              (for/list ([as (in-list ass)])
-               (define f   (current-fast-frame as))
-
-               (define id-sym    (fast-image->id f))
-
-             
-               (define sprite-id (ml:sprite-idx csd id-sym))
-
-               (define (ui? e)
-                 (and (get-component e layer?)
-                      (eq? (get-layer e) "ui")))
-
-               (define (tops? e)  ; for treetops and rooftops
-                 (and (get-component e layer?)
-                      (eq? (get-layer e) "tops")))
-
-               (define layer (cond [(ui? e)   2]
-                                   [(tops? e) 1]
-                                   [else      0]))
-
-               (if (or (get-component e hidden?)
-                       (not sprite-id))
+               (if (get-component e hidden?)
                    #f
-                   (ml:sprite #:layer layer
+                   (animated-sprite->ml:sprite e as)))))))
+
+
+(define (animated-sprite->ml:sprite e as)
+
+  (define (ui? e)
+    (and (get-component e layer?)
+         (eq? (get-layer e) "ui")))
+
+  (define (tops? e)  ; for treetops and rooftops
+    (and (get-component e layer?)
+         (eq? (get-layer e) "tops")))
+
+  (define layer (cond [(ui? e)   2]
+                      [(tops? e) 1]
+                      [else      0]))
+
+  
+  (cond [(image-animated-sprite? as) (image-animated-sprite->ml:sprite e as layer)]
+        [(string-animated-sprite? as) (string-animated-sprite->ml:sprite e as layer)]
+        [else (error "What was that?")]))
+
+
+(define (string-animated-sprite->ml:sprite e as layer)
+  (and debug-text-renderer
+       (let ([c (animated-sprite-rgb as)]) ;Get color here, pass to #:r ... etc
+         (debug-text-renderer (render-string as)
+                              #:r (first c) #:g (second c) #:b (third c)
+                              #:layer layer
                               (real->double-flonum
                                (+ (x e)
                                   (animated-sprite-x-offset as)))
                               (real->double-flonum
                                (+ (y e)
                                   (animated-sprite-y-offset as)))
-                              sprite-id
                               #:mx (real->double-flonum (animated-sprite-x-scale as))
-                              #:my (real->double-flonum (animated-sprite-y-scale as))
-                              #:theta (real->double-flonum (animated-sprite-rotation as))
-                              )))))))
+                              #:my (real->double-flonum (animated-sprite-y-scale as)))))
+  
+  )
+
+(define (image-animated-sprite->ml:sprite e as layer)
+  
 
 
+  
+  (define f   (current-fast-frame as))
+
+  (define id-sym    (fast-image->id f))
+
+             
+  (define sprite-id (ml:sprite-idx csd id-sym))
+
+  (and sprite-id
+       (ml:sprite #:layer layer
+                  (real->double-flonum
+                   (+ (x e)
+                      (animated-sprite-x-offset as)))
+                  (real->double-flonum
+                   (+ (y e)
+                      (animated-sprite-y-offset as)))
+                  sprite-id
+                  #:mx (real->double-flonum (animated-sprite-x-scale as))
+                  #:my (real->double-flonum (animated-sprite-y-scale as))
+                  #:theta (real->double-flonum (animated-sprite-rotation as))
+                  ))
+
+
+  )
 
 
