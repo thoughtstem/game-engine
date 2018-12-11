@@ -5,7 +5,8 @@
 (require "./direction.rkt")
 (require "./rotation-style.rkt")
 (require "./animated-sprite.rkt")
-(require posn)
+(require posn
+         threading)
 
 ;(displayln "LOADING ON START")
 
@@ -56,7 +57,7 @@
     
     (define facing-right?
       (if (eq? m 'left-right)
-          (negative? (animated-sprite-x-scale (get-component e animated-sprite?)))
+          (positive? (animated-sprite-x-scale (get-component e animated-sprite?)))
           #t))
 
     
@@ -70,8 +71,13 @@
                        [else (posn (+ (posn-x pos) (posn-x offset))
                                    (+ (posn-y pos) (posn-y offset)))]))
                        
-    (define new-entity (update-entity to-spawn posn?
-                                      new-posn))
+    (define new-entity (if (and (get-component to-spawn direction?)
+                                (get-component e direction?))
+                           (~> to-spawn
+                               (update-entity _ posn? new-posn)
+                               (update-entity _ direction? (direction dir)))
+                           (update-entity to-spawn posn?
+                                      new-posn)))
     
     (if relative?
         (struct-copy spawn-once s

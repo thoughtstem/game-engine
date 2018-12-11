@@ -29,14 +29,23 @@
       ((start-animation) g e2)
       ((stop-animation) g e2)))
 
+(define (set-key-direction)
+  (lambda (g e)
+    (define vel (get-current-velocity g e))
+    (define new-dir (if (equal? vel (posn 0 0))
+                        0
+                        (radians->degrees (atan (posn-y vel) (posn-x vel)))))
+    (update-entity e direction? (direction (modulo new-dir 360)))))
+
 (define (key-animator-system)
   (list (direction 0)
-        (on-key 'right (set-direction 0))
-        (on-key 'left  (set-direction 180))
+        (on-key 'right (set-key-direction))
+        (on-key 'left  (set-key-direction))
+        (on-key 'up    (set-key-direction))
+        (on-key 'down  (set-key-direction))
         (observe-change moving? start-stop-animation)
         (rotation-style 'left-right)
-        
-        )) 
+        ))
 
 (define (player-info-closed? g e)
   (not (get-entity "player info" g)))
