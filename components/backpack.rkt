@@ -1,5 +1,8 @@
 #lang racket
 
+
+
+
 (require "../game-entities.rkt")
 (require "../entity-helpers/sprite-util.rkt")
 (require "../entity-helpers/movement-util.rkt")
@@ -41,7 +44,8 @@
          draw-backpack
          update-backpack-sprite
          backpack-changed?
-         update-backpack)
+         update-backpack
+         draw-backpack-bg)
 
 (struct item (entity amount))
 
@@ -169,21 +173,64 @@
   (empty? (get-items e)))
 
 (define (draw-backpack image-list)
-  (define (scale-and-pad image) (pad (scale-to-fit image 24) 2 2))
+  (define (scale-and-pad image) (pad (scale-to-fit image 40) 2 2))
   (define scaled-list (map scale-and-pad image-list))
   (define num-of-items (length image-list))
   (define backpack-items (cond [(> num-of-items 1) (apply above scaled-list)]
                                [(= num-of-items 1) (first scaled-list)]
                                [(= num-of-items 0) (rectangle 32 32 "solid" "transparent")]))
   (overlay  backpack-items
-           (rectangle (+ 12 (image-width backpack-items)) (+ 12 (image-height backpack-items)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
-           (rectangle (+ 16 (image-width backpack-items)) (+ 16 (image-height backpack-items)) "solid"  (make-color 20 20 20 150))))
+            (rectangle (+ 0 (image-width backpack-items))
+                       (+ 0 (image-height backpack-items))
+                       'solid 'black)
+            
+            #;(rectangle (+ 12 (image-width backpack-items)) (+ 12 (image-height backpack-items)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
+            #;(rectangle (+ 16 (image-width backpack-items)) (+ 16 (image-height backpack-items)) "solid"  (make-color 20 20 20 150))))
+
+
+(define (draw-backpack-bg n)
+  (define ITEM-SIZE 40)
+  
+  (overlay
+   (rectangle (+ 12 ITEM-SIZE) (+ 12 (* n ITEM-SIZE)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
+   (rectangle (+ 16 ITEM-SIZE) (+ 16 (* n ITEM-SIZE)) "solid"  (make-color 20 20 20 150))))
+
 
 (define (update-backpack-sprite g e)
-  (define (get-frame entity)
-    (pick-frame-original (get-component entity animated-sprite?) 0))
-  (define image-list (map get-frame (map item-entity (get-items (get-entity "player" g)))))
-  (update-entity e animated-sprite? (new-sprite (draw-backpack image-list))))
+  (define IMAGE-HEIGHT
+    40)
+  
+  (define bg-sprite (get-component e animated-sprite?))
+
+  (define sprite-list (map (curryr get-component animated-sprite?)
+                           (map item-entity
+                                (get-items (get-entity "player" g)))))
+  
+  (define num-items (length sprite-list))
+
+  (define new-height (* IMAGE-HEIGHT num-items))
+
+  (define offset-sprite-list
+    (for/list ([s sprite-list]
+               [i (range (length sprite-list))])
+      (~> s
+          (set-y-offset (+ (/ IMAGE-HEIGHT 2)
+                           (- (* i IMAGE-HEIGHT)
+                              (/ new-height 2))) _)
+          (set-scale-xy (/ IMAGE-HEIGHT
+                           (image-height (render s))) _))))
+
+  (~> e
+      (remove-components _ animated-sprite?)
+
+      ;Adjust the bg size by picking the right animation frame for the background
+      ;Adjust its offset a tiny bit.
+      (add-component _  (~> bg-sprite
+                            (set-x-scale 44         _)
+                            (set-y-scale new-height _)))
+
+      ;Add in the actual animated sprites of the entities
+      (add-components _ offset-sprite-list)))
 
 (define (in-backpack? name)
   (lambda (g e)
@@ -218,7 +265,6 @@
   (if (void? e1)
       e2
       (begin
-        (displayln "UPDATING BACKPACK")
         (~> e2
             (update-backpack-sprite g _)
             ((go-to-pos-inside 'top-right) g _)))))
