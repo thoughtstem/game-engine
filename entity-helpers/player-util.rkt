@@ -10,6 +10,7 @@
 (require 2htdp/image
          posn)
 (require "../game-entities.rkt")
+(require "../component-util.rkt")
 (require "../components/animated-sprite.rkt")
 (require "../components/backdrop.rkt")
 (require "../components/key-movement.rkt")

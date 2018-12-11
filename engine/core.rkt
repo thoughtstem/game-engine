@@ -12,6 +12,10 @@
 
          handle-key-down
          handle-key-up
+
+         handle-mouse-xy
+         get-mouse-pos
+         
          tick
          )
 
@@ -118,6 +122,8 @@
               [self-killed-entities #:mutable]
               [input #:mutable]
               [prev-input #:mutable]
+              [mouse-input #:mutable]
+              [mouse-prev-input #:mutable]
               [collisions #:mutable]) #:transparent)
 
 (define-syntax-rule (handler g e body)
@@ -520,7 +526,10 @@
                                 [(string=? key-name (format "~a" 'keys))  (button-state-set 'keys #f)]
                                 ...
                                 [else btn-states]))
-             larger-state)))]))
+             larger-state)
+
+
+           ))]))
 
 
 (define-all-buttons
@@ -540,8 +549,16 @@
         ))
 
 
+(struct mouse-pos (x y))
 
+(define (handle-mouse-xy larger-state x-pos y-pos)
+  (displayln (~a "Mouse: " x-pos " " y-pos))
+  ;(define input-states (game-mouse-input larger-state))
+  (set-game-mouse-input! larger-state (mouse-pos x-pos y-pos))
+  larger-state)
 
+(define (get-mouse-pos key g)
+  (game-mouse-input g))
 
 (define (draw-entity e)
   (define ss (get-components e animated-sprite?))
@@ -839,6 +856,8 @@
         '()
         button-states
         button-states
+        (mouse-pos 0 0)
+        (mouse-pos 0 0)
         '()))
 
 
@@ -999,7 +1018,6 @@
         (chipmunkify-step2
          (update-entity e physical-collider?
                         (physical-collider chipmunk (posn 0 0)))))))
-
 
 
 
