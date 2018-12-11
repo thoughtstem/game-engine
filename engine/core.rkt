@@ -44,8 +44,9 @@
          get-component
          get-components
          add-component
-         add-component-at-end
+        ; add-component-at-end
          remove-component
+         remove-components
          add-components
          get-name
          get-id
@@ -99,7 +100,8 @@
          f-handler
          simple-handler
 
-         tick-entity)
+         tick-entity
+         tick-entities)
 
 (require posn)
 (require 2htdp/image)
@@ -332,14 +334,26 @@
 
 (define (add-component e c)
   (match-define (entity components) e)
-  (entity (cons c components)))
+  (entity (append components
+                  (list  c))))
 
-(define (add-component-at-end e c)
+#;(define (add-component-at-end e c)
   (match-define (entity components) e)
   (entity (append components
                   (list  c))))
 
+;This is the same as remove-components.  Probably it should not be.
+;   Change filter to something that removes just the first one?
 (define (remove-component e c?)
+  (match-define (entity components) e)
+
+  ;Just a quick little side-effect here,
+  ;  Nobody will notice...
+  (maybe-clean-up-physical-collider! e c?)
+  
+  (entity (filter (lambda (c) (not (c? c))) components)))
+
+(define (remove-components e c?)
   (match-define (entity components) e)
 
   ;Just a quick little side-effect here,
@@ -397,9 +411,9 @@
                         #:name     n
                         #:components (c #f)
                         . cs)
-  (define all-cs (flatten (filter identity (cons
+  (define all-cs (reverse (flatten (filter identity (cons
                                             (entity-name n)
-                                            (cons c cs)))))
+                                            (cons c cs))))))
   (define sprite (if (animated-sprite? sprite-or-image)
                      sprite-or-image
                      (new-sprite sprite-or-image)))
@@ -494,7 +508,6 @@
            
            ;Consumes a world, handles a single key PRESS by setting button state to true and returning the world
            (define (down-f larger-state a-key)
-
              (define key-name
                (convert-special a-key))
 
@@ -544,7 +557,8 @@
 
 
 (define (draw-entity e)
-  (define ss (get-components e animated-sprite?))
+  (define ss (reverse (get-components e animated-sprite?)))
+
 
   (if (empty? ss)
       empty-image
@@ -654,10 +668,15 @@
       ticked
       (tick-entity g ticked #:ticks (sub1 t))))
 
-(define (tick-entities g)
+(define (tick-entities g #:ticks (t 1))
   (define es (game-entities g))
-  (struct-copy game g
-               [entities (map (curry tick-entity g) es)]))
+
+  (define ticked (struct-copy game g
+                              [entities (map (curry tick-entity g) es)]))
+  
+  (if (<= t 1)
+      ticked
+      (tick-entities ticked #:ticks (sub1 t))))
 
 
 (define (do-game-functions g)
@@ -701,27 +720,33 @@
                [entities (map (curry uniqify-id g)
                               (game-entities g))]))
 
-(define tick
-  (lambda (g)
-    (define new-g (uniqify-ids g))
-    
-    (set! last-game-snapshot new-g)
-    
-    (define new-game (~> new-g
-                         ;Just a note for the future.  This is not slow.  Do not move to a different thread in a misguided effort to optimize...
-                         ;  However, maybe we should consider moving this to its own physics module...?
-                         physics-tick 
-                         tick-entities
-                         handle-self-killed-entities
-                         do-game-functions
-                         handle-killed-entities
-                         store-prev-input
-                         cleanup-physics))
-    ;(displayln (~a (map get-name (flatten (game-collisions g)))))
-
-    (set-game-self-killed-entities! new-game '())
+(define (tick g #:ticks (t 1))
+  (define ticked (tick-once g))
   
-    new-game))
+  (if (>= 1 t)
+      ticked
+      (tick ticked #:ticks (sub1 t))))
+
+(define (tick-once g)
+  (define new-g (uniqify-ids g))
+    
+  (set! last-game-snapshot new-g)
+    
+  (define new-game (~> new-g
+                       ;Just a note for the future.  This is not slow.  Do not move to a different thread in a misguided effort to optimize...
+                       ;  However, maybe we should consider moving this to its own physics module...?
+                       physics-tick 
+                       tick-entities
+                       handle-self-killed-entities
+                       do-game-functions
+                       handle-killed-entities
+                       store-prev-input
+                       cleanup-physics))
+  ;(displayln (~a (map get-name (flatten (game-collisions g)))))
+
+  (set-game-self-killed-entities! new-game '())
+  
+  new-game)
 
 (define (handle-self-killed-entities g)
   (handle-dead g #t))

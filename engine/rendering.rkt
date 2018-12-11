@@ -3,6 +3,7 @@
 (provide lux-start
          final-state
          precompiler-entity
+         precompile!
          (rename-out [make-precompiler precompiler])
          precompiler?)
 
@@ -286,6 +287,9 @@
   (member (fast-image-id f) temp-storage =))
 
 (define (precompiler-entity . is)
+  (apply precompile! is))
+
+(define (precompile! . is)
   (define images
     (flatten
      (append
@@ -359,13 +363,7 @@
   
          (define the-font
            (ml:load-font! sd2
-                          #:size 14.0)
-    
-           #;(ml:load-font! sd
-                            #:size 14.0
-                            #:face "THISDOESNTWORK"
-                            #:smoothing 'smoothed
-                            #:family 'modern))
+                          #:size 14.0))
          
 
          
@@ -387,7 +385,7 @@
    (filter identity
            (flatten
            (for/list ([e (in-list (reverse entities))])
-             (define ass (reverse (get-components e animated-sprite?)))
+             (define ass (get-components e animated-sprite?))
 
              (for/list ([as (in-list ass)])
                (if (get-component e hidden?)

@@ -33,21 +33,20 @@
                   (list 255 255 255))
 
     (check-equal? (render s)
-                  (text "Hello" 24 'white))
+                  (text "Hello" 14 'white))
 
     (check-equal? (render-string s)
                   "Hello")
 
     (check-equal? (render (increase-current-frame s))
-                  (text "Goodbye" 24 'white))
+                  (text "Goodbye" 14 'white))
 
     ;And back to the beginning
     (check-equal? (render (increase-current-frame (increase-current-frame s)))
-                  (text "Hello" 24 'white))
+                  (text "Hello" 14 'white))
 
     (check-equal? (render-string (set-text "New Text" s))
-                  "New Text")
-    )
+                  "New Text"))
 
 
   ;Example of animating fancier text
@@ -328,7 +327,8 @@
    (max 1 (animated-sprite-x-scale s)) ;Breaks on negatives...
    (max 1 (animated-sprite-y-scale s)) ;Breaks on negatives...
    (pick-frame s
-               (animated-sprite-current-frame s))))
+               (animated-sprite-current-frame s))
+   ))
 
 
 (define/contract (render-string as)

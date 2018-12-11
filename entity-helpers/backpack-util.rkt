@@ -1,5 +1,65 @@
 #lang racket
 
+(module+ test
+  (require rackunit
+           2htdp/image
+           threading)
+
+  (let ()
+    
+    (define item (sprite->entity (star 10 'solid 'gold)
+                                 #:name       "star"
+                                 #:position   (posn 0 0)))
+
+    (define item2 (sprite->entity (star 10 'solid 'red)
+                                 #:name       "star"
+                                 #:position   (posn 0 0)))
+    
+    (define b (sprite->entity (circle 10 'solid 'red)
+                  #:name       "player"
+                  #:position   (posn 0 0)
+                  #:components
+                  (backpack-system #:components (observe-change backpack-changed? update-backpack))
+                  (on-key 'i (add-item item))
+                  (on-key 'o (add-item item2))
+                  ))
+
+    (define g (initialize-game (list b)))
+
+
+    (define ticked-g-no-item
+      (~> g
+          (tick _ #:ticks 10) ; Not necessary, but why not run for a few ticks?
+          (handle-key-down _ "b")
+          (tick _)
+          (tick _)))
+
+    (define ticked-g
+      (~> ticked-g-no-item
+          (handle-key-down _ "i")
+          (tick _)
+          (tick _)
+          (handle-key-down _ "o")
+          (tick _)
+          (tick _)
+          
+          ))
+
+    (check-equal? (not (not (get-entity "backpack" ticked-g)))
+                  #t
+                  "There should be a backpack entity in the game by now")
+
+    (check-equal? (get-backpack-entities (get-entity "player" ticked-g))
+                  (list item item2)
+                  "There should be two items in the backpack at this time")
+
+
+    (check-equal? (> (image-height (draw-entity (get-entity "backpack" ticked-g)))
+                     (image-height (draw-entity (get-entity "backpack" ticked-g-no-item))))
+                  #t
+                  "Backpack should expand verticially when you add things to it")
+    ))
+
 (provide drop-last-item
          backpack-system)
 
@@ -14,7 +74,8 @@
 (require "../components/on-start.rkt")
 (require "../components/sound-stream.rkt")
 (require "../components/observe-change.rkt")
-(require posn)
+(require "../components/animated-sprite.rkt")
+(require posn 2htdp/image)
 
 (define (drop-last-item)
   (lambda (g e)
@@ -41,12 +102,20 @@
                          #:backpack-sound [backpack-sound #f]
                          #:components     [c #f]
                                           . custom-components)
+
+
+  (define bg-image (rectangle 1 1 'solid (make-color 0 0 0 100)))
+
+  (precompile! bg-image)
+  
   (define backpack-entity
-    (sprite->entity (draw-backpack '())
+    (sprite->entity (new-sprite bg-image
+                                #:animate #f)
                     #:name       "backpack"
                     #:position   (posn 0 0) ;(posn 12 (/ HEIGHT 2))
                     #:components (static)
                                  (hidden)
+                                 
                                  (on-start (do-many update-backpack-sprite
                                                     (go-to-pos-inside 'top-right)
                                                     show))
@@ -55,6 +124,7 @@
                                  (on-key backpack-key die)
                                  (observe-change backpack-changed? update-backpack)
                                  (cons c custom-components)))
+  
   (define (storable-item item-name key)
     (on-key key #:rule storable-items-nearby? (if pickup-sound
                                                   (do-many (store-nearby-item item-name)
@@ -62,6 +132,7 @@
                                                            (play-sound pickup-sound))
                                                   (do-many (store-nearby-item item-name)
                                                            (open-dialog backpack-entity)))))
+  
   (append (list (backpack)
                 (on-key backpack-key #:rule backpack-not-open? (if backpack-sound
                                                                    (do-many (display-items)
