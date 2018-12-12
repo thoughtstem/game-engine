@@ -15,8 +15,13 @@
   (lock-to name offset))
 
 (define (update-lock-to g e c)
-  (define target-pos (if (get-entity (lock-to-name c) g)
-                         (get-component (get-entity (lock-to-name c) g) posn?)
+  (define target-e
+    (cond [(string? (lock-to-name c)) (get-entity (lock-to-name c) g)]
+          [(procedure? (lock-to-name c)) ((lock-to-name c) g)]
+          [else (error "What is this?")]))
+  
+  (define target-pos (if target-e
+                         (get-component target-e posn?)
                          (posn 0 0)))
   (define offset-pos (lock-to-offset c))
   (define new-posn (posn (+ (posn-x target-pos) (posn-x offset-pos))

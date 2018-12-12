@@ -101,7 +101,9 @@
          simple-handler
 
          tick-entity
-         tick-entities)
+         tick-entities
+
+         current-version-of)
 
 (require posn)
 (require 2htdp/image)
@@ -439,8 +441,10 @@
        (displayln (apply ~a s))))
 
 (define (update-on-collide g e c)
+  (define colliding? (is-colliding-with? (on-collide-name c) g e))
+  
   (add-physical-collider-if-necessary
-   (if (is-colliding-with? (on-collide-name c) g e)
+   (if colliding?
        ((on-collide-func c) g e)       
        e
        )))
@@ -616,8 +620,14 @@
   (findf (curry member e entity-eq?) (game-collisions g)))
 
 (define (is-colliding-with? name g me)
-  (define names (map get-name (colliding-with me g)))
-  (member name names))
+
+  (cond [(string? name)
+         (let [(names (map get-name (colliding-with me g)))]
+           (member name names))]
+        [(procedure? name)
+         (let [(es (colliding-with me g))]
+           (findf name es))]
+        [else (error "What was that?")]))
 
 (define (is-colliding-by-name? name1 name2 g)
   (define names (map (curry map get-name) (game-collisions g)))
