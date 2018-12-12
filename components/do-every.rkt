@@ -6,10 +6,10 @@
 (provide (rename-out (make-do-every do-every))
          do-every?)
 
-(struct do-every (accum speed func))
+(struct do-every (accum speed rule func))
 
-(define (make-do-every ticks func)
-  (do-every 0 ticks func))
+(define (make-do-every ticks #:rule [rule (lambda (g e) #t)] func)
+  (do-every 0 ticks rule func))
 
 (define (reset-do-every a)
   (struct-copy do-every a
@@ -24,7 +24,8 @@
       (do-every-speed a)))
 
 (define (update-do-every g e c)
-  (if (do-every-ready? c)
+  (if (and (do-every-ready? c)
+           ((do-every-rule c) g e))
       (update-entity ((do-every-func c) g e) (is-component? c) reset-do-every)
       (update-entity e                       (is-component? c) inc-do-every)))
 
