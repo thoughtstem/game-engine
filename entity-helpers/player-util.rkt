@@ -24,6 +24,7 @@
 (require "../components/on-rule.rkt")
 (require "../entity-helpers/sprite-util.rkt")
 (require "../entity-helpers/dialog-util.rkt")
+(require "../entity-helpers/mouse-util.rkt")
 
 (define (start-stop-animation g e1 e2)
   (if (moving? g e2)
@@ -38,12 +39,18 @@
                         (radians->degrees (atan (posn-y vel) (posn-x vel)))))
     (update-entity e direction? (direction (modulo new-dir 360)))))
 
-(define (key-animator-system)
+(define (key-animator-system #:mode [mode 'arrow-keys] #:face-mouse? [face-mouse? #f])
+  (define key-list
+    (cond [(eq? mode 'arrow-keys) (list 'left  'right 'up    'down)]
+          [(eq? mode 'wasd)       (list 'a     'd     'w     's)]
+          [else                   (list 'left  'right 'up    'down)]))
   (list (direction 0)
-        (on-key 'right (set-key-direction))
-        (on-key 'left  (set-key-direction))
-        (on-key 'up    (set-key-direction))
-        (on-key 'down  (set-key-direction))
+        (if face-mouse?
+            (on-rule mouse-in-game? point-to-mouse)
+            (list (on-key (first  key-list) (set-key-direction))
+                  (on-key (second key-list) (set-key-direction))
+                  (on-key (third  key-list) (set-key-direction))
+                  (on-key (fourth key-list) (set-key-direction))))
         (observe-change moving? start-stop-animation)
         (rotation-style 'left-right)
         ))

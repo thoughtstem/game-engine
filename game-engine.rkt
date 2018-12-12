@@ -19,6 +19,7 @@
  (all-from-out "components/speed.rkt")
  (all-from-out "components/counter.rkt")
  (all-from-out "components/on-key.rkt")
+ (all-from-out "components/on-mouse.rkt")
  (all-from-out "components/stop-on-edge.rkt")
  (all-from-out "components/wrap-around.rkt")
  (all-from-out "components/on-edge.rkt")
@@ -44,6 +45,7 @@
  (all-from-out "entity-helpers/carry-util.rkt")
  (all-from-out "entity-helpers/player-util.rkt")
  (all-from-out "entity-helpers/mini-map.rkt")
+ (all-from-out "entity-helpers/mouse-util.rkt")
  (all-from-out "ai.rkt")
  (all-from-out "entity-helpers/time-manager.rkt")
 
@@ -70,6 +72,7 @@
 (require "components/counter.rkt")
 (require "components/speed.rkt")
 (require "components/on-key.rkt")
+(require "components/on-mouse.rkt")
 (require "components/stop-on-edge.rkt")
 (require "components/wrap-around.rkt")
 (require "components/on-edge.rkt")
@@ -95,6 +98,7 @@
 (require "entity-helpers/carry-util.rkt")
 (require "entity-helpers/player-util.rkt")
 (require "entity-helpers/mini-map.rkt")
+(require "entity-helpers/mouse-util.rkt")
 (require "ai.rkt")
 (require "entity-helpers/time-manager.rkt")
 

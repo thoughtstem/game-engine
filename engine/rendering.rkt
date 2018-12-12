@@ -20,7 +20,8 @@
          (prefix-in ml: mode-lambda/static)
          (prefix-in gl: mode-lambda/backend/gl)
          (prefix-in ml: mode-lambda/text/static)
-         (prefix-in ml: mode-lambda/text/runtime))
+         (prefix-in ml: mode-lambda/text/runtime)
+         posn)
 
 (require "./core.rkt")
 (require "../components/animated-sprite.rkt")
@@ -156,9 +157,16 @@
             (demo  (handle-key-up state (format "~a" (send e get-key-release-code))) render-tick))
          
         ]
-       [(lux:mouse-event? e)
+       [(and (lux:mouse-event? e)
+             (send e moving?))
         (let-values ([(mouse-x mouse-y) (lux:mouse-event-xy e)])
-          (demo  (handle-mouse-xy state mouse-x mouse-y) render-tick))
+          (demo  (handle-mouse-xy state (posn mouse-x mouse-y)) render-tick))
+        ]
+       [(and (lux:mouse-event? e)
+             (send e button-changed?))
+        (if (send e button-down?)
+            (demo (handle-mouse-down state (send e get-event-type)) render-tick)
+            (demo (handle-mouse-up state (send e get-event-type)) render-tick))
         ]
        [else w]))
    
