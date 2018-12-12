@@ -20,7 +20,8 @@
          (prefix-in ml: mode-lambda/static)
          (prefix-in gl: mode-lambda/backend/gl)
          (prefix-in ml: mode-lambda/text/static)
-         (prefix-in ml: mode-lambda/text/runtime))
+         (prefix-in ml: mode-lambda/text/runtime)
+         posn)
 
 (require "./core.rkt")
 (require "../components/animated-sprite.rkt")
@@ -50,9 +51,11 @@
 
 (define (lux-start larger-state)
   (define render-tick (get-mode-lambda-render-tick (game-entities larger-state)))
+  (define g-width  (game-width larger-state))
+  (define g-height (game-height larger-state))
 
   (call-with-chaos
-   (get-gui)
+   (get-gui #:width g-width #:height g-height)
    (λ () (fiat-lux (demo larger-state render-tick)))))
 
 
@@ -154,6 +157,17 @@
             (demo  (handle-key-up state (format "~a" (send e get-key-release-code))) render-tick))
          
         ]
+       [(and (lux:mouse-event? e)
+             (send e moving?))
+        (let-values ([(mouse-x mouse-y) (lux:mouse-event-xy e)])
+          (demo  (handle-mouse-xy state (posn mouse-x mouse-y)) render-tick))
+        ]
+       [(and (lux:mouse-event? e)
+             (send e button-changed?))
+        (if (send e button-down?)
+            (demo (handle-mouse-down state (send e get-event-type)) render-tick)
+            (demo (handle-mouse-up state (send e get-event-type)) render-tick))
+        ]
        [else w]))
    
    (define (word-tick w)
@@ -198,9 +212,15 @@
       'old-method
       'new-method))
 
-(define (get-gui)
+(define (get-gui #:width [w 480] #:height [h 360])
   (if (eq? rendering-mode 'new-method)
-      (make-gui #:start-fullscreen? #f #:mode gl:gui-mode)
+      (make-gui #:start-fullscreen? #f
+                #:frame-style (list 'no-resize-border
+                                    ;'no-caption
+                                    )
+                #:mode gl:gui-mode
+                #:width w
+                #:height h)
       (make-gui #:start-fullscreen? #f)))
 
 (define (get-render render-tick)

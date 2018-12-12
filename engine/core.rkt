@@ -12,6 +12,19 @@
 
          handle-key-down
          handle-key-up
+
+         handle-mouse-down
+         handle-mouse-up
+         
+         mouse-button-change-down?
+         mouse-button-change-up?
+
+         mouse-button-down?
+         mouse-button-up?
+
+         handle-mouse-xy
+         get-mouse-pos
+         
          tick
          )
 
@@ -23,6 +36,8 @@
          
          (struct-out hidden)
          (struct-out disabled)
+
+         (struct-out mouse-state)
 
          (struct-out layer)
          
@@ -122,6 +137,8 @@
               [self-killed-entities #:mutable]
               [input #:mutable]
               [prev-input #:mutable]
+              [mouse-input #:mutable]
+              [mouse-prev-input #:mutable]
               [collisions #:mutable]) #:transparent)
 
 (define-syntax-rule (handler g e body)
@@ -537,7 +554,10 @@
                                 [(string=? key-name (format "~a" 'keys))  (button-state-set 'keys #f)]
                                 ...
                                 [else btn-states]))
-             larger-state)))]))
+             larger-state)
+
+
+           ))]))
 
 
 (define-all-buttons
@@ -557,7 +577,67 @@
         ))
 
 
+(struct mouse-state (left right pos))
 
+(define (handle-mouse-xy larger-state mouse-posn)
+  ;(displayln (~a "Mouse: " x-pos " " y-pos))
+  (define ms (game-mouse-input larger-state))
+  (set-game-mouse-input! larger-state (struct-copy mouse-state ms
+                                                   [pos mouse-posn]))
+  larger-state)
+
+(define (handle-mouse-down larger-state button)
+  (define ms (game-mouse-input larger-state))
+  (set-game-mouse-input! larger-state (cond
+                                        [(eq? button 'left-down) (struct-copy mouse-state ms
+                                                                              [left #t])]
+                                        [(eq? button 'right-down)(struct-copy mouse-state ms
+                                                                              [right #t])]
+                                        [else ms])
+                         )
+  larger-state)
+
+(define (handle-mouse-up larger-state button)
+  (define ms (game-mouse-input larger-state))
+  (set-game-mouse-input! larger-state (cond
+                                        [(eq? button 'left-up) (struct-copy mouse-state ms
+                                                                         [left #f])]
+                                        [(eq? button 'right-up)(struct-copy mouse-state ms
+                                                                         [right #f])]
+                                        [else ms])
+                         )
+  larger-state)
+
+(define (get-mouse-pos g)
+  (mouse-state-pos (game-mouse-input g)))
+
+(define (mouse-button-down? button g)
+  (define ms (game-mouse-input g))
+  (cond
+    [(eq? button 'left)  (mouse-state-left ms)]
+    [(eq? button 'right) (mouse-state-right ms)]
+    [else #f]))
+
+(define (mouse-button-up? button g)
+  (not (mouse-button-down? button g)))
+
+(define (mouse-button-change-down? button g)
+  (define prev-ms (game-mouse-prev-input g))
+  (and
+   (mouse-button-down? button g)
+   (not (cond
+          [(eq? button 'left)  (mouse-state-left prev-ms)]
+          [(eq? button 'right) (mouse-state-right prev-ms)]
+          [else #f]))))
+
+(define (mouse-button-change-up? button g)
+  (define prev-ms (game-mouse-prev-input g))
+  (and
+   (mouse-button-up? button g)
+   (cond
+     [(eq? button 'left)  (mouse-state-left prev-ms)]
+     [(eq? button 'right) (mouse-state-right prev-ms)]
+     [else #f])))
 
 
 (define (draw-entity e)
@@ -705,7 +785,9 @@
   (set-game-prev-input! g (hash-copy (game-input g))) 
   g)
 
-
+(define (store-mouse-prev-input g)
+  (set-game-mouse-prev-input! g (game-mouse-input g)) 
+  g)
 
 (define (find-entity-by-id i g)
   (findf (λ(e) (eq? i (get-id e)))
@@ -751,6 +833,7 @@
                        do-game-functions
                        handle-killed-entities
                        store-prev-input
+                       store-mouse-prev-input
                        cleanup-physics))
   ;(displayln (~a (map get-name (flatten (game-collisions g)))))
 
@@ -874,6 +957,8 @@
         '()
         button-states
         button-states
+        (mouse-state #f #f (posn 0 0))
+        (mouse-state #f #f (posn 0 0))
         '()))
 
 
@@ -1034,7 +1119,6 @@
         (chipmunkify-step2
          (update-entity e physical-collider?
                         (physical-collider chipmunk (posn 0 0)))))))
-
 
 
 
