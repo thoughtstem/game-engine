@@ -7,6 +7,7 @@
          set-direction
          get-direction
          change-direction-by
+         change-direction-by-random
          random-direction
          bounce-back)
 
@@ -25,6 +26,11 @@
   (lambda (g e)
     (define d (get-direction e))
     (update-entity e direction? (direction (modulo (+ d inc) 360)))))
+
+(define (change-direction-by-random min max)
+  (lambda (g e)
+    (define d (get-direction e))
+    (update-entity e direction? (direction (+ d (random min (add1 max)))))))
 
 (define (random-direction min max)
   (lambda (g e)

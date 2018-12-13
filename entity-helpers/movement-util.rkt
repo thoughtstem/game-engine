@@ -9,6 +9,7 @@
          move-with-speed
          move-random-speed
          point-to
+         point-to-posn
          bounce
          change-x-by
          change-y-by
@@ -139,6 +140,15 @@
     (if target?
         (update-entity e direction? (direction (modulo (exact-round new-dir) 360)))
         e)))
+
+(define (point-to-posn target-pos)
+  (lambda (g e)
+    (define target-x (posn-x target-pos))
+    (define target-y (posn-y target-pos))
+    (define x (posn-x (get-component e posn?)))
+    (define y (posn-y (get-component e posn?)))
+    (define new-dir (radians->degrees (atan (- target-y y) (- target-x x))))
+    (update-entity e direction? (direction (modulo (exact-round new-dir) 360)))))
 
 (define (bounce)
   (lambda (g e)

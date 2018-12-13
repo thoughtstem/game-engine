@@ -13,6 +13,15 @@
          handle-key-down
          handle-key-up
 
+         handle-mouse-down
+         handle-mouse-up
+         
+         mouse-button-change-down?
+         mouse-button-change-up?
+
+         mouse-button-down?
+         mouse-button-up?
+
          handle-mouse-xy
          get-mouse-pos
          
@@ -27,6 +36,8 @@
          
          (struct-out hidden)
          (struct-out disabled)
+
+         (struct-out mouse-state)
 
          (struct-out layer)
          
@@ -105,7 +116,9 @@
          simple-handler
 
          tick-entity
-         tick-entities)
+         tick-entities
+
+         current-version-of)
 
 (require posn)
 (require 2htdp/image)
@@ -445,8 +458,10 @@
        (displayln (apply ~a s))))
 
 (define (update-on-collide g e c)
+  (define colliding? (is-colliding-with? (on-collide-name c) g e))
+  
   (add-physical-collider-if-necessary
-   (if (is-colliding-with? (on-collide-name c) g e)
+   (if colliding?
        ((on-collide-func c) g e)       
        e
        )))
@@ -562,16 +577,68 @@
         ))
 
 
-(struct mouse-pos (x y))
+(struct mouse-state (left right pos))
 
-(define (handle-mouse-xy larger-state x-pos y-pos)
-  (displayln (~a "Mouse: " x-pos " " y-pos))
-  ;(define input-states (game-mouse-input larger-state))
-  (set-game-mouse-input! larger-state (mouse-pos x-pos y-pos))
+(define (handle-mouse-xy larger-state mouse-posn)
+  ;(displayln (~a "Mouse: " x-pos " " y-pos))
+  (define ms (game-mouse-input larger-state))
+  (set-game-mouse-input! larger-state (struct-copy mouse-state ms
+                                                   [pos mouse-posn]))
   larger-state)
 
-(define (get-mouse-pos key g)
-  (game-mouse-input g))
+(define (handle-mouse-down larger-state button)
+  (define ms (game-mouse-input larger-state))
+  (set-game-mouse-input! larger-state (cond
+                                        [(eq? button 'left-down) (struct-copy mouse-state ms
+                                                                              [left #t])]
+                                        [(eq? button 'right-down)(struct-copy mouse-state ms
+                                                                              [right #t])]
+                                        [else ms])
+                         )
+  larger-state)
+
+(define (handle-mouse-up larger-state button)
+  (define ms (game-mouse-input larger-state))
+  (set-game-mouse-input! larger-state (cond
+                                        [(eq? button 'left-up) (struct-copy mouse-state ms
+                                                                         [left #f])]
+                                        [(eq? button 'right-up)(struct-copy mouse-state ms
+                                                                         [right #f])]
+                                        [else ms])
+                         )
+  larger-state)
+
+(define (get-mouse-pos g)
+  (mouse-state-pos (game-mouse-input g)))
+
+(define (mouse-button-down? button g)
+  (define ms (game-mouse-input g))
+  (cond
+    [(eq? button 'left)  (mouse-state-left ms)]
+    [(eq? button 'right) (mouse-state-right ms)]
+    [else #f]))
+
+(define (mouse-button-up? button g)
+  (not (mouse-button-down? button g)))
+
+(define (mouse-button-change-down? button g)
+  (define prev-ms (game-mouse-prev-input g))
+  (and
+   (mouse-button-down? button g)
+   (not (cond
+          [(eq? button 'left)  (mouse-state-left prev-ms)]
+          [(eq? button 'right) (mouse-state-right prev-ms)]
+          [else #f]))))
+
+(define (mouse-button-change-up? button g)
+  (define prev-ms (game-mouse-prev-input g))
+  (and
+   (mouse-button-up? button g)
+   (cond
+     [(eq? button 'left)  (mouse-state-left prev-ms)]
+     [(eq? button 'right) (mouse-state-right prev-ms)]
+     [else #f])))
+
 
 (define (draw-entity e)
   (define ss (reverse (get-components e animated-sprite?)))
@@ -633,8 +700,14 @@
   (findf (curry member e entity-eq?) (game-collisions g)))
 
 (define (is-colliding-with? name g me)
-  (define names (map get-name (colliding-with me g)))
-  (member name names))
+
+  (cond [(string? name)
+         (let [(names (map get-name (colliding-with me g)))]
+           (member name names))]
+        [(procedure? name)
+         (let [(es (colliding-with me g))]
+           (findf name es))]
+        [else (error "What was that?")]))
 
 (define (is-colliding-by-name? name1 name2 g)
   (define names (map (curry map get-name) (game-collisions g)))
@@ -712,7 +785,9 @@
   (set-game-prev-input! g (hash-copy (game-input g))) 
   g)
 
-
+(define (store-mouse-prev-input g)
+  (set-game-mouse-prev-input! g (game-mouse-input g)) 
+  g)
 
 (define (find-entity-by-id i g)
   (findf (λ(e) (eq? i (get-id e)))
@@ -758,6 +833,7 @@
                        do-game-functions
                        handle-killed-entities
                        store-prev-input
+                       store-mouse-prev-input
                        cleanup-physics))
   ;(displayln (~a (map get-name (flatten (game-collisions g)))))
 
@@ -881,8 +957,8 @@
         '()
         button-states
         button-states
-        (mouse-pos 0 0)
-        (mouse-pos 0 0)
+        (mouse-state #f #f (posn 0 0))
+        (mouse-state #f #f (posn 0 0))
         '()))
 
 
