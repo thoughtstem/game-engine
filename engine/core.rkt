@@ -232,7 +232,7 @@
 (define-syntax (new-game-function stx)
   
   (define update (second (syntax->datum stx)))
-  (displayln (~a "Registering game extension " update))
+  ;(displayln (~a "Registering game extension " update))
   (datum->syntax stx
    `(new-game-function-f ,(~a update) ,update)))
 
