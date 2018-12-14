@@ -97,6 +97,7 @@
     (check-equal? (round (x ticked-player2)) 2)     ;Wraparound
     (check-equal? (game->current-tile ticked-g2) 1) ;Crossed threshold yet
 
+
     )
   
 
@@ -122,7 +123,7 @@
                                      #:name "spawnee"
                                      #:position (posn 0 0)
                                      #:components
-                                     (active-on-bg 0) ;Incorrectly specify active tile
+                                     (make-active-on-bg 0) ;Incorrectly specify active tile
                                      ))
 
 
@@ -136,6 +137,9 @@
     (define ticked-g      (tick g #:ticks 4))
 
     (define spawned (get-entity "spawnee" ticked-g))
+
+    (check-equal? (length (game-entities ticked-g))
+                  3)
 
     (check-equal? (first (active-on-bg-bg-list (get-component spawned active-on-bg?)))
                   2)))
@@ -316,29 +320,6 @@
   (-> tracking-entity? (listof trackable-entity?))
   (get-backpack-entities e))
 
-;At runtime a trackable entity should become a tracked entity
-;  This predicate will determine whether something is tracked
-#;(define (tracked-entity? g e)
-  (-> game? trackable-entity? boolean?)
-  (define tracking (game->tracking-entity g))
-  (define tracked  (entity->tracked-entities tracking))
-  (member e tracked)) 
-
-;Start tracking any trackable entities in the game
-#;(define (start-tracking g e)
-  (set-backpack-entities
-   e
-   (game->trackable-entities g)))
-
-
-;Update our list of trackable entities in the game
-#;(define (update-tracking g e)
-  (define tracked-entities      (entity->tracked-entities e))
-  (define trackable-entities    (game->trackable-entities g))
-  
-  (define new-entities          (union-entities tracked-entities trackable-entities))
-
-  (set-backpack-entities e new-entities))
 
 
 
@@ -448,8 +429,7 @@
 
 
 (define (end-of-frame-tile-changed g old-tracking-entity dir)
-  (displayln "end-of-frame-tile-changed")
-  
+
   (define tracking-entity
     ((next-tile dir) g old-tracking-entity))
   
@@ -459,6 +439,8 @@
   (struct-copy game g
                [entities new-entities]))
 
+
+
 (define (track-new-entities-if-any g old-tracking-entity)
   ;Some of these trackable entities might be new.  Start tracking, if so.
   (define all-trackable     (game->trackable-entities g))
@@ -466,22 +448,20 @@
 
   ;If they are new, override their active-on-bg to current tile.
   (define (override-active-on-bg e)
-    (update-entity e active-on-bg?
-                   (make-active-on-bg (game->current-tile g))))
+    (if (member e currently-tracked entity-eq?)
+        e
+        (update-entity e active-on-bg?
+                       (make-active-on-bg (game->current-tile g)))))
 
-  (define just-started-tracking
-    (map
-     override-active-on-bg
-     (filter (λ(e)
-               (not (member e currently-tracked entity-eq?)))
-             all-trackable)))
-
-  #;(displayln (~a "JUST STARTED TRACKING "
-                   (map get-name just-started-tracking)))
-  
   (set-backpack-entities old-tracking-entity
-                         (union-entities just-started-tracking
-                                         currently-tracked)))
+                         (union-entities (map override-active-on-bg all-trackable)
+                                         currently-tracked))
+
+
+
+  #;(set-backpack-entities old-tracking-entity
+                           (union-entities just-started-tracking
+                                           currently-tracked)))
 
 
 (define (stop-tracking-dead-entities g old-tracking-entity)
@@ -730,7 +710,8 @@
          active-on-bg?
          set-active-on)
 
-(define (make-active-on-bg . bg-list)
+(define/contract (make-active-on-bg . bg-list)
+  (->* () () #:rest (listof number?) active-on-bg?)
   (active-on-bg bg-list))
 
 (define (active-on-random [min 0] [max #f])
