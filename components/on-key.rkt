@@ -3,7 +3,9 @@
 (require "../game-entities.rkt")
 
 
-(provide (rename-out (make-on-key on-key))
+(provide (rename-out (make-on-key on-key)
+                     (on-key struct-on-key)
+                     (on-key-rule? struct-on-key-rule))
          on-key?)
 
 (struct on-key (key rule? f))
