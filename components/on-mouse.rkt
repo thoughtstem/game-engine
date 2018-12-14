@@ -6,7 +6,9 @@
 (provide (rename-out (make-on-mouse on-mouse))
          on-mouse?
          (rename-out (make-on-mouse-hold on-mouse-hold))
-         on-mouse-hold?)
+         on-mouse-hold?
+         (rename-out (on-mouse      struct-on-mouse)
+                     (on-mouse-rule? struct-on-mouse-rule)))
 
 (struct on-mouse (button rule? f))
 
