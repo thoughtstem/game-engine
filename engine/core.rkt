@@ -118,7 +118,9 @@
          tick-entity
          tick-entities
 
-         current-version-of)
+         current-version-of
+
+         game-replace-entity)
 
 (require posn)
 (require 2htdp/image)
@@ -795,6 +797,7 @@
 
 (define (current-version-of e g)
   (find-entity-by-id (get-id e) g))
+
 
 (define last-game-snapshot #f)
 

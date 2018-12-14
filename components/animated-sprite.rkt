@@ -133,7 +133,8 @@
       (sheet->costume-list _ c r (* r c))
       (drop _ (* (- n 1) c))
       (take _ c)
-      (new-sprite _ actual-delay #:animate animate?)))
+      (new-sprite _ actual-delay #:animate animate?)
+      ))
 
 (define (row->sprite sheet
                      #:columns     (c 4)

@@ -4,7 +4,14 @@
 (module+ test
   ;Trying to expose how backdrops get rendered and swap tiles...
   (require rackunit)
-  (require "./on-start.rkt")
+  (require "./on-start.rkt"
+           "direction.rkt"
+           "speed.rkt"
+           "every-tick.rkt"
+           "do-every.rkt"
+           "key-movement.rkt"
+           "../ai.rkt")
+  
 
   (define red   (rectangle 10 10 'solid 'red))
   (define green (rectangle 10 10 'solid 'green))
@@ -20,6 +27,8 @@
                             #:rows       3
                             #:columns    3
                             #:start-tile 0))
+
+    
 
     (define be (sprite->entity (render-tile b)  
                                #:name       "bg"
@@ -56,8 +65,80 @@
 
     ;(start-game be)
     )
+
+  (let ()
+
+    (define be (bg->backdrop-entity grid
+                                    #:rows       3
+                                    #:columns    3
+                                    #:start-tile 0))
+
+
+    (define player (sprite->entity (square 1 'solid 'black)
+                                   #:name "player"
+                                   #:position (posn 5 5)
+                                   #:components
+                                   (speed 1)
+                                   (direction 0)
+                                   (every-tick (move))
+                                   (player-edge-system)))
+
+    (define g (initialize-game (list player be)))
+
+    (define ticked-g      (tick g #:ticks 4))
+    (define ticked-player (get-entity "player" ticked-g))
+
+    (check-equal? (round (x ticked-player)) 9)
+    (check-equal? (game->current-tile ticked-g) 0) ;Not crossed threshold yet
+
+    (define ticked-g2      (tick ticked-g #:ticks 2))
+    (define ticked-player2 (get-entity "player" ticked-g2))   
+
+    (check-equal? (round (x ticked-player2)) 2)     ;Wraparound
+    (check-equal? (game->current-tile ticked-g2) 1) ;Crossed threshold yet
+
+    )
   
-  )
+
+  (let ()
+
+    
+
+    ;Player is on tile 2
+    ; Spawn something with    (active-on-bg 0)
+    ; Want: That thing to get (active-on-bg 2)
+
+    
+    ;Currently: Ends up on tile 0
+    
+    (define be (bg->backdrop-entity grid
+                                    #:rows       3
+                                    #:columns    3
+                                    #:start-tile 2 ;Start on 2
+                                    ))
+
+    
+    (define to-spawn (sprite->entity (square 1 'solid 'yellow)
+                                     #:name "spawnee"
+                                     #:position (posn 0 0)
+                                     #:components
+                                     (active-on-bg 0) ;Incorrectly specify active tile
+                                     ))
+
+
+    (define player (sprite->entity (square 1 'solid 'black)
+                                   #:name "player"
+                                   #:position (posn 5 5)
+                                   #:components
+                                   (on-start (spawn to-spawn))))
+
+    (define g (initialize-game (list player be)))
+    (define ticked-g      (tick g #:ticks 4))
+
+    (define spawned (get-entity "spawnee" ticked-g))
+
+    (check-equal? (first (active-on-bg-bg-list (get-component spawned active-on-bg?)))
+                  2)))
 
 (require "../game-entities.rkt")
 (require "./animated-sprite.rkt")
@@ -138,13 +219,12 @@
                           #:columns    cols
                           #:start-tile start-tile))
 
-
   (define backdrop-animated-sprite
     (set-scale-xy scale
                   (sheet->sprite (apply beside (backdrop-tiles (first b)))
                                  #:rows 1
                                  #:columns    (* rows cols)
-                                 #:row-number (add1 start-tile)
+                                 #:row-number 1
                                  #:animate?    #f)))
   
   (define be (sprite->entity backdrop-animated-sprite
@@ -238,21 +318,21 @@
 
 ;At runtime a trackable entity should become a tracked entity
 ;  This predicate will determine whether something is tracked
-(define (tracked-entity? g e)
+#;(define (tracked-entity? g e)
   (-> game? trackable-entity? boolean?)
   (define tracking (game->tracking-entity g))
   (define tracked  (entity->tracked-entities tracking))
   (member e tracked)) 
 
 ;Start tracking any trackable entities in the game
-(define (start-tracking g e)
+#;(define (start-tracking g e)
   (set-backpack-entities
    e
    (game->trackable-entities g)))
 
 
 ;Update our list of trackable entities in the game
-(define (update-tracking g e)
+#;(define (update-tracking g e)
   (define tracked-entities      (entity->tracked-entities e))
   (define trackable-entities    (game->trackable-entities g))
   
@@ -312,7 +392,7 @@
 
   (define pos-x (posn-x p))
   (define pos-y (posn-y p))
-
+  
   (cond [(<= pos-x 0)      'left]
         [(>= pos-x WIDTH)  'right]
         [(<= pos-y 0)      'top]
@@ -368,6 +448,8 @@
 
 
 (define (end-of-frame-tile-changed g old-tracking-entity dir)
+  (displayln "end-of-frame-tile-changed")
+  
   (define tracking-entity
     ((next-tile dir) g old-tracking-entity))
   
@@ -379,11 +461,27 @@
 
 (define (track-new-entities-if-any g old-tracking-entity)
   ;Some of these trackable entities might be new.  Start tracking, if so.
-  (define all-trackable (game->trackable-entities g))
+  (define all-trackable     (game->trackable-entities g))
+  (define currently-tracked (entity->tracked-entities old-tracking-entity))
+
+  ;If they are new, override their active-on-bg to current tile.
+  (define (override-active-on-bg e)
+    (update-entity e active-on-bg?
+                   (make-active-on-bg (game->current-tile g))))
+
+  (define just-started-tracking
+    (map
+     override-active-on-bg
+     (filter (λ(e)
+               (not (member e currently-tracked entity-eq?)))
+             all-trackable)))
+
+  #;(displayln (~a "JUST STARTED TRACKING "
+                   (map get-name just-started-tracking)))
   
   (set-backpack-entities old-tracking-entity
-                         (union-entities all-trackable
-                                         (entity->tracked-entities old-tracking-entity))))
+                         (union-entities just-started-tracking
+                                         currently-tracked)))
 
 
 (define (stop-tracking-dead-entities g old-tracking-entity)
@@ -444,8 +542,6 @@
                    tracking))
   
 
-  #;(displayln ())
-
   (set-backpack-entities tracking-entity new-tracking))
 
 (define (end-of-frame-no-tile-changed g old-tracking-entity)
@@ -479,6 +575,8 @@
   ;Direction of tile change (will be #f if not moving tiles this frame)
   (define dir (tile-will-change? g old-tracking-entity))
 
+
+  
   (if dir
       (end-of-frame-tile-changed    g old-tracking-entity dir)
       (end-of-frame-no-tile-changed g old-tracking-entity)))
@@ -540,8 +638,6 @@
           (set-frame current-sprite num)           ;Update animation frame...
           (new-sprite (pick-tile backdrop num))))  ;If not, do it the old (SLOOOW) way
 
-    (displayln (~a "Changing tiles.  Effiient backdrop? " (efficient-backdrop? e)))
-    
     (update-entity new-e animated-sprite? the-new-sprite)))
 
 
