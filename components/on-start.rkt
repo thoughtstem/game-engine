@@ -6,14 +6,21 @@
 
 ;(displayln "LOADING ON START")
 
-(provide (struct-out on-start))
+(provide (rename-out (make-on-start on-start))
+         on-start?)
 
-(struct on-start (func))
+(struct on-start (rule func))
+
+(define (make-on-start #:rule [rule (λ (g e) #t)] func)
+  (on-start rule func))
 
 (define (update-on-start g e c)
   ;(displayln (list "UPDATING ON START" e))
+  (define updated-ent (if ((on-start-rule c) g e)
+                          ((on-start-func c) g e)
+                          e))
   (remove-component
-   ((on-start-func c) g e) on-start?))
+   updated-ent on-start?))
 
 (new-component on-start?
-               update-on-start)  
+               update-on-start)
