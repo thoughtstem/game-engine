@@ -68,8 +68,7 @@
          get-id
          change-name
          basic-entity
-         dead
-         dead?
+         (struct-out dead)
          die
          get-entity
 

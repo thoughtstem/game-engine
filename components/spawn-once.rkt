@@ -57,7 +57,7 @@
                     #f))
     (define offset (get-component to-spawn posn?))
     (define rot-offset (unless (eq? dir #f)
-                         (posn-rotate-origin-ccw dir offset)))
+                         (posn-rotate-origin-ccw (modulo (exact-round dir) 360) offset)))
     (define rs? (get-component e rotation-style?))
     (define m (if rs?
                   (rotation-style-mode rs?)

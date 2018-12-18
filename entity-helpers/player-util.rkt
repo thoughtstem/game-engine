@@ -5,6 +5,7 @@
          player-info-closed?
          update-move-info
          show-move-info
+         key-is-down?
          )
 
 (require 2htdp/image
@@ -92,3 +93,7 @@
                                  (on-key "o" die)
                                  (on-rule player-is-moving? (update-move-info))))
   (add-component e (spawn-once info-entity)))
+
+(define (key-is-down? key)
+  (lambda (g e)
+    (button-down? key g)))
