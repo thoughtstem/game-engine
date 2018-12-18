@@ -295,6 +295,10 @@
 
 (define (spawn-on-current-tile to-spawn)
   (lambda (g e)
+    (set! to-spawn (if (procedure? to-spawn)
+                       (to-spawn)
+                       to-spawn))
+    
     (define to-spawn-fixed
       (if (get-component to-spawn active-on-bg?)
           (update-entity to-spawn active-on-bg?
