@@ -2,7 +2,8 @@
 
 (provide show-mouse-state
          point-to-mouse
-         mouse-in-game?)
+         mouse-in-game?
+         mouse-button-is-down?)
 
 (require "../game-entities.rkt"
          "./movement-util.rkt"
@@ -23,3 +24,7 @@
   (define target-pos (get-mouse-pos g))
   ((point-to-posn target-pos) g e)
   )
+
+(define (mouse-button-is-down? button)
+  (lambda (g e)
+    (mouse-button-down? button g)))
