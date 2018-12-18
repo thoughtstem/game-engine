@@ -4,6 +4,7 @@
          get-storage
          get-storage-data
          set-storage
+         set-storage-named
 
          entity-with-storage)
 
@@ -40,3 +41,7 @@
       (get-storage key e)
       (equal? val (get-storage-data key e))))
    (game-entities g)))
+
+(define (set-storage-named key-name data)
+  (lambda (g e)
+    (set-storage key-name e data)))
