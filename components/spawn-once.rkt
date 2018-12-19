@@ -16,12 +16,18 @@
          spawn-once-accum
          spawn-once-next
          was-spawned?
+         spawn-once?
          spawned ;don't provide this
-         (rename-out [make-spawn-once spawn-once]))
+         (rename-out [make-spawn-once spawn-once])
+         update-what-will-spawn)
 
 (struct spawn-once (spawn speed accum next relative?))
 
 (struct spawned ())
+
+(define (update-what-will-spawn s f)
+  (struct-copy spawn-once s
+               [spawn (f (spawn-once-spawn s))]))
 
 (define (was-spawned? e)
   (get-component e spawned?))

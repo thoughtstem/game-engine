@@ -1,6 +1,10 @@
 #lang racket
 
-(provide (struct-out storage)
+(provide (rename-out [new-storage storage])
+         storage?
+         storage-name
+         storage-data
+         
          get-storage
          get-storage-data
          set-storage
@@ -11,7 +15,7 @@
 (require "../game-entities.rkt")
 
 
-(struct storage (name data))
+(component storage (name data))
 
 (define (storage-with-name? n)
   (lambda (s)
@@ -25,7 +29,7 @@
 (define (set-storage name e v)
   (update-entity e
                  (storage-with-name? name)
-                 (storage name v)))
+                 (new-storage name v)))
 
 
 (define (get-storage-data name e)

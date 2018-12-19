@@ -8,7 +8,8 @@
          (rename-out (make-on-mouse-hold on-mouse-hold))
          on-mouse-hold?
          (rename-out (on-mouse      struct-on-mouse)
-                     (on-mouse-rule? struct-on-mouse-rule)))
+                     (on-mouse-rule? struct-on-mouse-rule)
+                     (on-mouse-f struct-on-mouse-f)))
 
 (struct on-mouse (button rule? f))
 

@@ -5,7 +5,8 @@
 
 (provide (rename-out (make-on-key on-key)
                      (on-key struct-on-key)
-                     (on-key-rule? struct-on-key-rule))
+                     (on-key-rule? struct-on-key-rule)
+                     (on-key-f struct-on-key-f))
          on-key?)
 
 (struct on-key (key rule? f))
