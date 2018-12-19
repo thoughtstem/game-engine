@@ -195,7 +195,7 @@
 
   (and (system-type 'os)
        (computer-number)
-       (> 200 (computer-number))))
+       (> 300 (computer-number))))
 
 (define (computer-number)
   (define s (with-output-to-string
