@@ -55,7 +55,8 @@
          entity-animation
          sprite->entity
          sprite->bb
-         update-entity 
+         update-entity
+         run-handler-on-entity-in-game
          get-component
          get-components
          add-component
@@ -797,6 +798,20 @@
 
 (define (current-version-of e g)
   (find-entity-by-id (get-id e) g))
+
+
+
+(define (run-handler-on-entity-in-game handler e g)
+  (define new-e (handler g e))
+
+  (define new-entities (map (λ(e2)
+                              (if (entity-eq? new-e e2)
+                                  new-e
+                                  e2))
+                            (game-entities g)))
+
+  (struct-copy game g
+               [entities new-entities]))
 
 
 (define last-game-snapshot #f)

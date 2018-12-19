@@ -6,6 +6,7 @@
   (require rackunit)
   (require "./on-start.rkt"
            "direction.rkt"
+           "spawn-once.rkt"
            "speed.rkt"
            "every-tick.rkt"
            "do-every.rkt"
@@ -97,7 +98,76 @@
     (check-equal? (round (x ticked-player2)) 2)     ;Wraparound
     (check-equal? (game->current-tile ticked-g2) 1) ;Crossed threshold yet
 
+    )
 
+  (let ()
+    (define be (bg->backdrop-entity grid
+                                    #:rows       3
+                                    #:columns    3
+                                    #:start-tile 2 ;Start on 2
+                                    ))
+
+    (define player (sprite->entity (square 1 'solid 'black)
+                                   #:name "player"
+                                   #:position (posn 5 5)))
+
+    (define a (sprite->entity (square 1 'solid 'black)
+                              #:name "a"
+                              #:position (posn 0 0)
+                              #:components (make-active-on-bg 0)))
+
+    (define b (sprite->entity (square 1 'solid 'black)
+                              #:name "b"
+                              #:position (posn 0 0)
+                              #:components (make-active-on-bg 5)))
+
+    (define c (sprite->entity (square 1 'solid 'black)
+                              #:name "c"
+                              #:position (posn 0 0)
+                              #:components (make-active-on-bg 2)))
+
+
+    (define g (initialize-game (list player a b c be)))
+    (define ticked-g      (tick g #:ticks 4))
+
+    (check-equal? (map get-name (game-entities ticked-g)) 
+                  (list "player" "c" "bg")
+                  "Entities a and b should be despawned...")
+
+
+    ;Now let's go to tile 0
+
+    
+    (define ticked-g2 (~> ticked-g
+                          (run-handler-on-entity-in-game (change-tile-to 0)
+                                                         (get-entity "bg" ticked-g)
+                                                         _)
+                          (tick _ #:ticks 4)))
+
+
+    (check-equal? (game->current-tile ticked-g2)
+                  0)
+
+    (check-equal? (map get-name (game-entities ticked-g2)) 
+                  (list "a" "player" "bg")
+                  "Entities b and c should be despawned...")
+
+    ;Now let's go back to tile 2
+
+    (define ticked-g3 (~> ticked-g2
+                          (run-handler-on-entity-in-game (change-tile-to 2)
+                                                         (get-entity "bg" ticked-g2)
+                                                         _)
+                          (tick _ #:ticks 4)))
+
+
+    (check-equal? (game->current-tile ticked-g3)
+                  2)
+
+    (check-equal? (map get-name (game-entities ticked-g3)) 
+                  (list "c" "player" "bg")
+                  "Entities a and b should be despawned...")
+    
     )
   
 
@@ -131,18 +201,26 @@
                                    #:name "player"
                                    #:position (posn 5 5)
                                    #:components
-                                   (on-start (spawn to-spawn))))
+                                   (on-start (spawn-on-current-tile to-spawn))))
 
     (define g (initialize-game (list player be)))
-    (define ticked-g      (tick g #:ticks 4))
+    (define ticked-g      (tick g #:ticks 5))
 
-    (define spawned (get-entity "spawnee" ticked-g))
+    (define spawnee (get-entity "spawnee" ticked-g))
+
+    (displayln (map get-name (game-entities ticked-g)))
 
     (check-equal? (length (game-entities ticked-g))
-                  3)
+                  3
+                  "The spawned entity should be there still")
 
-    (check-equal? (first (active-on-bg-bg-list (get-component spawned active-on-bg?)))
-                  2)))
+    (check-equal? (game->current-tile ticked-g)
+                  2
+                  "The current tile should be 2.  We haven't moved")
+
+    (check-equal? (first (active-on-bg-bg-list (get-component spawnee active-on-bg?)))
+                  2
+                  "The spawned entity's active-on-bg number should have changed to 2")))
 
 (require "../game-entities.rkt")
 (require "./animated-sprite.rkt")
@@ -184,7 +262,9 @@
          bg->backdrop
          bg->backdrop-entity
          game->current-tile
-         player-edge-system)
+         player-edge-system
+
+         spawn-on-current-tile)
 
 ;====== BACKDROP =====
 ;  Keeps track of the various tiles, also manages which entities should be active on which tiles
@@ -210,6 +290,22 @@
     (backdrop-tiles backdrop-component))
    (backpack)))
 
+
+
+
+(define (spawn-on-current-tile to-spawn)
+  (lambda (g e)
+    (set! to-spawn (if (procedure? to-spawn)
+                       (to-spawn)
+                       to-spawn))
+    
+    (define to-spawn-fixed
+      (if (get-component to-spawn active-on-bg?)
+          (update-entity to-spawn active-on-bg?
+                         (make-active-on-bg (game->current-tile g)))
+          to-spawn))
+
+    ((spawn to-spawn-fixed) g e)))
 
 
 (define (bg->backdrop-entity i
@@ -286,6 +382,7 @@
 
 ;It can be convenient to work with tracking entities, not backdrop structs.
 ;These functions help:
+
 
 ;Given some tracking entity, we can extract the current tile
 (define/contract (tracking-entity->current-tile e)
@@ -406,163 +503,6 @@
 
 ;Here, we register the backdop component
 (new-component backdrop?  update-backdrop)
-
-
-;======SPAWNING TRACKED ENTITIES======
-
-
-(define (game->misplaced-entities g)
-  (filter (and/c
-           trackable-entity?
-           (not/c (curry should-be-shown? g)))
-          (game-entities g)))
-
-
-
-
-
-(define (backdrop-end-of-frame g)
-  (if (or (not (game->tracking-entity g))
-          (not (get-entity "player" g)))
-      g
-      (backdrop-end-of-frame-for-real g)))
-
-
-(define (end-of-frame-tile-changed g old-tracking-entity dir)
-
-  (define tracking-entity
-    ((next-tile dir) g old-tracking-entity))
-  
-  (define new-entities
-    (replace-entity-in-list tracking-entity (game-entities g)))
-  
-  (struct-copy game g
-               [entities new-entities]))
-
-
-
-(define (track-new-entities-if-any g old-tracking-entity)
-  ;Some of these trackable entities might be new.  Start tracking, if so.
-  (define all-trackable     (game->trackable-entities g))
-  (define currently-tracked (entity->tracked-entities old-tracking-entity))
-
-  ;If they are new, override their active-on-bg to current tile.
-  (define (override-active-on-bg e)
-    (if (member e currently-tracked entity-eq?)
-        e
-        (update-entity e active-on-bg?
-                       (make-active-on-bg (game->current-tile g)))))
-
-  (set-backpack-entities old-tracking-entity
-                         (union-entities (map override-active-on-bg all-trackable)
-                                         currently-tracked))
-
-
-
-  #;(set-backpack-entities old-tracking-entity
-                           (union-entities just-started-tracking
-                                           currently-tracked)))
-
-
-(define (stop-tracking-dead-entities g old-tracking-entity)
-  (define entities-to-stop-tracking
-    (game-self-killed-entities g))
-
-  (define new-entities-to-track
-    (filter (curryr entity-in-list? entities-to-stop-tracking)
-            (entity->tracked-entities old-tracking-entity)))
-  
-  (set-backpack-entities old-tracking-entity
-                         new-entities-to-track))
-
-(define  (kill-if-living-and-on-wrong-tile g tracking-entity es)
-  (define misplaced-entities
-    (filter (not/c (curry should-be-shown? g))
-            (entity->tracked-entities tracking-entity)))
- 
-  (define es-with-dead
-    (map (curryr die-if-member-of misplaced-entities) es))
-  
-  es-with-dead)
-
-(define  (spawn-if-dead-but-on-right-tile g tracking-entity es)
-  (define to-spawn
-    (filter (and/c (curry should-be-shown? g)
-                   (not/c (curryr member es)))
-            (entity->tracked-entities tracking-entity)))
-
-  (define new-tracking-entity
-    (spawn-many-from #:relative #f
-                     tracking-entity to-spawn))
-  
-
-  
-  
-  (replace-entity-in-list new-tracking-entity es))
-
-
-(define (stop-tracking-no-longer-trackables g tracking-entity)
-  
-  ;Can we make these four operations clearer and in an obvious sequence??
-  ;  Also, need to handle case where we find a thing without an active-on-bg, but which used to have one (we are currently tracking...)
-  
-  (define all-non-trackable-es
-    (filter (not/c trackable-entity?)
-            (game-entities g)))
-
-  (define tracking
-    (entity->tracked-entities tracking-entity))
-
-  (define stop-tracking
-    (filter (curryr member all-non-trackable-es entity-eq?)
-            tracking))
-
-  (define new-tracking
-    (filter (not/c (curryr member stop-tracking entity-eq?))
-                   tracking))
-  
-
-  (set-backpack-entities tracking-entity new-tracking))
-
-(define (end-of-frame-no-tile-changed g old-tracking-entity)
-
-  (define new-tracking-entity
-    (~> old-tracking-entity
-        (stop-tracking-no-longer-trackables g _)
-        (track-new-entities-if-any          g _)
-        (stop-tracking-dead-entities        g _)
-        ))
- 
-  (define entities-with-new-tracker
-    (replace-entity-in-list new-tracking-entity
-                            (game-entities g)))
-
-  (define new-entities
-    (~> entities-with-new-tracker
-        (kill-if-living-and-on-wrong-tile g new-tracking-entity _)
-        (spawn-if-dead-but-on-right-tile  g new-tracking-entity _)))
-  
-  (struct-copy game g
-               [entities new-entities]))
-
-
-
-(define (backdrop-end-of-frame-for-real g)
-
-  ;Current tracking entity
-  (define old-tracking-entity (game->tracking-entity g))
-
-  ;Direction of tile change (will be #f if not moving tiles this frame)
-  (define dir (tile-will-change? g old-tracking-entity))
-
-
-  
-  (if dir
-      (end-of-frame-tile-changed    g old-tracking-entity dir)
-      (end-of-frame-no-tile-changed g old-tracking-entity)))
-
-
-(new-game-function backdrop-end-of-frame)
 
 
 
@@ -711,7 +651,8 @@
          set-active-on)
 
 (define/contract (make-active-on-bg . bg-list)
-  (->* () () #:rest (listof number?) active-on-bg?)
+  (->* () () #:rest (listof number?)
+       active-on-bg?)
   (active-on-bg bg-list))
 
 (define (active-on-random [min 0] [max #f])
@@ -724,3 +665,195 @@
 (define (set-active-on . tiles)
   (lambda (g e)
     (update-entity e active-on-bg? (apply make-active-on-bg tiles))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+;======SPAWNING TRACKED ENTITIES======
+
+
+(define (game->misplaced-entities g)
+  (filter (and/c
+           trackable-entity?
+           (not/c (curry should-be-shown? g)))
+          (game-entities g)))
+
+
+
+
+(define (end-of-frame-tile-changed g old-tracking-entity dir)
+
+  (define tracking-entity
+    ((next-tile dir) g old-tracking-entity))
+  
+  (define new-entities
+    (replace-entity-in-list tracking-entity (game-entities g)))
+  
+  (struct-copy game g
+               [entities new-entities]))
+
+
+
+
+(define (unspecified-tiles? e)
+  (and
+   (get-component e active-on-bg?)
+   (eq? '() (active-on-bg-bg-list (get-component e active-on-bg?)))))
+
+(define (handle-if-blank-active-on-bg g e)
+  (if (unspecified-tiles? e)
+      (update-entity e active-on-bg?
+                     (make-active-on-bg (game->current-tile g)))
+      e))
+
+(define (track-new-entities-if-any g old-tracking-entity)
+  ;Some of these trackable entities might be new.  Start tracking, if so.
+
+  
+  (define all-trackable     (game->trackable-entities g))
+  (define currently-tracked (entity->tracked-entities old-tracking-entity))
+
+  (define new-entities
+    (union-entities all-trackable
+                    currently-tracked))
+
+  
+
+
+  (set-backpack-entities old-tracking-entity
+                         (map (curry handle-if-blank-active-on-bg g)
+                              new-entities)))
+
+
+(define (stop-tracking-dead-entities g old-tracking-entity)
+  (define entities-to-stop-tracking
+    (game-self-killed-entities g))
+
+  (define new-entities-to-track
+    (filter (curryr entity-in-list? entities-to-stop-tracking)
+            (entity->tracked-entities old-tracking-entity)))
+
+  (set-backpack-entities old-tracking-entity
+                         new-entities-to-track))
+
+
+(define  (kill-if-living-and-on-wrong-tile g tracking-entity es)
+  (define misplaced-entities
+    (filter (not/c (curry should-be-shown? g))
+            (entity->tracked-entities tracking-entity)))
+
+  (define es-with-dead
+    (map (curryr die-if-member-of misplaced-entities) es))
+  
+  es-with-dead)
+
+
+
+(define  (spawn-if-dead-but-on-right-tile g tracking-entity es)
+  (define to-spawn
+    (filter (and/c (curry should-be-shown? g)
+                   (not/c (curryr member es entity-eq?)))
+            (entity->tracked-entities tracking-entity)))
+
+  ;(displayln "SPAAAAWN")
+  ;(displayln (map get-name to-spawn))
+
+  (define new-tracking-entity
+    (spawn-many-from #:relative #f
+                     tracking-entity to-spawn))
+  
+
+  
+  
+  (replace-entity-in-list new-tracking-entity es))
+
+
+(define (stop-tracking-no-longer-trackables g tracking-entity)
+  
+  ;Can we make these four operations clearer and in an obvious sequence??
+  ;  Also, need to handle case where we find a thing without an active-on-bg, but which used to have one (we are currently tracking...)
+  
+  (define all-non-trackable-es
+    (filter (not/c trackable-entity?)
+            (game-entities g)))
+
+  (define tracking
+    (entity->tracked-entities tracking-entity))
+
+  (define stop-tracking
+    (filter (curryr member all-non-trackable-es entity-eq?)
+            tracking))
+
+  (define new-tracking
+    (filter (not/c (curryr member stop-tracking entity-eq?))
+                   tracking))
+  
+
+  (set-backpack-entities tracking-entity new-tracking))
+
+
+
+(define (end-of-frame-no-tile-changed g old-tracking-entity)
+
+  (define new-tracking-entity
+    (~> old-tracking-entity
+        (stop-tracking-no-longer-trackables g _)
+        (track-new-entities-if-any          g _)
+        (stop-tracking-dead-entities        g _)
+        ))
+
+
+  
+ 
+  (define entities-with-new-tracker
+    (replace-entity-in-list new-tracking-entity
+                            (game-entities g)))
+
+
+  (define new-entities
+    (~> entities-with-new-tracker
+        (kill-if-living-and-on-wrong-tile g new-tracking-entity _)
+        ;(temp-log "killed " _)
+        (spawn-if-dead-but-on-right-tile  g new-tracking-entity _)
+        ;(temp-log "spawned " _)
+        ))
+
+  
+  
+  (struct-copy game g
+               [entities (map (curry handle-if-blank-active-on-bg g)
+                              new-entities)]))
+
+
+
+(define (backdrop-end-of-frame-for-real g)
+
+  ;Current tracking entity
+  (define old-tracking-entity (game->tracking-entity g))
+
+  ;Direction of tile change (will be #f if not moving tiles this frame)
+  (define dir (tile-will-change? g old-tracking-entity))
+
+  (if dir
+      (end-of-frame-tile-changed    g old-tracking-entity dir)
+      (end-of-frame-no-tile-changed g old-tracking-entity)))
+
+(define (backdrop-end-of-frame g)
+  (if (or (not (game->tracking-entity g))
+          (not (get-entity "player" g)))
+      g
+      (backdrop-end-of-frame-for-real g)))
+
+
+(new-game-function backdrop-end-of-frame)
+
+
