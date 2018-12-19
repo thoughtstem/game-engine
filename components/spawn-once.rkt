@@ -15,20 +15,12 @@
          spawn-once-speed
          spawn-once-accum
          spawn-once-next
-         was-spawned?
-         spawned ;don't provide this
          (rename-out [make-spawn-once spawn-once]))
 
 (struct spawn-once (spawn speed accum next relative?))
 
-(struct spawned ())
-
-(define (was-spawned? e)
-  (get-component e spawned?))
-
 (define (make-spawn-once spawn #:relative? [relative? #t])
-  (spawn-once (add-component spawn
-                             (spawned)) 1 0 #f relative?))
+  (spawn-once spawn 1 0 #f relative?))
 
 (define (spawn-once-ready? s)
   (>= (spawn-once-accum s)
