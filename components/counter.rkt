@@ -5,7 +5,9 @@
 (require 2htdp/image)
 
 (require posn)
-(provide (struct-out counter)
+(provide counter?
+         counter-count
+         (rename-out [make-counter counter])
          set-counter
          get-counter
          change-counter-by
@@ -13,13 +15,17 @@
          draw-other-counter
          random-counter)
 
-(struct counter (count))
+(component counter (count))
+
+(define (make-counter c)
+  (new-counter c))
 
 (define (update-counter g e c) e)
 
 (define (set-counter num)
  (lambda (g e)
-     (update-entity e counter? (counter num))))
+     (update-entity e counter? (struct-copy counter (get-component e counter?)
+                                            [count num]))))
 
 (define (get-counter e)
   (counter-count (get-component e counter?)))
@@ -27,7 +33,10 @@
 (define (change-counter-by inc)
   (lambda (g e)
     (define num (get-counter e))
-    (update-entity e counter? (counter (+ num inc)))))
+    (update-entity e counter?
+                   (struct-copy counter (get-component e counter?)
+                                [count (+ num inc)])
+                   )))
 
 (define (draw-counter label size color)
   (lambda (g e)
@@ -41,10 +50,9 @@
 
 (define (random-counter min max)
   (lambda (g e)
-     (update-entity e counter? (counter (random min (add1 max))))))
+     (update-entity e counter? (new-counter (random min (add1 max))))))
 
-(new-component counter?
-               update-counter)
+(new-component counter? update-counter)
 
 ; === SIMPLE STRUCTS ===
 (struct hue-val  (hue))

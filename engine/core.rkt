@@ -121,7 +121,14 @@
 
          current-version-of
 
-         game-replace-entity)
+         game-replace-entity
+
+         next-component-id
+
+         component
+         component?
+         component-eq?
+         component-id)
 
 (require posn)
 (require 2htdp/image)
@@ -156,6 +163,57 @@
   (lambda (g e)
     body
     e))
+
+(define COMPONENT-ID-COUNTER 0)
+(define (next-component-id)
+  (set! COMPONENT-ID-COUNTER (add1 COMPONENT-ID-COUNTER))
+  COMPONENT-ID-COUNTER)
+
+(define (component-id c)
+  ;There must be a better way than this...
+  (with-handlers ([exn:fail? (thunk* #f)])
+      (string->number (second (string-split (~a c) " ")))))
+
+(define (component-eq? c1 c2)
+  (eq? (component-id c1)
+       (component-id c2)))
+
+(define (component? c)
+  (not (not
+        (and (struct? c)
+             (component-id c)))))
+
+(require (for-syntax racket))
+(define-syntax (component stx)
+  (syntax-case stx ()
+    [(_ name (field ...) things ...)
+     (with-syntax [(construct-with-id (format-id #'name "new-~a" #'name))]
+       #`(begin
+           ;(provide (rename-out [construct-with-id name]))
+           (struct name (id field ...) things ... #:transparent)
+           (define (construct-with-id field ...)
+             (name (next-component-id) field ...))
+           ))]))
+
+
+
+(module+ test
+  (require rackunit)
+  
+  (component dumb (val))
+
+  (define a (new-dumb 'a))
+  (define b (new-dumb 'b))
+
+  (check-equal? (component? a) #t)
+
+  (check-equal? (component-eq? a b)
+                #f)
+
+  (check-equal? (component-eq? a (struct-copy dumb a
+                                              [val 'new-a-val]))
+                #t)
+  )
 
 (struct bb [w h])
 
@@ -223,8 +281,6 @@
   (hash-ref component-handlers type #f))
 
 
-(define (component? x)
-  (get-handler-for-component x))
 
 (define (and/r . rs)
   (λ(g e)
@@ -417,6 +473,8 @@
       e
       (apply (curry add-components (add-component e (first flattened)))
              (rest flattened))))
+
+
 
 (define (basic-entity p s)
   (entity (list (id #f)

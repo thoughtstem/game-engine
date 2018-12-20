@@ -7,7 +7,10 @@
 (require 2htdp/image)
 (require threading)
 
-(provide (struct-out rotation-style))
+(provide (struct-out rotation-style)
+         set-rotation-style
+         horizontal-flip-sprite
+         vertical-flip-sprite)
 
 (struct rotation-style (mode))
 
@@ -28,7 +31,8 @@
       [(eq? mode 'face-direction)
        (update-entity e animated-sprite?
                       (curry set-angle dir))
-       ]))
+       ]
+      [else e]))
   
   (update-entity e-with-new-animation rotation-style? c))
 
@@ -36,4 +40,22 @@
   (switch-animations-if-necessary c e))
 
 (new-component rotation-style?
-               update-rotation-style) 
+               update-rotation-style)
+
+; ==== HANDLERS ====
+(define (set-rotation-style mode)
+  (lambda (g e)
+    (displayln (~a "CHANGING ROTATION STYLE TO: " mode))
+    (update-entity e rotation-style? (rotation-style mode))))
+
+(define (horizontal-flip-sprite)
+  (lambda (g e)
+    (define x-scale (get-x-scale (get-component e animated-sprite?)))
+    (update-entity e animated-sprite?
+                   (curry set-x-scale (- x-scale)))))
+
+(define (vertical-flip-sprite)
+  (lambda (g e)
+    (define y-scale (get-y-scale (get-component e animated-sprite?)))
+    (update-entity e animated-sprite?
+                   (curry set-y-scale (- y-scale)))))

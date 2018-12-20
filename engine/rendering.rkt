@@ -216,7 +216,7 @@
   (if (eq? rendering-mode 'new-method)
       (make-gui #:start-fullscreen? #f
                 #:frame-style (list 'no-resize-border
-                                    ;'no-caption
+                                    'no-caption
                                     )
                 #:mode gl:gui-mode
                 #:width w

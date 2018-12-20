@@ -9,10 +9,10 @@
 
 ;(provide (struct-out do-every))
 
-(struct follow (accum name speed))
+(component follow (accum name speed))
 
 (define (make-follow name [ticks 1])
-  (follow 0 name ticks))
+  (new-follow 0 name ticks))
 
 (define (reset-follow a)
   (struct-copy follow a
