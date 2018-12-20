@@ -115,7 +115,7 @@
                     #:position   (posn 0 0) ;(posn 12 (/ HEIGHT 2))
                     #:components (static)
                                  (hidden)
-                                 
+                                 (layer "ui")
                                  (on-start (do-many update-backpack-sprite
                                                     (go-to-pos-inside 'top-right)
                                                     show))

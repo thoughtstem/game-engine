@@ -34,7 +34,9 @@
        ]
       [else e]))
   
-  (update-entity e-with-new-animation rotation-style? c))
+  ;(update-entity e-with-new-animation rotation-style? c)
+  e-with-new-animation
+  )
 
 (define (update-rotation-style g e c)
   (switch-animations-if-necessary c e))
@@ -42,10 +44,15 @@
 (new-component rotation-style?
                update-rotation-style)
 
+(define (get-rotation-style e)
+  (rotation-style-mode (get-component e rotation-style?)))
+
+
 ; ==== HANDLERS ====
 (define (set-rotation-style mode)
   (lambda (g e)
-    (displayln (~a "CHANGING ROTATION STYLE TO: " mode))
+    ;(displayln (~a "Current rotation-style: " (get-rotation-style e)))
+    ;(displayln (~a "Attempt rotation-style change: " mode))
     (update-entity e rotation-style? (rotation-style mode))))
 
 (define (horizontal-flip-sprite)
