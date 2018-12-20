@@ -9,7 +9,8 @@
          on-mouse-hold?
          (rename-out (on-mouse      struct-on-mouse)
                      (on-mouse-rule? struct-on-mouse-rule)
-                     (on-mouse-f struct-on-mouse-f)))
+                     (on-mouse-f struct-on-mouse-f))
+         get-on-mouse-button)
 
 (struct on-mouse (button rule? f))
 
@@ -39,3 +40,6 @@
 
 (new-component on-mouse-hold?
                update-on-mouse-hold)
+
+(define (get-on-mouse-button e)
+  (on-mouse-button (get-component e on-mouse?)))

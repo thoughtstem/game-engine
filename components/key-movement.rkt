@@ -14,6 +14,7 @@
          player-is-moving?
          stop-movement
          get-current-velocity
+         get-key-mode
          )
 
 (struct key-movement (speed mode rule?) #:transparent)
