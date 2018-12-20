@@ -101,6 +101,10 @@
          get-image-id
          set-x-scale
          set-y-scale
+         
+         get-x-scale
+         get-y-scale
+         
          set-x-offset
          set-y-offset
          scale-xy
@@ -219,6 +223,12 @@
   
   as)
 
+(define (get-x-scale as)
+  (animated-sprite-x-scale as))
+
+(define (get-y-scale as)
+  (animated-sprite-y-scale as))
+ 
 
 (define/contract (set-x-offset v as)
   (-> number? animated-sprite? animated-sprite?)
