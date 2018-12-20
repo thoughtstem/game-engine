@@ -444,7 +444,7 @@
           (get-fast-image-id i2)))
 
 (define (make-fast-image i)
-  (displayln (~a "Making fast image for image sized: " (image-width i) "x" (image-height i)))
+  ;(displayln (~a "Making fast image for image sized: " (image-width i) "x" (image-height i)))
   
   (define ret
     (if (fast-image? i)

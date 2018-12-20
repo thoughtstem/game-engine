@@ -20,7 +20,7 @@
                           ((on-start-func c) g e)
                           e))
   (remove-component
-   updated-ent on-start?))
+   updated-ent (is-component? c)))
 
 (new-component on-start?
                update-on-start)
