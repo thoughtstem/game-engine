@@ -26,7 +26,11 @@
          get-mouse-pos
          
          tick
+         
          )
+
+;For contracts
+(provide game-has-entity-named/c)
 
 
 (provide new-component
@@ -150,6 +154,26 @@
               [mouse-input #:mutable]
               [mouse-prev-input #:mutable]
               [collisions #:mutable]) #:transparent)
+
+;For use in contracts
+
+(define (game-has-entity-named/c n)
+  (flat-contract-with-explanation
+   (λ (g)
+     (if (and (game? g)
+              (entity-with-name n g))
+         #t
+         (λ(blame)
+           (raise-blame-error blame g
+                              (list 'expected:
+                                    (~a "a game containing an entity named " n)
+                                    'given:
+                                    (~a "given a game with entities: " (map get-name (game-entities g))))
+                              )
+           ) ))))
+
+
+
 
 (define-syntax-rule (handler g e body)
   (lambda (g e)
@@ -422,7 +446,8 @@
 
 ;This is the same as remove-components.  Probably it should not be.
 ;   Change filter to something that removes just the first one?
-(define (remove-component e c?)
+(define/contract (remove-component e c?)
+  (-> entity? procedure? entity?)
   (match-define (entity components) e)
 
   ;Just a quick little side-effect here,
