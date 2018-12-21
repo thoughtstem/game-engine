@@ -30,7 +30,7 @@
 (define (change-direction-by-random min max)
   (lambda (g e)
     (define d (get-direction e))
-    (update-entity e direction? (direction (+ d (random min (add1 max)))))))
+    (update-entity e direction? (direction (modulo (+ d (random min (add1 max))) 360)))))
 
 (define (random-direction min max)
   (lambda (g e)
