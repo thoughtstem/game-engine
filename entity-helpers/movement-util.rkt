@@ -47,12 +47,12 @@
 
 
 (define alignment? (or/c 'left        'right        'top         'bottom
-              'top-left    'top-right    'bottom-left 'bottom-right
-              'left-center 'right-center 'top-center  'bottom-center
-              'center))
+                         'top-left    'top-right    'bottom-left 'bottom-right
+                         'left-center 'right-center 'top-center  'bottom-center
+                         'center))
 
-(define/contract (go-to-pos pos #:offset [offset 0])
-  (->* (alignment?) (#:offset number?) procedure?) 
+(define/contract (go-to-pos pos #:offset [offset 0] #:posn-offset (posn-offset (posn 0 0)))
+  (->* (alignment?) (#:offset number? #:posn-offset posn?) procedure?) 
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
@@ -60,7 +60,10 @@
     (define pos-x (posn-x p))
     (define pos-y (posn-y p))
     (update-entity e posn?
-                   (cond
+
+                   (posn-add
+                    posn-offset
+                    (cond
                      [(eq? pos 'left)         (posn offset           pos-y)]
                      [(eq? pos 'right)        (posn (+ WIDTH offset) pos-y)]
                      [(eq? pos 'top)          (posn pos-x            offset)]
@@ -73,10 +76,11 @@
                      [(eq? pos 'right-center) (posn (+ WIDTH offset) (/ HEIGHT 2))]
                      [(eq? pos 'top-center)   (posn (/ WIDTH 2)      offset)]
                      [(eq? pos 'bottom-center)(posn (/ WIDTH 2)      (+ HEIGHT offset))]
-                     [(eq? pos 'center)       (posn (/ WIDTH 2)      (/ HEIGHT 2))]))))
+                     [(eq? pos 'center)       (posn (/ WIDTH 2)      (/ HEIGHT 2))]))
+                   )))
                          
-(define/contract (go-to-pos-inside pos #:offset [offset 0])
-  (->* ((and/c alignment? (not/c 'center))) (#:offset number?) procedure?) 
+(define/contract (go-to-pos-inside pos #:offset [offset 0] #:posn-offset (posn-offset (posn 0 0)))
+  (->* ((and/c alignment? (not/c 'center))) (#:offset number? #:posn-offset posn?) procedure?) 
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
@@ -90,19 +94,21 @@
     (define pos-x (posn-x p))
     (define pos-y (posn-y p))
     (update-entity e posn?
-                   (cond
-                     [(eq? pos 'left)         (posn (+ offset hw)           pos-y)]
-                     [(eq? pos 'right)        (posn (+ (- WIDTH hw) offset) pos-y)]
-                     [(eq? pos 'top)          (posn pos-x                   (+ offset hh))]
-                     [(eq? pos 'bottom)       (posn pos-x                   (+ (- HEIGHT hh) offset))]
-                     [(eq? pos 'top-left)     (posn hw                      hh)]
-                     [(eq? pos 'top-right)    (posn (- WIDTH hw)            hh)]
-                     [(eq? pos 'bottom-left)  (posn hw                      (- HEIGHT hh))]
-                     [(eq? pos 'bottom-right) (posn (- WIDTH hw)            (- HEIGHT hh))]
-                     [(eq? pos 'left-center)  (posn (+ hw offset)           (/ HEIGHT 2))]
-                     [(eq? pos 'right-center) (posn (+ (- WIDTH hw) offset) (/ HEIGHT 2))]
-                     [(eq? pos 'top-center)   (posn (/ WIDTH 2)             (+ hh offset))]
-                     [(eq? pos 'bottom-center)(posn (/ WIDTH 2)             (+ (- HEIGHT hh) offset))]))))    
+                   (posn-add
+                    posn-offset
+                    (cond
+                      [(eq? pos 'left)         (posn (+ offset hw)           pos-y)]
+                      [(eq? pos 'right)        (posn (+ (- WIDTH hw) offset) pos-y)]
+                      [(eq? pos 'top)          (posn pos-x                   (+ offset hh))]
+                      [(eq? pos 'bottom)       (posn pos-x                   (+ (- HEIGHT hh) offset))]
+                      [(eq? pos 'top-left)     (posn hw                      hh)]
+                      [(eq? pos 'top-right)    (posn (- WIDTH hw)            hh)]
+                      [(eq? pos 'bottom-left)  (posn hw                      (- HEIGHT hh))]
+                      [(eq? pos 'bottom-right) (posn (- WIDTH hw)            (- HEIGHT hh))]
+                      [(eq? pos 'left-center)  (posn (+ hw offset)           (/ HEIGHT 2))]
+                      [(eq? pos 'right-center) (posn (+ (- WIDTH hw) offset) (/ HEIGHT 2))]
+                      [(eq? pos 'top-center)   (posn (/ WIDTH 2)             (+ hh offset))]
+                      [(eq? pos 'bottom-center)(posn (/ WIDTH 2)             (+ (- HEIGHT hh) offset))])))))    
 
 (define (respawn edge #:offset [offset 0])
   (lambda (g e)
