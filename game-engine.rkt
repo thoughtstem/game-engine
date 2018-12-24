@@ -48,6 +48,7 @@
  (all-from-out "entity-helpers/mouse-util.rkt")
  (all-from-out "ai.rkt")
  (all-from-out "entity-helpers/time-manager.rkt")
+ (all-from-out "entity-helpers/particles.rkt")
 
 
  #%module-begin)
@@ -101,4 +102,5 @@
 (require "entity-helpers/mouse-util.rkt")
 (require "ai.rkt")
 (require "entity-helpers/time-manager.rkt")
+(require "entity-helpers/particles.rkt")
 
