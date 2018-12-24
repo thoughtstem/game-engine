@@ -35,6 +35,8 @@
 
 (provide new-component
          new-game-function
+         find-entity-by-id
+         clone-entity
          (struct-out entity)
          (struct-out entity-name)
          
@@ -271,7 +273,7 @@
 
 
 
-(struct entity [components] #:transparent)
+(struct entity [id components] #:transparent)
 
 (struct entity-name (string) #:transparent)
 
@@ -389,7 +391,7 @@
 ; the end of your predicate.
 (define/contract (update-entity e component-pred f)
   (-> entity? (-> any/c boolean?) any/c entity?)
-  (match-define (entity components) e)
+  (match-define (entity id components) e)
 
   (and
    (eq? component-pred posn?)
@@ -409,7 +411,7 @@
      (procedure? f)
      (set! f (compose set-has-changed f)))
 
-  (entity (update-component components component-pred f)))
+  (set-components e (update-component components component-pred f)))
 
 
 (define (update-chipmunk-posn! e p)
@@ -435,35 +437,36 @@
   (filter component-pred (entity-components e)))
 
 (define (add-component e c)
-  (match-define (entity components) e)
-  (entity (append components
+  (match-define (entity id components) e)
+  (set-components e (append components
                   (list  c))))
 
-#;(define (add-component-at-end e c)
-  (match-define (entity components) e)
-  (entity (append components
-                  (list  c))))
+
+(define (set-components e cs)
+  (struct-copy entity
+               e
+               [components cs]))
 
 ;This is the same as remove-components.  Probably it should not be.
 ;   Change filter to something that removes just the first one?
 (define/contract (remove-component e c?)
   (-> entity? procedure? entity?)
-  (match-define (entity components) e)
+  (match-define (entity id components) e)
 
   ;Just a quick little side-effect here,
   ;  Nobody will notice...
   (maybe-clean-up-physical-collider! e c?)
   
-  (entity (filter (lambda (c) (not (c? c))) components)))
+  (set-components e (filter (lambda (c) (not (c? c))) components)))
 
 (define (remove-components e c?)
-  (match-define (entity components) e)
+  (match-define (entity id components) e)
 
   ;Just a quick little side-effect here,
   ;  Nobody will notice...
   (maybe-clean-up-physical-collider! e c?)
   
-  (entity (filter (lambda (c) (not (c? c))) components)))
+  (set-components e (filter (lambda (c) (not (c? c))) components)))
 
   
 (define (replace-entity-in-list updated-entity current-entities)
@@ -501,8 +504,15 @@
 
 
 
+(define ENTITY-ID-COUNTER 0)
+
+(define (next-entity-id)
+  (set! ENTITY-ID-COUNTER (add1 ENTITY-ID-COUNTER))
+  ENTITY-ID-COUNTER)
+
 (define (basic-entity p s)
-  (entity (list (id #f)
+  (entity (next-entity-id)
+          (list (id #f)
                 p
                 (image->bb (render s))
                 s)))
@@ -875,12 +885,43 @@
   (set-game-mouse-prev-input! g (game-mouse-input g)) 
   g)
 
+
+(define entity-map:id->index (hash))
+(define last-game-entity-vector (vector))
+
+(define (update-map-from-game g)
+  (define es (game-entities g))
+  
+  (apply hash
+         (flatten
+          (for/list ([e es]
+                     [i (range (length es))])
+            (list (entity-id e) i     ;New way
+                  (get-id e)    i     ;Old way - Remove this soon
+                  )))))
+
+(define (clone-entity e)
+  (entity (next-entity-id)
+          (entity-components e)))
+
 (define (find-entity-by-id i g)
-  (findf (λ(e) (eq? i (get-id e)))
-         (game-entities g)))
+  (define index (hash-ref entity-map:id->index i #f))
+  
+  (and index
+       (vector-ref last-game-entity-vector
+                   index))
+
+  ;Old, slow implementation
+  #;(findf (λ(e) (eq? i (get-id e)))
+           (game-entities g))
+  )
 
 (define (current-version-of e g)
-  (find-entity-by-id (get-id e) g))
+  (find-entity-by-id (entity-id e) g)
+
+  ;Old, slow implementation
+  #;(find-entity-by-id (get-id e) g)
+  )
 
 
 
@@ -922,8 +963,16 @@
 
 (define (tick-once g)
   (define new-g (uniqify-ids g))
-    
-  (set! last-game-snapshot new-g)
+
+  (define did-change?
+    (not (eq? new-g last-game-snapshot)))
+
+  (and did-change?
+       (begin
+         (set! last-game-snapshot new-g)
+         (set! last-game-entity-vector
+               (list->vector (game-entities new-g)))
+         (set! entity-map:id->index (update-map-from-game new-g))))
     
   (define new-game (~> new-g
                        ;Just a note for the future.  This is not slow.  Do not move to a different thread in a misguided effort to optimize...

@@ -38,6 +38,7 @@
        (get-storage name e))
       #f))
 
+
 (define (entity-with-storage key val g)
   (findf
    (λ(e)
@@ -45,6 +46,8 @@
       (get-storage key e)
       (equal? val (get-storage-data key e))))
    (game-entities g)))
+
+
 
 (define (set-storage-named key-name data)
   (lambda (g e)

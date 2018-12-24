@@ -176,7 +176,8 @@
          y-offset
          color
          )
-  #:transparent)
+  #:transparent
+  #:mutable)
 
 
 
@@ -233,44 +234,47 @@
 (define/contract (set-x-offset v as)
   (-> number? animated-sprite? animated-sprite?)
   
-  (struct-copy animated-sprite as
-               [x-offset v]))
+  (set-animated-sprite-x-offset! as v)
+  as)
 
 (define/contract (set-y-offset v as)
   (-> number? animated-sprite? animated-sprite?)
   
-  (struct-copy animated-sprite as
-               [y-offset v]))
+  (set-animated-sprite-y-offset! as v)
+  as)
 
 
 
 (define/contract (set-x-scale s as)
   (-> number? animated-sprite? animated-sprite?)
-  
-  (struct-copy animated-sprite as
-               [x-scale (* 1.0 s)]))
+
+  (set-animated-sprite-x-scale! as (* 1.0 s))
+  as)
 
 (define/contract (set-y-scale s as)
   (-> number? animated-sprite? animated-sprite?)
   
-  (struct-copy animated-sprite as
-               [y-scale (* 1.0 s)]))
+  (set-animated-sprite-y-scale! as (* 1.0 s))
+  as)
 
 (define/contract (set-scale-xy v as)
   (-> number? animated-sprite? animated-sprite?)
   
   (~> as
       (set-x-scale v _)
-      (set-y-scale v _)))
+      (set-y-scale v _))
+  as)
 
 (define (scale-xy v as)
-  (struct-copy animated-sprite as
-               [x-scale (* 1.0 v (animated-sprite-x-scale as))]
-               [y-scale (* 1.0 v (animated-sprite-y-scale as))]))
+
+  (set-animated-sprite-x-scale! as (* 1.0 v (animated-sprite-x-scale as)))
+  (set-animated-sprite-y-scale! as (* 1.0 v (animated-sprite-y-scale as)))
+  
+  as)
 
 (define (set-angle v as)
-  (struct-copy animated-sprite as
-               [rotation (* 1.0 (degrees->radians v))]))
+  (set-animated-sprite-rotation! as (* 1.0 (degrees->radians v)))
+  as)
 
 
 (define/contract (new-sprite costumes (rate 1)
