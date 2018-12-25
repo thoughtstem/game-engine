@@ -124,7 +124,7 @@
   (define es     (game-entities g))
   (define new-es (collect-spawn-once es))
 
-  (and (not (empty? new-es))
+  #;(and (not (empty? new-es))
        (displayln (~a "Spawning: " (map get-name new-es))))
   
   (define all    (append #;new-es

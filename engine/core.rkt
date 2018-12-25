@@ -30,7 +30,8 @@
          )
 
 ;For contracts
-(provide game-has-entity-named/c)
+(provide game-has-entity-named/c
+         game-has-property/c)
 
 
 (provide new-component
@@ -160,22 +161,37 @@
 ;For use in contracts
 
 (define (game-has-entity-named/c n)
+  (game-has-property/c
+   (curry entity-with-name n))) ;TODO: Make a better macro, so the entity name shows up in the error message.
+
+
+(define-syntax-rule (game-has-property/c p?)
   (flat-contract-with-explanation
    (λ (g)
      (if (and (game? g)
-              (entity-with-name n g))
+              (p? g))
          #t
          (λ(blame)
            (raise-blame-error blame g
                               (list 'expected:
-                                    (~a "a game containing an entity named " n)
+                                    (~a "a game containing an entity with property " 'p?)
                                     'given:
-                                    (~a "given a game with entities: " (map get-name (game-entities g))))
+                                    (~a "given a game with " (length (game-entities g)) " entities: "
+                                        (map get-name (game-entities g))
+                                        "\n\n"
+                                        (map print-entity (game-entities g))
+                                        ))
                               )
            ) ))))
 
-
-
+(define (print-entity e)
+  (define (print-posn p)
+    (~a "(posn " (round (posn-x p)) " " (round (posn-y p)) ")"))
+  
+  (~a (get-name e)
+      "["
+      "posn=" (print-posn (get-posn e))
+      "]"))
 
 (define-syntax-rule (handler g e body)
   (lambda (g e)
