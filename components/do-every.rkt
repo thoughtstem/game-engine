@@ -6,7 +6,8 @@
 (provide (rename-out (make-do-every do-every)
                      (do-every      struct-do-every)
                      (do-every-rule struct-do-every-rule)
-                     (do-every-func struct-do-every-func))
+                     (do-every-func struct-do-every-func)
+                     (do-every-speed struct-do-every-speed))
          do-every?)
 
 (component do-every (accum speed rule func))

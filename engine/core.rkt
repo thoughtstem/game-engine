@@ -455,7 +455,9 @@
 (define (add-component e c)
   (match-define (entity id components) e)
   (set-components e (append components
-                  (list  c))))
+                  (list  c)))
+
+  )
 
 
 (define (set-components e cs)
