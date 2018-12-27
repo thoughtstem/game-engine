@@ -659,7 +659,7 @@
   (lambda (g e)
     (define m (tracking-entity->total-tiles (game->tracking-entity g)))
     (if (eq? max #f)
-        (update-entity e active-on-bg? (make-active-on-bg (random min (add1 m))))
+        (update-entity e active-on-bg? (make-active-on-bg (random min m)))
         (update-entity e active-on-bg? (make-active-on-bg (random min (add1 max)))))))
 
 (define (set-active-on . tiles)
