@@ -101,6 +101,7 @@
                          #:drop-sound     [drop-sound    #f]
                          #:backpack-sound [backpack-sound #f]
                          #:max-items      [max-items    10]
+                         #:pickup-rule    [rule (λ (g e) #t)]
                          #:components     [c #f]
                                           . custom-components)
 
@@ -132,7 +133,8 @@
   
   (define (storable-item item-name key)
     (on-key key #:rule (and/r storable-items-nearby?
-                              (not/r backpack-is-full?)) (if pickup-sound
+                              (not/r backpack-is-full?)
+                              rule) (if pickup-sound
                                                   (do-many (store-nearby-item item-name)
                                                            (open-dialog backpack-entity)
                                                            (play-sound pickup-sound))
@@ -155,7 +157,8 @@
           (if storable-item-list
               (map (curryr storable-item store-key) storable-item-list)
               (list (on-key store-key #:rule (and/r storable-items-nearby?
-                                                    (not/r backpack-is-full?))
+                                                    (not/r backpack-is-full?)
+                                                    rule)
                             (if pickup-sound
                                 (do-many (store-nearby-item)
                                          (open-dialog backpack-entity)
