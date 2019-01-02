@@ -237,7 +237,7 @@
     (define items (get-items (get-entity "player" g)))
     (define entity-list (map item-entity items))
     (define name-list (map get-name entity-list))
-    (member name name-list)))
+    (not (not (member name name-list)))))
 
 (define/contract (remove-item-by-name name [amount 1])
   (->* (string?) (number?) procedure?)

@@ -7,6 +7,8 @@
 ;(displayln "LOADING ON START")
 
 (provide (rename-out (make-on-start on-start))
+         on-start-rule
+         on-start-func
          on-start?)
 
 (struct on-start (rule func))
