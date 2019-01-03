@@ -26,9 +26,11 @@
 (require "../components/spawn-once.rkt")
 (require "../components/spawn-dialog.rkt")
 (require "./rgb-hsb.rkt")
+(require "../components/after-time.rkt")
 ;(require "../ai.rkt")
 
-(require posn)
+(require posn
+         threading)
 
 (define (change-sprite sprite-or-func)
   (lambda (g e)
@@ -45,10 +47,19 @@
     (update-entity e animated-sprite?
                    (curry set-scale-xy amount))))
 
-(define (scale-sprite amount)
-  (lambda (g e)  
-     (update-entity e animated-sprite?
-                    (curry scale-xy amount))))
+(define (scale-sprite amount #:for [d #f])
+  (lambda (g e)
+    (define original (struct-copy animated-sprite (get-component e animated-sprite?)))
+    
+    (define (revert-back g e)
+      (update-entity e animated-sprite? original))
+    
+    (~> e
+        (update-entity _ animated-sprite?
+                   (curry scale-xy amount))
+        (add-components _ (if d
+                              (after-time d revert-back)
+                              #f)))))
 
 (define (random-dec min max)
   (define new-min (exact-round (* min 100)))

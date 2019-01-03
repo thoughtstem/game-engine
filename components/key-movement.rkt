@@ -1,11 +1,14 @@
 #lang racket
 
 (require "../game-entities.rkt")
-(require posn)
+(require "./after-time.rkt")
+(require posn
+         threading)
 
 (provide (rename-out (make-key-movement key-movement))
          key-movement?
          change-speed-by
+         multiply-speed-by
          get-speed
          (struct-out on-no-key-movement)
          (struct-out on-key-movement)
@@ -48,12 +51,35 @@
         (+ upVel downVel)))
 
 ;Not clear either...  Move or simplify with better API
-(define (change-speed-by n)
+(define (change-speed-by n #:for [d #f])
   (lambda (g e)
+    (define original (get-component e key-movement?))
+    (define (revert-speed g e)
+      (update-entity e key-movement? original))
     (define increase (lambda (k)
                        (struct-copy key-movement k
                                     [speed (+ (key-movement-speed k) n)])))
-    (update-entity e key-movement? increase)))
+    (~> e
+        (update-entity _ key-movement? increase)
+        (add-components _ (if d
+                              (after-time d revert-speed)
+                              #f)))
+            ))
+
+(define (multiply-speed-by n #:for [d #f])
+  (lambda (g e)
+    (define original (get-component e key-movement?))
+    (define (revert-speed g e)
+      (update-entity e key-movement? original))
+    (define increase (lambda (k)
+                       (struct-copy key-movement k
+                                    [speed (* (key-movement-speed k) n)])))
+    (~> e
+        (update-entity _ key-movement? increase)
+        (add-components _ (if d
+                              (after-time d revert-speed)
+                              #f)))
+            ))
 
 (define (get-speed e)
   (key-movement-speed (get-component e key-movement?)))
