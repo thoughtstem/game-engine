@@ -15,11 +15,14 @@
          spawn-once-speed
          spawn-once-accum
          spawn-once-next
+         spawn-once-inc
          update-what-will-spawn
          spawn-once?
+         spawn-once-ready?
+         spawn-once-almost-ready?
          (rename-out [make-spawn-once spawn-once]))
 
-(struct spawn-once (spawn speed accum next relative?))
+(struct spawn-once (spawn speed accum next relative?) #:transparent)
 
 (define (make-spawn-once spawn #:relative? [relative? #t])
   (spawn-once spawn 1 0 #f relative?))
@@ -31,6 +34,10 @@
 (define (spawn-once-ready? s)
   (>= (spawn-once-accum s)
       (spawn-once-speed s)))
+
+(define (spawn-once-almost-ready? s)
+  (= (spawn-once-accum s)
+     (sub1 (spawn-once-speed s))))
 
 (define (spawn-once-reset s)
   (struct-copy spawn-once s

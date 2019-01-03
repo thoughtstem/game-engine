@@ -12,6 +12,7 @@
 
 (component do-every (accum speed rule func))
 
+
 (define (make-do-every ticks #:rule [rule (lambda (g e) #t)] func)
   (new-do-every 0 ticks rule func))
 
