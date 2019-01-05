@@ -202,7 +202,7 @@
               (animated-sprite-current-frame as)))
 
 (define (sprite-map f s)
-  (displayln "Mapping over a sprite.  Slow...  Don't do this at runtime.")
+  ;(displayln "Mapping over a sprite.  Slow...  Don't do this at runtime.")
   (define new-frames (vector-map (compose f fast-image-data) (animated-sprite-frames s)))
   
   (struct-copy animated-sprite s

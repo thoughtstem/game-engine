@@ -208,9 +208,11 @@
 
 
 (define rendering-mode
-  (if (on-white-chromebook)
+  'old-method
+  #;(if (on-white-chromebook)
       'old-method
-      'new-method))
+      'new-method)
+  )
 
 (define (get-gui #:width [w 480] #:height [h 360])
   (if (eq? rendering-mode 'new-method)
