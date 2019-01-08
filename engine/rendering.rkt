@@ -183,57 +183,19 @@
 
 
 
-;This part is bullshit.
-;  Mode lambda doesn't work on the white chromebooks we use in class
-;  So I'm going to make the rendering strategy use either mode-lambda or our old home rolled system
-;    depending on what kind of computer we're on...
-;  Gross.  But I do have a github issue open on mode-lambda and a racket mailing list post that
-;    I hope will make this crap unnecessary soon.
-
-(define (on-white-chromebook)
-   ;Check os.  Check `whoami` check number: 1.. 199
-
-  (and (system-type 'os)
-       (computer-number)
-       (> 300 (computer-number))))
-
-(define (computer-number)
-  (define s (with-output-to-string
-              (thunk (system "hostname"))))
-
-  (~> s
-      (string-replace _ "ts" "")
-      (string-replace _ "\n" "")
-      (string->number _)))
-
-
-(define rendering-mode
-  (if (on-white-chromebook)
-      'old-method
-      'new-method))
-
 (define (get-gui #:width [w 480] #:height [h 360])
-  (if (eq? rendering-mode 'new-method)
-      (make-gui #:start-fullscreen? #f
-                #:frame-style (list 'no-resize-border
-                                    ;'no-caption
-                                    )
-                #:mode gl:gui-mode
-                #:width w
-                #:height h)
-      (make-gui #:start-fullscreen? #f)))
+  (make-gui #:start-fullscreen? #f
+            #:frame-style (list 'no-resize-border
+                                ;'no-caption
+                                )
+            #:mode gl:gui-mode
+            #:width w
+            #:height h))
 
 (define (get-render render-tick)
-  (if (eq? rendering-mode 'old-method)
-
-      ;Ignores render-tick -- which is the mode-lambda rendering function
-      (and last-game-snapshot
-           (g/v (draw last-game-snapshot))) ;Old, slower drawing method.  For reference...
-
-      ;Uses render-tick -- as it should.
-      (if last-game-snapshot
+  (if last-game-snapshot
           (render-tick (game-entities last-game-snapshot))
-          (render-tick '()))))
+          (render-tick '())))
 
 
 ;End bullshit
