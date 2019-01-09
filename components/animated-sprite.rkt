@@ -104,6 +104,11 @@
          
          get-x-scale
          get-y-scale
+
+         get-x-offset
+         get-y-offset
+
+         get-rotation
          
          set-x-offset
          set-y-offset
@@ -229,6 +234,15 @@
 
 (define (get-y-scale as)
   (animated-sprite-y-scale as))
+
+(define (get-x-offset as)
+  (animated-sprite-x-offset as))
+
+(define (get-y-offset as)
+  (animated-sprite-y-offset as))
+
+(define (get-rotation as)
+  (radians->degrees (animated-sprite-rotation as)))
  
 
 (define/contract (set-x-offset v as)

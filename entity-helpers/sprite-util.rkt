@@ -3,6 +3,7 @@
 (provide change-sprite)
 (provide set-size)
 (provide scale-sprite)
+(provide rotate-sprite)
 (provide random-dec)
 (provide random-size)
 (provide set-color)
@@ -49,14 +50,56 @@
 
 (define (scale-sprite amount #:for [d #f])
   (lambda (g e)
-    (define original (struct-copy animated-sprite (get-component e animated-sprite?)))
+    (define all-sprites (get-components e animated-sprite?))
+    (define original-sprites (map (λ (as) (struct-copy animated-sprite as)) all-sprites))
     
     (define (revert-back g e)
-      (update-entity e animated-sprite? original))
+      (~> e
+          (remove-components _ animated-sprite?)
+          (add-components _ original-sprites))
+      )
+
+    (define (scale-a-sprite as)
+      (define xs (get-x-scale as))
+      (define ys (get-y-scale as))
+      (define xo (get-x-offset as))
+      (define yo (get-y-offset as))
+      (struct-copy animated-sprite as
+                   [x-scale (* xs amount)]
+                   [y-scale (* ys amount)]
+                   [x-offset (* xo amount)]
+                   [y-offset (* yo amount)]))
+
+    (define new-sprites (map scale-a-sprite original-sprites))
     
     (~> e
-        (update-entity _ animated-sprite?
-                   (curry scale-xy amount))
+        (remove-components _ animated-sprite?)
+        (add-components _ new-sprites)
+        (add-components _ (if d
+                              (after-time d revert-back)
+                              #f)))))
+
+(define (rotate-sprite amount #:for [d #f])
+  (lambda (g e)
+    (define all-sprites (get-components e animated-sprite?))
+    (define original-sprites (map (λ (as) (struct-copy animated-sprite as)) all-sprites))
+    
+    (define (revert-back g e)
+      (~> e
+          (remove-components _ animated-sprite?)
+          (add-components _ original-sprites))
+      )
+
+    (define (rotate-a-sprite as)
+      (define rot (get-rotation as))
+      (struct-copy animated-sprite as
+                   [rotation (degrees->radians (+ rot amount))]))
+
+    (define new-sprites (map rotate-a-sprite original-sprites))
+    
+    (~> e
+        (remove-components _ animated-sprite?)
+        (add-components _ new-sprites)
         (add-components _ (if d
                               (after-time d revert-back)
                               #f)))))

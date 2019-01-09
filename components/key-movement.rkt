@@ -18,6 +18,7 @@
          stop-movement
          get-current-velocity
          get-key-mode
+         remove-key-movement
          )
 
 (struct key-movement (speed mode rule?) #:transparent)
@@ -133,3 +134,6 @@
 (define (player-is-moving? g e)
   (define vel (get-current-velocity g (get-entity "player" g)))
   (not (equal? vel (posn 0 0))))
+
+(define (remove-key-movement g e)
+  (remove-component e key-movement?))

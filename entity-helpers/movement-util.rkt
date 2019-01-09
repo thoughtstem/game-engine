@@ -5,6 +5,7 @@
          go-to
          go-to-pos
          go-to-pos-inside
+         go-to-entity
          respawn
          move-with-speed
          move-random-speed
@@ -109,6 +110,13 @@
                       [(eq? pos 'right-center) (posn (+ (- WIDTH hw) offset) (/ HEIGHT 2))]
                       [(eq? pos 'top-center)   (posn (/ WIDTH 2)             (+ hh offset))]
                       [(eq? pos 'bottom-center)(posn (/ WIDTH 2)             (+ (- HEIGHT hh) offset))])))))    
+
+(define (go-to-entity name #:offset [offset (posn 0 0)])
+  (lambda (g e)
+    (define target? (get-entity name g))
+    (if target?
+        (update-entity e posn? (posn-add (get-component target? posn?) offset))
+        e)))
 
 (define (respawn edge #:offset [offset 0])
   (lambda (g e)
