@@ -11,15 +11,12 @@
          racket/fixnum
          racket/flonum
          lux
-         lux/chaos/gui
+         
          lux/chaos/gui/val
-         (prefix-in lux: lux/chaos/gui/key)
-         (prefix-in lux: lux/chaos/gui/mouse)
 
          (prefix-in ml: mode-lambda)
          (prefix-in ml: mode-lambda/static)
          (prefix-in gl: mode-lambda/backend/gl)
-         (prefix-in ml: mode-lambda/text/static)
          (prefix-in ml: mode-lambda/text/runtime)
          posn)
 
@@ -145,6 +142,10 @@
      (get-render render-tick))
    
    (define (word-event w e)
+     (define lux:key-event? (dynamic-require 'lux/chaos/gui/key 'key-event?))
+     (define lux:mouse-event-xy (dynamic-require 'lux/chaos/gui/mouse 'mouse-event-xy))
+     (define lux:mouse-event? (dynamic-require 'lux/chaos/gui/mouse 'mouse-event?))
+     
      (match-define (demo  state render-tick) w)
      (define closed? #f)
      (cond
@@ -184,6 +185,7 @@
 
 
 (define (get-gui #:width [w 480] #:height [h 360])
+  (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
   (make-gui #:start-fullscreen? #f
             #:frame-style (list 'no-resize-border
                                 ;'no-caption
@@ -335,6 +337,8 @@
 
 
 (define (recompile!)
+  (define ml:load-font! (dynamic-require 'mode-lambda/text/static 'load-font!))
+  
   (and should-recompile?
        (set! should-recompile? #f)
        (let ([sd2 (ml:make-sprite-db)])
