@@ -68,7 +68,7 @@
     ((change-sprite (new-sprite count-image)) g e)))
 
 (define/contract (draw-progress-bar amount #:max [max-val 50])
-  (-> exact-nonnegative-integer? #:max exact-nonnegative-integer? image?)
+  (->* (exact-nonnegative-integer?) (#:max exact-nonnegative-integer?) image?)
   (define progress-bar  (if (= max-val 0)
                                empty-image
                                (pad (rectangle (* amount (/ 50 max-val)) 10 "solid" "lightblue")4 4)))
@@ -82,14 +82,45 @@
                      (overlay
                       (rectangle (+ 4 (image-width max-progress-bar)) (+ 4 (image-height max-progress-bar)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
                       (rectangle (+ 8 (image-width max-progress-bar)) (+ 8 (image-height max-progress-bar)) "solid"  (make-color 20 20 20 150))))))
-
+  
+(define (make-progress-bar amount #:max [max-val 50])
+  (define progress-bar-slice (if (= max-val 0)
+                                 empty-image
+                                 (rectangle 1 10 'solid 'lightblue)))
+  (define bg-image (square 1 'solid 'white))
+  (precompile! bg-image progress-bar-slice)
+  (define bar-width (* amount (/ 50 max-val)))
+  (define bar-sprite (~> progress-bar-slice
+                         (new-sprite _ #:animate #f)
+                         (set-x-scale bar-width _)
+                         (set-x-offset (/ (- bar-width 50) 2) _)
+                         ))
+  (define border-sprite (~> bg-image
+                        (new-sprite _ #:animate #f)
+                        (set-x-scale 54 _)
+                        (set-y-scale 14 _)))
+  ; Not sure why, but the top of the list is added last.
+  (list bar-sprite
+        border-sprite
+        )
+  )
+  
 (define (update-progress-bar #:max [max-val 50])
   (lambda (g e)
+    (displayln (~a "ANIMATED SPRITES: " (length (get-components e animated-sprite?))))
+    (define current-bar-sprite
+      (last (get-components e animated-sprite?)))
     (define count (get-counter e))
-    (define progress-bar (draw-progress-bar count #:max max-val))
+    (define bar-width (* count (/ 50 max-val)))
+    (define new-bar-sprite (~> current-bar-sprite
+                               (set-x-scale bar-width _)
+                               (set-x-offset (/ (- bar-width 50) 2) _)
+                               ))
     (if (= max-val 0)
         e
-        ((change-sprite (new-sprite progress-bar)) g e))))
+        (update-entity e
+                       (is-component? current-bar-sprite)
+                       new-bar-sprite))))
 
 (define (change-progress-by amount #:min [min-val 0] #:max [max-val 50])
   (lambda (g e)
@@ -113,15 +144,27 @@
     (define progress-bar (get-entity progress-entity-name g))
     (and progress-bar
          (>= (get-counter progress-bar) build-time)))
+
+  (define bg-image (square 1 'solid (make-color 20 20 20 150)))
+  
+  (precompile! bg-image)
+  
+  (define bg-sprite (~> bg-image
+                        (new-sprite _ #:animate #f)
+                        (set-x-scale 58 _)
+                        (set-y-scale 18 _)))
   
   (define progress-counter
-    (sprite->entity #;(draw-dialog "Progress: 0") (if (<= build-time 0)
-                                                      empty-image
-                                                      (draw-progress-bar 0 #:max build-time))
+    (sprite->entity (if (<= build-time 0)
+                        empty-image
+                        bg-sprite)
                     #:position   (posn 0 0)
                     #:name       progress-entity-name
                     #:components (static)
                                  (hidden)
+                                 (if (<= build-time 0)
+                                     #f
+                                     (make-progress-bar 0 #:max build-time))
                                  (counter 0)
                                  (on-start show)
                                  (do-every 10 (change-progress-by 1 #:max build-time))
@@ -168,16 +211,28 @@
     (define progress-bar (get-entity progress-entity-name g))
     (and progress-bar
          (>= (get-counter progress-bar) build-time)))
+
+  (define bg-image (square 1 'solid (make-color 20 20 20 150)))
+  
+  (precompile! bg-image)
+  
+  (define bg-sprite (~> bg-image
+                        (new-sprite _ #:animate #f)
+                        (set-x-scale 58 _)
+                        (set-y-scale 18 _)))
   
   (define progress-counter
-    (sprite->entity #;(draw-dialog "Progress: 0") (if (<= build-time 0)
-                                                      empty-image
-                                                      (draw-progress-bar 0 #:max build-time))
+    (sprite->entity (if (<= build-time 0)
+                        empty-image
+                        bg-sprite)
                     #:position   (posn 0 0)
                     #:name       progress-entity-name
                     #:components (static)
                                  (hidden)
                                  (counter 0)
+                                 (if (<= build-time 0)
+                                     #f
+                                     (make-progress-bar 0 #:max build-time))
                                  (on-start show)
                                  (do-every 10 (change-progress-by 1 #:max build-time))
                                  (on-rule (λ (g e) (or (> (get-counter e) build-time)
@@ -194,7 +249,7 @@
           ((spawn updated-to-spawn) g e2)
           e2)))
   (list
-   (precompiler (map (λ (t) (draw-progress-bar t #:max build-time)) (range 0 (add1 build-time))))
+   ;(precompiler (map (λ (t) (draw-progress-bar t #:max build-time)) (range 0 (add1 build-time))))
    (on-key 'enter
            #:rule (and/r rule
                          (λ (g e)(get-entity "crafting list" g))
