@@ -5,8 +5,7 @@
 (require 2htdp/image)
 
 (require posn)
-(provide counter?
-         counter-count
+(provide (except-out (struct-out counter) counter)
          (rename-out [make-counter counter])
          set-counter
          get-counter

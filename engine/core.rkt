@@ -135,7 +135,8 @@
          component
          component?
          component-eq?
-         component-id)
+         component-id
+         component-or-system?)
 
 (require posn)
 (require 2htdp/image)
@@ -224,6 +225,9 @@
   (not (not
         (and (struct? c)
              (component-id c)))))
+
+(define component-or-system?
+  (or/c component? (listof component?)))
 
 (require (for-syntax racket))
 (define-syntax (component stx)
