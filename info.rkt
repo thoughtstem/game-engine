@@ -6,6 +6,7 @@
 (define scribblings '(("game-engine.scrbl" ())))
 
 (define deps '("threading"
+               "memoize"
                "mode-lambda"
                "drracket"
                "htdp-lib"
