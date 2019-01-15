@@ -25,7 +25,7 @@
          #:particle-time-to-live (ttl 100)
          #:system-time-to-live (sttl 10))
 
-  (precompile! green-star)
+  (precompile! sprite)
   
   (define particle 
     (sprite->entity sprite
