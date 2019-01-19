@@ -26,7 +26,11 @@
          get-mouse-pos
          
          tick
-         
+
+         ui?
+         not-ui?
+         tops?
+         not-tops?
          )
 
 ;For contracts
@@ -797,8 +801,15 @@
     (and ((has-component? layer?) e)
          (eq? (get-layer e) "ui")))
 
-  (define (not-ui? e)
-    (not (ui? e)))
+(define (not-ui? e)
+  (not (ui? e)))
+
+(define (tops? e)  ; for treetops and rooftops
+    (and (get-component e layer?)
+         (eq? (get-layer e) "tops")))
+
+(define (not-tops? e)
+  (not (tops? e)))
 
 (define #;/contract (draw g)
   #;(-> game? image?)

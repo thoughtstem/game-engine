@@ -26,16 +26,18 @@
   (define offset-pos (lock-to-offset c))
   (define new-posn (posn (+ (posn-x target-pos) (posn-x offset-pos))
                          (+ (posn-y target-pos) (posn-y offset-pos))))
-  (update-entity e posn? new-posn))
+  (if target-e
+      (update-entity e posn? new-posn)
+      e))
 
 (new-component lock-to?
                update-lock-to)
 
-(define (other-entity-locked-to? s)
+(define (other-entity-locked-to? s #:filter [f identity])
   (λ(g e)
     (define other-lock-tos
       (filter identity
               (map (λ(e) (get-component e lock-to?))
-                   (game-entities g))))
+                   (filter f (game-entities g)))))
 
     (member s (map lock-to-name other-lock-tos))  ))

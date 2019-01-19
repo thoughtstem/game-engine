@@ -381,13 +381,13 @@
 
 (define (animated-sprite->ml:sprite e as)
 
-  (define (ui? e)
-    (and (get-component e layer?)
-         (eq? (get-layer e) "ui")))
+  ;(define (ui? e)
+  ;  (and (get-component e layer?)
+  ;       (eq? (get-layer e) "ui")))
 
-  (define (tops? e)  ; for treetops and rooftops
-    (and (get-component e layer?)
-         (eq? (get-layer e) "tops")))
+  ;(define (tops? e)  ; for treetops and rooftops
+  ;  (and (get-component e layer?)
+  ;       (eq? (get-layer e) "tops")))
 
   (define layer (cond [(ui? e)   2]
                       [(tops? e) 1]

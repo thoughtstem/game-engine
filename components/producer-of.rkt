@@ -272,8 +272,12 @@
                            (eq? sel selection))
                          (λ (g e) (not (get-entity progress-entity-name g)))
                          near-player?
-                         (nearest-to-player? #:filter (has-component? on-key?))
-                         (not/r (other-entity-locked-to? "player")))
+                         (nearest-to-player? #:filter (and/c (has-component? on-key?)
+                                                             not-tops?
+                                                             not-ui?))
+                         (not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? on-key?)
+                                                                                  not-tops?
+                                                                                  not-ui?))))
            ;(do-many (spawn to-clone))
            (spawn progress-counter)
            )
