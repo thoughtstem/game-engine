@@ -9,10 +9,10 @@
                      (on-key-f struct-on-key-f))
          on-key?)
 
-(struct on-key (key rule? f))
+(component on-key (key rule? f))
 
 (define (make-on-key key #:rule [rule? (lambda (g e) #t)] f)
-  (on-key key rule? f))
+  (new-on-key key rule? f))
 
 (define (update-on-key g e c)
  (if (and (button-change-down? (on-key-key c) g)

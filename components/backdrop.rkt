@@ -227,6 +227,8 @@
 (require "./detect-edge.rkt")
 (require "./on-edge.rkt")
 (require "./on-rule.rkt")
+(require "./on-start.rkt")
+(require "./after-time.rkt")
 (require "../component-util.rkt")
 (require "./spawn-once.rkt")
 (require "../entity-helpers/sprite-util.rkt")
@@ -760,9 +762,13 @@
 
 (define  (spawn-if-dead-but-on-right-tile g tracking-entity es)
   (define to-spawn
-    (filter (and/c (curry should-be-shown? g)
-                   (not/c (curryr member es entity-eq?)))
-            (entity->tracked-entities tracking-entity)))
+    (map (curryr add-components
+                 (hidden)
+                 (after-time 1 show))
+         (filter (and/c (curry should-be-shown? g)
+                        (not/c (curryr member es entity-eq?)))
+                 (entity->tracked-entities tracking-entity)))
+    )
 
   ;(displayln "SPAAAAWN")
   ;(displayln (map get-name to-spawn))
@@ -836,7 +842,6 @@
 
 
 (define (backdrop-end-of-frame-for-real g)
-
   ;Current tracking entity
   (define old-tracking-entity (game->tracking-entity g))
 
@@ -849,7 +854,8 @@
 
 (define (backdrop-end-of-frame g)
   (if (or (not (game->tracking-entity g))
-          (not (get-entity "player" g)))
+          ;(not (get-entity "player" g))
+          )
       g
       (backdrop-end-of-frame-for-real g)))
 

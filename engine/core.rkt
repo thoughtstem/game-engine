@@ -26,7 +26,11 @@
          get-mouse-pos
          
          tick
-         
+
+         ui?
+         not-ui?
+         tops?
+         not-tops?
          )
 
 ;For contracts
@@ -135,7 +139,8 @@
          component
          component?
          component-eq?
-         component-id)
+         component-id
+         component-or-system?)
 
 (require posn)
 (require 2htdp/image)
@@ -224,6 +229,9 @@
   (not (not
         (and (struct? c)
              (component-id c)))))
+
+(define component-or-system?
+  (or/c component? (listof component?)))
 
 (require (for-syntax racket))
 (define-syntax (component stx)
@@ -793,8 +801,15 @@
     (and ((has-component? layer?) e)
          (eq? (get-layer e) "ui")))
 
-  (define (not-ui? e)
-    (not (ui? e)))
+(define (not-ui? e)
+  (not (ui? e)))
+
+(define (tops? e)  ; for treetops and rooftops
+    (and (get-component e layer?)
+         (eq? (get-layer e) "tops")))
+
+(define (not-tops? e)
+  (not (tops? e)))
 
 (define #;/contract (draw g)
   #;(-> game? image?)

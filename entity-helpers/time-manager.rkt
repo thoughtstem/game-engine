@@ -10,18 +10,22 @@
 (require "../game-entities.rkt"
          "../components/counter.rkt"
          "../components/every-tick.rkt"
+         "../components/on-start.rkt"
+         "./movement-util.rkt"
          2htdp/image
          posn)
 
-(define (time-manager-entity #:components c . cs)
-  (define components (flatten (cons c cs)))
-  
+(define (time-manager-entity #:components [c #f]
+                             . custom-components)
   (sprite->entity empty-image
                   #:name "time manager"
-                  #:position (posn 0 0)
+                  #:position   (posn 0 0)
                   #:components (counter 0)
+                               (layer "ui")
+                               (hidden)
+                               (on-start (go-to-pos 'center))
                                (every-tick (change-counter-by 1))
-                               components))
+                               (cons c custom-components)))
 
 (define (reached-game-count? num)
   (lambda (g e)
