@@ -4,8 +4,7 @@
 (require posn)
 
 (provide (rename-out [new-every-tick every-tick])
-         every-tick?
-         every-tick-func)
+         (except-out (struct-out every-tick) every-tick))
 
 (component every-tick (func))
 

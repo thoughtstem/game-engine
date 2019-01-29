@@ -4,13 +4,13 @@
 (require "../entity-helpers/movement-util.rkt")
 (require posn)
 
-;(provide (struct-out wrap-around))
-(provide (rename-out (make-wrap-around wrap-around)))
+(provide (except-out (struct-out wrap-around) wrap-around)
+         (rename-out (make-wrap-around wrap-around)))
 
-(struct wrap-around (mode))
+(component wrap-around (mode))
 
 (define (make-wrap-around [mode 'all-edges])
-  (wrap-around mode))
+  (new-wrap-around mode))
 
 (define (update-wrap-around g e c)
   (define WIDTH (game-width g))

@@ -7,8 +7,9 @@
                      (do-every      struct-do-every)
                      (do-every-rule struct-do-every-rule)
                      (do-every-func struct-do-every-func)
-                     (do-every-speed struct-do-every-speed))
-         do-every?)
+                     (do-every-speed struct-do-every-speed)
+                     )
+         (except-out (struct-out do-every) do-every))
 
 (component do-every (accum speed rule func))
 

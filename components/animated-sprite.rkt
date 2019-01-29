@@ -80,6 +80,7 @@
          animation-finished?
          reset-animation
          (struct-out animated-sprite)
+         sprite?
          animated-sprite-x-scale
          sheet->sprite
          row->sprite
@@ -184,6 +185,7 @@
   #:transparent
   #:mutable)
 
+(define sprite? (or/c image? animated-sprite?))
 
 
 (define/contract (image-animated-sprite? as)

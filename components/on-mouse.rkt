@@ -3,19 +3,19 @@
 (require "../game-entities.rkt")
 
 
-(provide (rename-out (make-on-mouse on-mouse))
-         on-mouse?
+(provide (except-out (struct-out on-mouse) on-mouse)
+         (rename-out (make-on-mouse on-mouse))
+         (except-out (struct-out on-mouse-hold) on-mouse-hold)
          (rename-out (make-on-mouse-hold on-mouse-hold))
-         on-mouse-hold?
          (rename-out (on-mouse      struct-on-mouse)
                      (on-mouse-rule? struct-on-mouse-rule)
                      (on-mouse-f struct-on-mouse-f))
          get-on-mouse-button)
 
-(struct on-mouse (button rule? f))
+(component on-mouse (button rule? f))
 
 (define (make-on-mouse button #:rule [rule? (lambda (g e) #t)] f)
-  (on-mouse button rule? f))
+  (new-on-mouse button rule? f))
 
 (define (update-on-mouse g e c)
  (if (and (mouse-button-change-down? (on-mouse-button c) g)
@@ -27,10 +27,10 @@
                update-on-mouse)
 
 ; ==== on-mouse-hold ====
-(struct on-mouse-hold (button rule? f))
+(component on-mouse-hold (button rule? f))
 
 (define (make-on-mouse-hold button #:rule [rule? (lambda (g e) #t)] f)
-  (on-mouse-hold button rule? f))
+  (new-on-mouse-hold button rule? f))
 
 (define (update-on-mouse-hold g e c)
  (if (and (mouse-button-down? (on-mouse-hold-button c) g)

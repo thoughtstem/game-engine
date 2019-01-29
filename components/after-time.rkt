@@ -4,12 +4,13 @@
 (require posn)
 
 (provide (rename-out (make-after-time after-time))
+         (except-out (struct-out after-time) after-time)
          do-after-time)
 
-(struct after-time (accum speed func))
+(component after-time (accum speed func))
 
 (define (make-after-time ticks func)
-  (after-time 0 ticks func))
+  (new-after-time 0 ticks func))
 
 (define (inc-after-time a)
   (struct-copy after-time a
@@ -29,4 +30,4 @@
 
 (define (do-after-time time f)
   (lambda (g e)
-    (add-component e (make-after-time time f))))
+    (add-component e (new-after-time time f))))

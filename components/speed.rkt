@@ -3,10 +3,8 @@
 (require "../game-entities.rkt")
 (require posn)
 
-(provide #;(struct-out speed)
+(provide (except-out (struct-out speed) speed)
          (rename-out [new-speed speed])
-         speed?
-         speed-spd
          set-speed
          get-ai-speed
          change-ai-speed-by
@@ -28,7 +26,7 @@
 (define (change-ai-speed-by inc)
   (lambda (g e)
     (define s (get-ai-speed e))
-    (update-entity e speed? (speed (+ s inc)))))
+    (update-entity e speed? (new-speed (+ s inc)))))
 
 (define (random-speed min max)
   (lambda (g e)

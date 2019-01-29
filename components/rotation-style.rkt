@@ -7,12 +7,13 @@
 (require 2htdp/image)
 (require threading)
 
-(provide (struct-out rotation-style)
+(provide (except-out (struct-out rotation-style) rotation-style)
+         (rename-out (new-rotation-style rotation-style))
          set-rotation-style
          horizontal-flip-sprite
          vertical-flip-sprite)
 
-(struct rotation-style (mode))
+(component rotation-style (mode))
 
 (define (switch-animations-if-necessary c e)
   (define mode (rotation-style-mode c))
@@ -54,7 +55,7 @@
   (lambda (g e)
     ;(displayln (~a "Current rotation-style: " (get-rotation-style e)))
     ;(displayln (~a "Attempt rotation-style change: " mode))
-    (update-entity e rotation-style? (rotation-style mode))))
+    (update-entity e rotation-style? (new-rotation-style mode))))
 
 (define (horizontal-flip-sprite)
   (lambda (g e)

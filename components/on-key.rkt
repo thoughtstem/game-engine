@@ -3,11 +3,11 @@
 (require "../game-entities.rkt")
 
 
-(provide (rename-out (make-on-key on-key)
-                     (on-key struct-on-key)
+(provide (except-out (struct-out on-key) on-key)
+         (rename-out (make-on-key on-key)
+                     (on-key       struct-on-key)
                      (on-key-rule? struct-on-key-rule)
-                     (on-key-f struct-on-key-f))
-         on-key?)
+                     (on-key-f     struct-on-key-f)))
 
 (component on-key (key rule? f))
 

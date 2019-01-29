@@ -6,9 +6,10 @@
 (require threading)
 
 
-(provide key-animator)
+(provide (except-out (struct-out key-animator) key-animator)
+         (rename-out (new-key-animator key-animator)))
 
-(struct key-animator (current animation))
+(component key-animator (current animation))
 
 (define (update-key-animator g e c)
   (define pdir (velocity-from-buttons (game-input g)
@@ -25,7 +26,7 @@
       e
       (~> e
           (update-entity _ key-animator?
-                         (key-animator new-dir (key-animator-animation c)))
+                         (new-key-animator new-dir (key-animator-animation c)))
           (update-entity _ animated-sprite?
                          ((key-animator-animation c) new-dir)))))
 

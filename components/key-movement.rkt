@@ -5,7 +5,8 @@
 (require posn
          threading)
 
-(provide (rename-out (make-key-movement key-movement))
+(provide (except-out (struct-out key-movement) key-movement)
+         (rename-out (make-key-movement key-movement))
          key-movement?
          change-speed-by
          multiply-speed-by
@@ -21,13 +22,13 @@
          remove-key-movement
          )
 
-(struct key-movement (speed mode rule?) #:transparent)
+(component key-movement (speed mode rule?))
 
 ;This just puts the units we usually use into units that Chimpmunk physics understands.
 (define MAGIC-SPEED-MULTIPLIER 50)
 
 (define (make-key-movement speed #:mode [mode 'arrow-keys] #:rule [rule? (lambda (g e) #t)])
-  (key-movement speed mode rule?))
+  (new-key-movement speed mode rule?))
 
 (define (update-key-movement g e c)
   (define rule? (key-movement-rule? c))
@@ -121,7 +122,7 @@
 
 (define (set-player-speed n)
   (lambda (g e)
-    (update-entity e key-movement? (key-movement n))))
+    (update-entity e key-movement? (new-key-movement n))))
 
 (define (stop-movement)
   (lambda (g e)

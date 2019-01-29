@@ -3,16 +3,17 @@
 (require "../game-entities.rkt")
 (require posn)
 
-(provide (rename-out (make-lock-to lock-to))
+(provide (except-out (struct-out lock-to) lock-to)
+         (rename-out (make-lock-to lock-to))
          lock-to-name
          lock-to?
          other-entity-locked-to?)
 
-(struct lock-to (name offset))
+(component lock-to (name offset))
 
 (define (make-lock-to name #:offset [offset (posn 0 0)])
   ;(displayln (~a "LOCKING TO: " name))
-  (lock-to name offset))
+  (new-lock-to name offset))
 
 (define (update-lock-to g e c)
   (define target-e

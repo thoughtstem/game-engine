@@ -11,21 +11,17 @@
 ;(displayln "LOADING ON START")
 
 (provide spawn-many-from
-         spawn-once-spawn
-         spawn-once-speed
-         spawn-once-accum
-         spawn-once-next
          spawn-once-inc
          update-what-will-spawn
-         spawn-once?
          spawn-once-ready?
          spawn-once-almost-ready?
+         (except-out (struct-out spawn-once) spawn-once)
          (rename-out [make-spawn-once spawn-once]))
 
-(struct spawn-once (spawn speed accum next relative?) #:transparent)
+(component spawn-once (spawn speed accum next relative?))
 
 (define (make-spawn-once spawn #:relative? [relative? #t])
-  (spawn-once spawn 1 0 #f relative?))
+  (new-spawn-once spawn 1 0 #f relative?))
 
 (define (update-what-will-spawn so f)
   (struct-copy spawn-once so

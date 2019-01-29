@@ -6,13 +6,14 @@
 
 (require posn)
 
-(provide (struct-out dialog)
+(provide (except-out (struct-out dialog) dialog)
+         (rename-out (new-dialog dialog))
          set-dialog-index
          get-dialog-index
          get-dialog-sprites
          )
 
-(struct dialog (sprites index))
+(component dialog (sprites index))
 
 (define (update-dialog g e c) e)
 

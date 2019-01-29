@@ -3,9 +3,10 @@
 (require "../game-entities.rkt")
 (require posn)
 
-(provide (struct-out detect-edge))
+(provide (except-out (struct-out detect-edge) detect-edge)
+         (rename-out (new-detect-edge detect-edge)))
 
-(struct detect-edge (name pos func))
+(component detect-edge (name pos func))
 
 (define (update-detect-edge g e c)
   (define WIDTH (game-width g))

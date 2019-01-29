@@ -54,12 +54,18 @@
 (new-component counter? update-counter)
 
 ; === SIMPLE STRUCTS ===
-(struct hue-val  (hue))
-(struct size-val (size))
+(component hue-val  (hue))
+(component size-val (size))
+
+;(define (make-hue-val hue)
+;  (new-hue-val hue))
+
+;(define (make-size-val size)
+;  (new-hue-val size))
 
 (define (set-hue-val num)
  (lambda (g e)
-     (update-entity e hue-val? (hue-val num))))
+     (update-entity e hue-val? (new-hue-val num))))
 
 (define (get-hue-val e)
   (define hue-comp (get-component e hue-val?))
@@ -70,11 +76,11 @@
 (define (change-hue-val-by inc)
   (lambda (g e)
     (define num (get-hue-val e))
-    (update-entity e hue-val? (hue-val (+ num inc)))))
+    (update-entity e hue-val? (new-hue-val (+ num inc)))))
 
 (define (set-size-val num)
   (lambda (g e)
-    (update-entity e size-val? (size-val num))))
+    (update-entity e size-val? (new-size-val num))))
 
 (define (get-size-val e)
   (define size-comp (get-component e size-val?))
@@ -85,10 +91,12 @@
 (define (multiply-size-val-by inc)
   (lambda (g e)
     (define num (get-size-val e))
-    (update-entity e size-val? (size-val (* num inc)))))
+    (update-entity e size-val? (new-size-val (* num inc)))))
 
-(provide (struct-out hue-val)
-         (struct-out size-val)
+(provide (except-out (struct-out hue-val) hue-val)
+         (except-out (struct-out size-val) size-val)
+         (rename-out (new-hue-val hue-val))
+         (rename-out (new-size-val size-val))
          get-hue-val
          change-hue-val-by
          set-size-val

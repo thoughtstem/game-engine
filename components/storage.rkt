@@ -1,9 +1,7 @@
 #lang racket
 
-(provide (rename-out [new-storage storage])
-         storage?
-         storage-name
-         storage-data
+(provide (except-out (struct-out storage) storage)
+         (rename-out [new-storage storage])
          
          get-storage
          get-storage-data
