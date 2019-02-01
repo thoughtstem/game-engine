@@ -4,7 +4,7 @@
 (require posn)
 
 (provide (except-out (struct-out direction) direction)
-         (rename-out [make-direction direction])
+         (rename-out [new-direction direction])
          set-direction
          get-direction
          change-direction-by
@@ -14,8 +14,8 @@
 
 (component direction (dir))
 
-(define (make-direction c)
-  (new-direction c))
+;(define (make-direction c)
+;  (new-direction c))
 
 (define (update-direction g e c) e)
 

@@ -1,18 +1,18 @@
 #lang racket
 
-(provide (rename-out [make-observe-change observe-change])
-         observe-change?)
+(provide (except-out (struct-out observe-change) observe-change)
+         (rename-out [make-observe-change observe-change]))
 
 (require "../game-entities.rkt"
          ;"../component-util.rkt"
          posn)
 
-(struct observe-change (rule last-val previous-entity on-change))
+(component observe-change (rule last-val previous-entity on-change))
 
 
 
 (define (make-observe-change rule on-change)
-  (observe-change rule (void) (void) on-change))
+  (new-observe-change rule (void) (void) on-change))
 
 
 #;(observe-change carried?

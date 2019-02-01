@@ -6,15 +6,13 @@
 
 ;(displayln "LOADING ON START")
 
-(provide (rename-out (make-on-start on-start))
-         on-start-rule
-         on-start-func
-         on-start?)
+(provide (except-out (struct-out on-start) on-start)
+         (rename-out (make-on-start on-start)))
 
-(struct on-start (rule func))
+(component on-start (rule func))
 
 (define (make-on-start #:rule [rule (λ (g e) #t)] func)
-  (on-start rule func))
+  (new-on-start rule func))
 
 (define (update-on-start g e c)
   ;(displayln (list "UPDATING ON START" e))

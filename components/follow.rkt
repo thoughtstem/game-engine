@@ -5,7 +5,7 @@
 (require posn)
 
 (provide (rename-out (make-follow follow))
-         follow?)
+         (except-out (struct-out follow) follow))
 
 ;(provide (struct-out do-every))
 

@@ -526,16 +526,38 @@
 
 ;Updates bg-backdrop component. Inputs new background img. Num col and rows will stay the same for a new backdrop!
 ; Function only replaces list of tiles stored in the struct.
-(define (change-backdrop new-bg)
+(define (change-backdrop new-bg #:scale [scale 1])
   ;(-> image? handler-function?)
   (lambda (g e)
-    (define bg-entity   (get-entity "bg" g))
-    (define bg-backdrop (get-component bg-entity backdrop?))
+    ;(define bg-entity   (get-entity "bg" g))
+    (define bg-backdrop (get-component e backdrop?))
     (define columns     (backdrop-columns bg-backdrop))
     (define rows        (/ (length (backdrop-tiles bg-backdrop)) columns))
     (define new-tiles   (sheet->costume-list new-bg columns rows (* rows columns)))
-    (define new-bg-backdrop   (struct-copy backdrop bg-backdrop [id (random 1000000)] [tiles new-tiles]))
-    ((show-backdrop) g (update-entity e backdrop? new-bg-backdrop))))
+    (define current-tile (backdrop-current-tile bg-backdrop))
+    ;(apply precompile! new-tiles)
+    
+    ;(define new-bg-backdrop   (struct-copy backdrop bg-backdrop [id (random 1000000)] [tiles new-tiles]))
+    ;((show-backdrop) g (update-entity e backdrop? new-bg-backdrop))
+    
+    (define b (bg->backdrop new-bg
+                          #:rows       rows
+                          #:columns    columns
+                          #:start-tile current-tile))
+
+    (define backdrop-animated-sprite
+      (set-frame (set-scale-xy scale
+                               (sheet->sprite (apply beside (backdrop-tiles (first b)))
+                                              #:rows 1
+                                              #:columns    (* rows columns)
+                                              #:row-number 1
+                                              #:animate?    #f))
+                 current-tile
+                 ))
+    (~> e
+        ;(update-entity _ backdrop? b)
+        (update-entity _ animated-sprite? backdrop-animated-sprite))
+    ))
 
 ;Renders start-tile from the bg-backdrop component
 (define (show-backdrop)

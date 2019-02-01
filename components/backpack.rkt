@@ -18,8 +18,8 @@
          threading)
 
 (require posn)
-(provide (rename-out (make-backpack backpack))
-         backpack?
+(provide (except-out (struct-out backpack) backpack)
+         (rename-out (make-backpack backpack))
          ;entity->item ; provided for dev only
          ;item->entity ; provided for dev only
          get-items
@@ -49,7 +49,7 @@
 
 (struct item (entity amount))
 
-(struct backpack (items))
+(component backpack (items))
 
 (define/contract (entity->item e)
   (-> entity? item?)
@@ -62,7 +62,7 @@
 (define/contract (make-backpack . entities)
   (->* () () #:rest (or/c (listof entity?) empty?) backpack?)
   (define new-items (map (lambda (e) (item e 1)) entities))
-  (backpack new-items))
+  (new-backpack new-items))
 
 ;(define (update-backpack g e c) e)
 
@@ -86,7 +86,7 @@
 (define (set-backpack-entities entity-with-backpack entities-for-backpack)
   (update-entity entity-with-backpack
                  backpack?
-                 (backpack (map entity->item entities-for-backpack))))
+                 (new-backpack (map entity->item entities-for-backpack))))
 
 (define (get-backpack-entities e)
   (map item-entity (get-items e)))
@@ -102,7 +102,7 @@
   (lambda (g e)
     (define old-items (get-items e))
     (define new-items (append old-items (list (item ent amount))))
-    (update-entity e backpack? (backpack new-items))))
+    (update-entity e backpack? (new-backpack new-items))))
 
 (define (store-item name)
   (lambda (g e)
@@ -142,14 +142,14 @@
   (lambda (g e)
     (define old-items (get-items e))
     (define new-items (remove (item ent amount) old-items item-eq?))
-    (update-entity e backpack? (backpack new-items))))
+    (update-entity e backpack? (new-backpack new-items))))
 
 (define (set-items . items)
   (lambda (g e)
     (define (enity->item e)
       (item e 1))
     (define new-items (map enity->item items))
-    (update-entity e backpack? (backpack new-items))))
+    (update-entity e backpack? (new-backpack new-items))))
 
 (define (display-items)
   (lambda (g e)
@@ -249,7 +249,7 @@
     (define new-items (remove (entity->item target-ent) old-items item-name-eq?))
     ;(define new-entity-list (map item->entity new-items)) ; warning: loses amount data
     ;(update-entity e backpack? (apply backpack new-entity-list))
-    (update-entity e backpack? (backpack new-items))
+    (update-entity e backpack? (new-backpack new-items))
     ))
 
 (define (item-name-eq? item1 item2)
