@@ -30,4 +30,4 @@
 
 (define (do-after-time time f)
   (lambda (g e)
-    (add-component e (new-after-time time f))))
+    (add-component e (make-after-time time f))))
