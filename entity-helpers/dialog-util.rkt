@@ -1,6 +1,7 @@
 #lang racket
 
 (provide animated-dialog
+         fast-animated-dialog
          pad
          draw-title
          draw-dialog
@@ -11,6 +12,7 @@
          draw-dialog-list
          draw-crafting-list
          draw-dialog-lg
+         fast-dialog-lg
          draw-avatar-box
          dialog->sprites
          dialog->response-sprites
@@ -55,7 +57,8 @@
 (require "../entity-helpers/rgb-hsb.rkt")
 
 (require 2htdp/image
-         posn)
+         posn
+         threading)
 
 
 (define (pad image w-pad h-pad)
@@ -171,12 +174,17 @@
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
+    (define TEXT-WIDTH (* WIDTH .8))
     (define dialog-index (get-counter e))
     ;(displayln (~a "CURRENT DIALOG: " dialog-index))
     (define dialog-length (length dialog-list))
     (define name (get-name e))
     (define avatar-box (draw-avatar-box e))
-    (define message-entity (create-dialog dialog-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
+    (define message-entity (create-dialog dialog-list
+                                          name
+                                          (posn (+ (- WIDTH TEXT-WIDTH) (/ TEXT-WIDTH 2) -6) ;(/ (* WIDTH 2.3) 4)
+                                                (- HEIGHT 40))
+                                          #:sound rsound))
     (update-entity (add-component e
                                   (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 5)))
                    counter?
@@ -186,12 +194,15 @@
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
+    (define TEXT-WIDTH (* WIDTH .8))
     (define player-dialog-index (get-counter (get-entity "player" g)))
     (define npc-dialog-index (get-counter e))
     (define response-length (length (list-ref response-list player-dialog-index)))
     (define name (get-name e))
     (define avatar-box (draw-avatar-box e))
-    (define message-entity (create-dialog response-list name (posn (/ (* WIDTH 2.5) 4) (- HEIGHT 40)) #:sound rsound))
+    (define message-entity (create-dialog response-list name (posn (+ (- WIDTH TEXT-WIDTH) (/ TEXT-WIDTH 2) -6) ;(/ (* WIDTH 2.5) 4)
+                                                                   (- HEIGHT 40))
+                                          #:sound rsound))
     (add-component (update-entity e counter? (counter (add1 npc-dialog-index)))
                    (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 10)))))
 
@@ -236,8 +247,13 @@
 
 (define (stop-dialog-scroll)
   (lambda (g e)
-    (define dialog-sprite (get-component e animated-sprite?))
-    ((change-sprite (new-sprite (pick-frame dialog-sprite (sub1 (animated-sprite-total-frames dialog-sprite))) 1)) g e)))
+    (define as (get-component e animated-sprite?))
+    ;((change-sprite (new-sprite (pick-frame dialog-sprite (sub1 (animated-sprite-total-frames dialog-sprite))) 1 #:color 'yellow)) g e)
+    (update-entity e
+                   animated-sprite?
+                   (struct-copy animated-sprite as
+                                [animate? #f]))
+    ))
     
 (define (create-dialog dialog-list name pos #:delay [delay-time 0] #:sound [rsound #f])
   (sprite->entity empty-image ;(draw-dialog msg)
@@ -277,15 +293,74 @@
                                   0 40 "left" "center"
                                   (overlay (rectangle (- game-width 4) 76 "outline" (pen "white" 2 "solid" "butt" "bevel"))
                                            (rectangle game-width       80 "solid"  (make-color 20 20 20 150))))))
+
+(define (fast-dialog-lg name avatar game-width)
+  (define NAME-MAX-WIDTH (- (/ game-width 10) 2))
+  (define padded-name (~a name
+                          #:min-width 10
+                          #:max-width NAME-MAX-WIDTH
+                          #:limit-marker "..."
+                          #:align 'center))
+  (define name-box-width (* (string-length padded-name) (/ game-width NAME-MAX-WIDTH)))
+  (define name-box-height 30)
+  (define outer-border-image (square 1 'solid 'black))
+  (define border-image (square 1 'solid 'white))
+  (define box-image (square 1 'solid 'dimgray))
+  (define main-border-sprite (~> border-image
+                                 (new-sprite _ #:animate #f)
+                                 (set-x-scale (- game-width 2) _)
+                                 (set-y-scale 78 _)))
+  (define main-box-sprite (~> box-image
+                        (new-sprite _ #:animate #f)
+                        (set-x-scale (- game-width 6) _)
+                        (set-y-scale 74 _)))
+  (define name-outer-border-sprite (~> outer-border-image
+                                       (new-sprite _ #:animate #f)
+                                       (set-x-scale name-box-width _)
+                                       (set-y-scale name-box-height _)
+                                       (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)
+                                       (set-y-offset (- (+ 40 (/ name-box-height 2))) _)))
+  (define name-border-sprite (~> border-image
+                                 (new-sprite _ #:animate #f)
+                                 (set-x-scale (- name-box-width 2) _)
+                                 (set-y-scale (- name-box-height 2) _)
+                                 (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)
+                                 (set-y-offset (- (+ 40 (/ name-box-height 2))) _)))
+  (define name-box-sprite (~> box-image
+                              (new-sprite _ #:animate #f)
+                              (set-x-scale (- name-box-width 6) _)
+                              (set-y-scale (- name-box-height 6) _)
+                              (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)
+                              (set-y-offset (- (+ 40 (/ name-box-height 2))) _)))
+  (define name-text-sprite (~> (new-sprite padded-name #:color 'yellow)
+                               (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)
+                               (set-y-offset (- (+ 40 2 (/ name-box-height 2))) _)))
+  (define avatar-sprite (~> (new-sprite avatar #:animate #f)
+                            (set-x-offset (- (* game-width 0.1) ;(+ 16 (/ (image-width avatar) 2))
+                                             (/ game-width 2)) _)))
+  (list name-text-sprite
+        name-box-sprite
+        name-border-sprite
+        name-outer-border-sprite
+        avatar-sprite
+        main-box-sprite
+        main-border-sprite))
      
 (define (dialog-lg avatar name message-entity game-width #:delay [delay-time 0])
-  (sprite->entity (draw-dialog-lg name avatar game-width)
+  (define bg-image (square 1 'solid 'black))
+  (define bg-sprite (~> bg-image
+                        (new-sprite _ #:animate #f)
+                        (set-x-scale game-width _)
+                        (set-y-scale 80 _)))
+  (sprite->entity bg-sprite
+                  ;(draw-dialog-lg name avatar game-width)
                   #:name       "dialog bg"
                   #:position   (posn 0 0)
                   #:components (static)
                                (hidden)
                                (layer "ui")
                                ;(on-key 'space die)
+                               (fast-dialog-lg name avatar game-width)
                                (on-key 'enter #:rule last-dialog? die)
                                (on-start (go-to-pos-inside 'bottom-center))
                                (after-time delay-time (do-many show
@@ -371,20 +446,43 @@
     ;(displayln (~a "Player Selection: " selection))
     (update-entity e counter? (counter selection))))
 
+(define (animated-dialog-string msg #:skip [skip 1])
+  (define msg-list (string->list msg))
+  (define msg-len  (length msg-list))
+  (for/list ([i (append (range 0 (add1 msg-len) (min skip msg-len)) (list msg-len))])
+    (list->string (take msg-list i))))
+
+(define (format-dialog msg game-width)
+  (~a msg
+      #:width (- (exact-round (* game-width 0.8 0.1)) 2)
+      ;#:limit-marker "..."
+      ))
+
+(define (fast-animated-dialog msg game-width #:skip [skip 1])
+  (new-sprite (map (curryr format-dialog game-width)
+                   (animated-dialog-string msg #:skip skip))
+              #:color 'yellow))
+
 ; === GENERIC SPRITE GENERATORS ===
 (define (dialog->response-sprites dialog-list #:game-width game-width #:animated [animated? #t] #:speed [spd 2])
   (map (lambda (response-list)
          (map (lambda (msg)
                 (if animated?
-                    (animated-dialog msg game-width #:skip spd)
-                    (new-sprite (draw-dialog-text msg)))
+                    ;(animated-dialog msg game-width #:skip spd)
+                    ;(new-sprite (draw-dialog-text msg game-width))
+                    (fast-animated-dialog msg game-width #:skip spd)
+                    (new-sprite (format-dialog msg game-width) #:color 'yellow)
+                    )
                 ) response-list)) dialog-list))
 
 (define (dialog->sprites dialog-list #:game-width game-width #:animated [animated? #t] #:speed [spd 2])
   (map (lambda (msg)
          (if animated?
-             (animated-dialog msg game-width #:skip spd)
-             (new-sprite (draw-dialog-text msg)))
+             ;(animated-dialog msg game-width #:skip spd)
+             ;(new-sprite (draw-dialog-text msg game-width))
+             (fast-animated-dialog msg game-width #:skip spd)
+             (new-sprite (format-dialog msg game-width) #:color 'yellow)
+             )
          ) dialog-list))
 
 

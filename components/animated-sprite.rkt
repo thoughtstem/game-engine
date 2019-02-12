@@ -73,6 +73,8 @@
          
          render
          render-string
+
+         (struct-out text-frame)
          
          next-frame
          set-frame
