@@ -23,7 +23,7 @@
 (require "./core.rkt")
 (require "../components/animated-sprite.rkt")
 
-(struct precompiler (sprites) #:transparent)
+(component precompiler (sprites))
 
 (define debug-message
   #f
@@ -41,7 +41,7 @@
   
   (define images (filter image? (flatten animated-sprites-or-images)))
   
-  (precompiler (flatten
+  (new-precompiler (flatten
                 (append (map fast-image images)
                         (map vector->list (map animated-sprite-frames (flatten animated-sprites)))))))
 
@@ -188,7 +188,7 @@
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
   (make-gui #:start-fullscreen? #f
             #:frame-style (list 'no-resize-border
-                                ;'no-caption
+                                'no-caption
                                 )
             #:mode gl:gui-mode
             #:width w
@@ -349,7 +349,12 @@
   
          (define the-font
            (ml:load-font! sd2
-                          #:size 14.0))
+                          #:size 13.0
+                          #:face   "DejaVu Sans Mono"
+                          #:family 'modern
+                          ;#:weight 'bold
+                          ;#:smoothing 'unsmoothed
+                          ))
          
 
          
@@ -410,6 +415,7 @@
                                   (animated-sprite-x-offset as)))
                               (real->double-flonum
                                (+ (y e)
+                                  -8
                                   (animated-sprite-y-offset as)))
                               #:mx (real->double-flonum (animated-sprite-x-scale as))
                               #:my (real->double-flonum (animated-sprite-y-scale as)))))
