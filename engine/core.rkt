@@ -538,27 +538,40 @@
 
 (define (basic-entity p s)
   (entity (next-entity-id)
-          (list (id #f)
-                p
-                (image->bb (render s))
-                s)))
+          (flatten (list (id #f)
+                         p
+                         (image->bb (render (if (list? s)
+                                                (first s)
+                                                s)))
+                         s
+                         ))))
 
 (define (get-entity name g)
   (define (has-name n e)
     (string=? n (get-name e)))
   (findf (curry has-name name) (game-entities g)))
 
-(define (sprite->entity sprite-or-image #:position p
+(define (sprite->entity sprite-or-image-or-list
+                        #:position p
                         #:name     n
                         #:components (c #f)
                         . cs)
   (define all-cs (reverse (flatten (filter identity (cons
                                             (entity-name n)
                                             (cons c cs))))))
-  (define sprite (if (animated-sprite? sprite-or-image)
-                     sprite-or-image
-                     (new-sprite sprite-or-image)))
-  (apply (curry add-components (basic-entity p sprite) )
+  (define (ensure-sprite sprite-or-image)
+    (if (animated-sprite? sprite-or-image)
+        sprite-or-image
+        (new-sprite sprite-or-image)))
+  (define sprite-or-image?
+    (or/c animated-sprite? image?))
+  (define sprite-or-sprites
+    (cond
+      [(animated-sprite? sprite-or-image-or-list) sprite-or-image-or-list]
+      [((listof sprite-or-image?) sprite-or-image-or-list) (reverse (map ensure-sprite sprite-or-image-or-list))]
+      [(image? sprite-or-image-or-list) (new-sprite sprite-or-image-or-list)]
+      [else     (error "What was that?")]))
+  (apply (curry add-components (basic-entity p sprite-or-sprites) )
          all-cs))
 
 (define (sprite->bb s)

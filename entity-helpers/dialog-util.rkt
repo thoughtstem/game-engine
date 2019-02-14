@@ -306,58 +306,55 @@
   (define outer-border-image (square 1 'solid 'black))
   (define border-image (square 1 'solid 'white))
   (define box-image (square 1 'solid 'dimgray))
-  (define main-border-sprite (~> border-image
-                                 (new-sprite _ #:animate #f)
-                                 (set-x-scale (- game-width 2) _)
-                                 (set-y-scale 78 _)))
-  (define main-box-sprite (~> box-image
-                        (new-sprite _ #:animate #f)
-                        (set-x-scale (- game-width 6) _)
-                        (set-y-scale 74 _)))
-  (define name-outer-border-sprite (~> outer-border-image
-                                       (new-sprite _ #:animate #f
-                                                     ;#:x-scale name-box-width
-                                                     ;#:y-scale name-box-height
-                                                     ;#:x-offset (- (/ name-box-width 2) (/ game-width 2))
-                                                     ;#:y-offset (- (+ 40 (/ name-box-height 2)))
-                                                     )
-                                       (set-x-scale name-box-width _)
-                                       (set-y-scale name-box-height _)
-                                       (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)
-                                       (set-y-offset (- (+ 40 (/ name-box-height 2))) _)))
-  (define name-border-sprite (~> border-image
-                                 (new-sprite _ #:animate #f)
-                                 (set-x-scale (- name-box-width 2) _)
-                                 (set-y-scale (- name-box-height 2) _)
-                                 (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)
-                                 (set-y-offset (- (+ 40 (/ name-box-height 2))) _)))
-  (define name-box-sprite (~> box-image
-                              (new-sprite _ #:animate #f)
-                              (set-x-scale (- name-box-width 6) _)
-                              (set-y-scale (- name-box-height 6) _)
-                              (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)
-                              (set-y-offset (- (+ 40 (/ name-box-height 2))) _)))
-  (define name-text-sprite (~> (new-sprite padded-name #:color 'yellow)
-                               (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)
-                               (set-y-offset (- (+ 40 2 (/ name-box-height 2))) _)))
-  (define avatar-sprite (~> (new-sprite avatar #:animate #f)
-                            (set-x-offset (- (* game-width 0.1) ;(+ 16 (/ (image-width avatar) 2))
-                                             (/ game-width 2)) _)))
+  (define outer-border-sprite (new-sprite outer-border-image
+                                #:animate #f
+                                #:x-scale game-width
+                                #:y-scale 80))
+  (define main-border-sprite (new-sprite border-image
+                                         #:animate #f
+                                         #:x-scale (- game-width 2)
+                                         #:y-scale 78))
+  (define main-box-sprite (new-sprite box-image
+                                      #:animate #f
+                                      #:x-scale (- game-width 6)
+                                      #:y-scale 74))
+  (define name-outer-border-sprite (new-sprite outer-border-image
+                                               #:animate #f
+                                               #:x-scale name-box-width
+                                               #:y-scale name-box-height
+                                               #:x-offset (- (/ name-box-width 2) (/ game-width 2))
+                                               #:y-offset (- (+ 40 (/ name-box-height 2)))))
+  (define name-border-sprite (new-sprite border-image
+                                         #:animate  #f
+                                         #:x-scale  (- name-box-width 2)
+                                         #:y-scale  (- name-box-height 2)
+                                         #:x-offset (- (/ name-box-width 2) (/ game-width 2))
+                                         #:y-offset (- (+ 40 (/ name-box-height 2)))))
+  (define name-box-sprite (new-sprite box-image
+                                      #:animate  #f
+                                      #:x-scale  (- name-box-width 6)
+                                      #:y-scale  (- name-box-height 6)
+                                      #:x-offset (- (/ name-box-width 2) (/ game-width 2))
+                                      #:y-offset (- (+ 40 (/ name-box-height 2)))))
+  (define name-text-sprite (new-sprite padded-name
+                                       #:color 'yellow
+                                       #:x-offset (- (/ name-box-width 2) (/ game-width 2))
+                                       #:y-offset (- (+ 40 2 (/ name-box-height 2)))))
+  (define avatar-sprite (new-sprite avatar
+                                    #:animate #f
+                                    #:x-offset (- (* game-width 0.1) ;(+ 16 (/ (image-width avatar) 2))
+                                                  (/ game-width 2))))
   (list name-text-sprite
         name-box-sprite
         name-border-sprite
         name-outer-border-sprite
         avatar-sprite
         main-box-sprite
-        main-border-sprite))
+        main-border-sprite
+        outer-border-sprite))
      
 (define (dialog-lg avatar name message-entity game-width #:delay [delay-time 0])
-  (define bg-image (square 1 'solid 'black))
-  (define bg-sprite (~> bg-image
-                        (new-sprite _ #:animate #f)
-                        (set-x-scale game-width _)
-                        (set-y-scale 80 _)))
-  (sprite->entity bg-sprite
+  (sprite->entity (fast-dialog-lg name avatar game-width) ;bg-sprite
                   ;(draw-dialog-lg name avatar game-width)
                   #:name       "dialog bg"
                   #:position   (posn 0 0)
@@ -365,7 +362,7 @@
                                (hidden)
                                (layer "ui")
                                ;(on-key 'space die)
-                               (fast-dialog-lg name avatar game-width)
+                               ;(fast-dialog-lg name avatar game-width)
                                (on-key 'enter #:rule last-dialog? die)
                                (on-start (go-to-pos-inside 'bottom-center))
                                (after-time delay-time (do-many show
