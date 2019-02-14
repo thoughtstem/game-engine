@@ -315,7 +315,12 @@
                         (set-x-scale (- game-width 6) _)
                         (set-y-scale 74 _)))
   (define name-outer-border-sprite (~> outer-border-image
-                                       (new-sprite _ #:animate #f)
+                                       (new-sprite _ #:animate #f
+                                                     ;#:x-scale name-box-width
+                                                     ;#:y-scale name-box-height
+                                                     ;#:x-offset (- (/ name-box-width 2) (/ game-width 2))
+                                                     ;#:y-offset (- (+ 40 (/ name-box-height 2)))
+                                                     )
                                        (set-x-scale name-box-width _)
                                        (set-y-scale name-box-height _)
                                        (set-x-offset (- (/ name-box-width 2) (/ game-width 2)) _)

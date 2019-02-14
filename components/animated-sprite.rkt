@@ -33,27 +33,28 @@
                   (list 255 255 255))
 
     (check-equal? (render s)
-                  (text "Hello" 14 'white))
+                  ;(text "Hello" 14 'white)
+                  (text "Hello" 1 'white)
+                  )
 
     (check-equal? (render-string s)
                   "Hello")
 
     (check-equal? (render (increase-current-frame s))
-                  (text "Goodbye" 14 'white))
+                  (text "Goodbye" 1 'white))
 
     ;And back to the beginning
     (check-equal? (render (increase-current-frame (increase-current-frame s)))
-                  (text "Hello" 14 'white))
+                  (text "Hello" 1 'white))
 
     (check-equal? (render-string (set-text "New Text" s))
                   "New Text"))
 
 
   ;Example of animating fancier text
-  ;  (NOT yet implemented in rendering.rkt.)
-  (let ()
-    (define s (new-sprite (list (text-frame "Hello"   14 'red)
-                                (text-frame "Goodbye" 14 'green))))
+  #;(let ()
+    (define s (new-sprite (list (make-text-frame "Hello"   #:scale 2 #:color 'red)
+                                (make-text-frame "Goodbye" #:scale 2 #:color 'green))))
 
     (check-equal? (string-animated-sprite? s) #t)
 
@@ -73,8 +74,10 @@
          
          render
          render-string
+         render-text-frame
 
-         (struct-out text-frame)
+         (except-out (struct-out text-frame) text-frame)
+         (rename-out (make-text-frame text-frame))
          
          next-frame
          set-frame
@@ -159,10 +162,13 @@
                  #:row-number n
                  #:delay delay))
 
-(struct text-frame (string size color))
+(struct text-frame (string scale font color))
 
-(define (make-text-frame s)
-  (text-frame s 14 'white))
+(define (make-text-frame s
+                         #:scale [scale 1]
+                         #:font [font #f]
+                         #:color [color #f])
+  (text-frame s scale font color))
 
 
 (struct fast-image (data [id #:mutable]) #:transparent)
@@ -300,7 +306,9 @@
                              #:x-offset (x-offset 0)
                              #:y-offset (y-offset 0)
                              #:color    (color 'white)
-                             #:scale    (scale 1))
+                             #:scale    (scale #f)
+                             #:x-scale  [x-scale 1]
+                             #:y-scale  [y-scale 1])
   (->* ((or/c image? (listof image?)
               string?     (listof string?)
               text-frame? (listof text-frame?)))
@@ -308,36 +316,49 @@
                 #:x-offset number?
                 #:y-offset number?
                 #:color    symbol?
-                #:scale    number?) animated-sprite?)
+                #:scale    number?
+                #:x-scale  number?
+                #:y-scale  number?) animated-sprite?)
   (define list-costumes (if (list? costumes)
                             costumes
                             (list costumes)))
 
   (animated-sprite
    ;Umm we don't need to be storing this two times do we?
+   ;JL: This is stored twice to preserve original costumes for functions like
+   ;    set-size and set-hue. This can be removed once we have a new way to
+   ;    set-hue and all functions in sprite-util are updated.
    (list->vector (map prep-costumes list-costumes)) 
    (list->vector (map prep-costumes list-costumes))
    0
    rate
    0
    animate?
-   scale ;x-scale
-   scale ;y-scale
+   (if scale scale x-scale)
+   (if scale scale y-scale)
    0.0 ;theta (in radians)
    x-offset ;x offset
    y-offset ;y offset
    color
    ))
 
+; Is this only for string-animated-sprite?
+; What abot when you apply mode-lambda rgb to a sprite?
 (define (animated-sprite-rgb as)
-  (-> animated-sprite? (listof byte?))
+  (-> string-animated-sprite? (listof byte?))
 
-  (define c (send the-color-database find-color (~a (animated-sprite-color as))))
+  (define tf-color-symbol (text-frame-color (render-text-frame as)))
 
-  (list
-   (send c red)
-   (send c green)
-   (send c blue)))
+  (define c (if tf-color-symbol
+                (send the-color-database find-color (~a tf-color-symbol))
+                (send the-color-database find-color (~a (animated-sprite-color as)))))
+  (if c
+      (list
+       (send c red)
+       (send c green)
+       (send c blue))
+      (list 0 0 0))
+      )
 
 (define (prep-costumes thing)
   (cond [(image? thing)  (make-fast-image thing)]
@@ -355,7 +376,6 @@
 
 (define/contract (render s)
   (-> animated-sprite? image?)
-
   (scale/xy
    (max 1 (animated-sprite-x-scale s)) ;Breaks on negatives...
    (max 1 (animated-sprite-y-scale s)) ;Breaks on negatives...
@@ -370,6 +390,12 @@
   (text-frame-string
    (vector-ref (animated-sprite-frames as)
                (animated-sprite-current-frame as))))
+
+(define/contract (render-text-frame as)
+  (-> string-animated-sprite? text-frame?)
+
+  (vector-ref (animated-sprite-frames as)
+              (animated-sprite-current-frame as)))
 
 (define/contract (pick-frame s i)
   (-> animated-sprite? integer? image?)
@@ -387,8 +413,10 @@
 
 (define (text-frame->image thing)
   (text (text-frame-string thing)
-        (text-frame-size thing)
-        (text-frame-color thing)))
+        (text-frame-scale thing)
+        (if (text-frame-color thing)
+            (text-frame-color thing)
+            'white)))
 
 (define/contract (reset-animation s)
   (-> animated-sprite? animated-sprite?)

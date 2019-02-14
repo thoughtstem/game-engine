@@ -5,7 +5,10 @@
          precompiler-entity
          precompile!
          (rename-out [make-precompiler precompiler])
-         precompiler?)
+         precompiler?
+         register-fonts!
+       ;  set-font!
+         )
 
 (require racket/match
          racket/fixnum
@@ -71,6 +74,7 @@
 
   ;Initialize the compiled sprite database
   (register-sprites-from-entities! original-entities)
+  (register-fonts-from-entities! original-entities)
 
   ;Use the entities, plus their sprites, to determine the initial sprite database
   (set! csd (entities->compiled-sprite-database original-entities))
@@ -78,7 +82,12 @@
   ;Define that we'll have one layer of sprites (for now).
   ;Fix its position at the center of the screen
   (define layers (vector (ml:layer (real->double-flonum W/2)
-                                   (real->double-flonum H/2))
+                                   (real->double-flonum H/2)
+                                   ;#:mx 0.1
+                                   ;#:my 0.1
+                                   ;#:mode7 2.0
+                                   ;#:horizon 50.0
+                                   )
                          (ml:layer (real->double-flonum W/2)
                                    (real->double-flonum H/2))
                          (ml:layer (real->double-flonum W/2)
@@ -94,6 +103,7 @@
     
     ;Find uncompiled entities...
     (register-sprites-from-entities! current-entities)
+    (register-fonts-from-entities! current-entities)
 
     ;Recompile the database if we added anything:
     (thread (thunk
@@ -106,22 +116,11 @@
 
     (define static-sprites (list))
 
-    (define debug-sprites
-      (if (and debug-text-renderer debug-message)
-          (list (debug-text-renderer debug-message
-                            #:b 255 #:g 255
-                            100.0
-                            0.0
-                            #:layer 3))
-          '()))
-
 
     ;Actually render them
     (ml:render layers
                static-sprites
-
-
-               (append debug-sprites dynamic-sprites)))
+               dynamic-sprites))
 
   ticky-tick)
 
@@ -288,7 +287,7 @@
 (define compiled-images '())
 
 (define csd       #f)  ;Mode Lambda's representation of our compiled sprites
-(define debug-text-renderer #f)
+
 
 (define (entities->sprites-to-compile entities)
   (define fast-images-from-animated-sprite
@@ -313,6 +312,27 @@
   (append fast-images-from-animated-sprite
           fast-images-from-precompile-component))
 
+(define (entities->fonts-to-register entities)
+  (define fonts-from-animated-sprite
+    (~> entities
+        (map (curryr get-components string-animated-sprite?) _)
+        flatten
+        (filter identity _)
+        (map (compose vector->list animated-sprite-frames) _)
+        flatten
+        (map text-frame-font _)
+        (filter identity _)))
+
+  #|(define fast-images-from-precompile-component
+    (flatten
+     (~> entities
+         (map (curryr get-components precompiler?) _)
+         flatten
+         (map precompiler-sprites _) 
+         flatten)))|#
+
+  fonts-from-animated-sprite)
+
 
 (define (register-sprites-from-images! images)
   (define uncompiled-images
@@ -335,9 +355,45 @@
 
   (register-sprites-from-images! images))
 
+(define (register-fonts-from-entities! entities)
+  (define fonts (entities->fonts-to-register entities))
+  (apply register-fonts! fonts))
+
+(define (register-fonts! . fonts)
+  (define (seen-font-before f)
+    (findf (curry font-eq? f) game-fonts))
+
+  (define (object->font f)
+    (font (send f get-size)
+          (send f get-face)
+          (send f get-family)
+          (send f get-style)
+          (send f get-weight)
+          #f
+          #f))
+  
+  (define uncompiled-fonts
+    (filter-not seen-font-before
+                fonts))
+
+  (and (not (empty? uncompiled-fonts))
+       (displayln "Registering New Fonts:")
+       (displayln (~a (remove-duplicates (map object->font uncompiled-fonts))))
+       (set! game-fonts (append game-fonts (remove-duplicates (map object->font uncompiled-fonts))))
+       (set! should-recompile? #t)
+       ))
+
+
+(struct font (size face family style weight ml:font renderer) #:transparent)
+
+(define game-fonts
+  (list (font 13.0 "DejaVu Sans Mono"
+              'modern 'normal 'normal
+              #f
+              #f)))
+
 
 (define (recompile!)
-  (define ml:load-font! (dynamic-require 'mode-lambda/text/static 'load-font!))
   
   (and should-recompile?
        (set! should-recompile? #f)
@@ -346,25 +402,73 @@
            (add-animated-sprite-frame-new! sd2 image))
 
          
-  
-         (define the-font
+         (define ml:load-font! (dynamic-require 'mode-lambda/text/static 'load-font!))
+         
+         #;(define the-font
            (ml:load-font! sd2
                           #:size 13.0
                           #:face   "DejaVu Sans Mono"
                           #:family 'modern
-                          ;#:weight 'bold
+                          #:style  'normal
+                          #:weight 'normal
                           ;#:smoothing 'unsmoothed
                           ))
-         
+
+         (set! game-fonts
+               (map
+                (λ(f)
+                  (struct-copy font f
+                               [ml:font
+                                (ml:load-font! sd2
+                                               #:size (font-size f)
+                                               #:face   (font-face f)
+                                               #:family (font-family f)
+                                               #:style  (font-style f)
+                                               #:weight (font-weight f)
+                                               ;#:smoothing 'unsmoothed
+                                               )]))
+            game-fonts))
 
          
          (set! csd (ml:compile-sprite-db sd2))
-         (set! debug-text-renderer (ml:make-text-renderer the-font csd))
+
+         
+
+         (set! game-fonts
+               (map (λ(f)
+                      (struct-copy font f
+                                   [renderer (ml:make-text-renderer (font-ml:font f) csd)]))
+                    game-fonts))
+
+         
 
          ;(displayln (ml:compiled-sprite-db-spr->idx csd))
          
          
          #t)))
+
+#;(define (set-font! #:size   [size 13]
+                   #:face   [face "DejaVu Sans Mono"]
+                   #:family [family 'modern]
+                   #:style  [style  'normal]
+                   #:weight [weight 'normal])
+  (define ml:load-font! (dynamic-require 'mode-lambda/text/static 'load-font!))
+  (and should-recompile?
+       (set! should-recompile? #f)
+       (let ([sd2 (ml:make-sprite-db)])
+         (for ([image (in-list compiled-images)])
+           (add-animated-sprite-frame-new! sd2 image))
+
+         (define the-font (ml:load-font! sd2
+                                         #:size size
+                                         #:face face
+                                         #:family family
+                                         #:style  style
+                                         #:weight weight))
+         (set! csd (ml:compile-sprite-db sd2))
+         (set! debug-text-renderer (ml:make-text-renderer the-font csd))
+         #t)))
+  
 
 
 
@@ -403,10 +507,41 @@
         [(string-animated-sprite? as) (string-animated-sprite->ml:sprite e as layer)]
         [else (error "What was that?")]))
 
+;size face family style weight
+(define (font-eq? f1 f2)
+    (define f1-size   (send f1 get-size))
+    (define f1-face   (send f1 get-face))
+    (define f1-family (send f1 get-family))
+    (define f1-style  (send f1 get-style))
+    (define f1-weight (send f1 get-weight))
+
+    
+    (define f2-size   (font-size f2))
+    (define f2-face   (font-face f2))
+    (define f2-family (font-family f2))
+    (define f2-style  (font-style f2))
+    (define f2-weight (font-weight f2))
+    
+    (and (= f1-size f2-size)
+         (equal? f1-face f2-face)
+         (eq? f1-family f2-family)
+         (eq? f1-style f2-style)
+         (eq? f1-weight f2-weight)
+         ))
 
 (define (string-animated-sprite->ml:sprite e as layer)
+  (define tf-scale (text-frame-scale (render-text-frame as)))
+  (define tf-font (text-frame-font (render-text-frame as)))
+    
+  (define debug-text-renderer
+    (font-renderer
+     (or (and tf-font
+              (findf (curry font-eq? tf-font) game-fonts))
+         (first game-fonts))))
+  
   (and debug-text-renderer
-       (let ([c (animated-sprite-rgb as)]) ;Get color here, pass to #:r ... etc
+       (let ([c (animated-sprite-rgb as)]
+             [tf (render-text-frame as)]) ;Get color here, pass to #:r ... etc
          (debug-text-renderer (render-string as)
                               #:r (first c) #:g (second c) #:b (third c)
                               #:layer layer
@@ -417,8 +552,8 @@
                                (+ (y e)
                                   -8
                                   (animated-sprite-y-offset as)))
-                              #:mx (real->double-flonum (animated-sprite-x-scale as))
-                              #:my (real->double-flonum (animated-sprite-y-scale as)))))
+                              #:mx (real->double-flonum (* (animated-sprite-x-scale as) tf-scale))
+                              #:my (real->double-flonum (* (animated-sprite-y-scale as) tf-scale)))))
   
   )
 
@@ -445,7 +580,7 @@
                   sprite-id
                   #:mx (real->double-flonum (animated-sprite-x-scale as))
                   #:my (real->double-flonum (animated-sprite-y-scale as))
-                  #:theta (real->double-flonum (animated-sprite-rotation as))
+                  #:theta (real->double-flonum (animated-sprite-rotation as))	 	 
                   ))
 
 
