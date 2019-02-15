@@ -88,6 +88,7 @@
          sprite?
          animated-sprite-x-scale
          sheet->sprite
+         sprite->sheet
          row->sprite
          sprite-map
          pick-frame
@@ -97,6 +98,7 @@
          fast-equal?
          fast-image-data
          fast-image?
+         frame->image
          
          finalize-fast-image
          (rename-out [get-fast-image-id fast-image-id])
@@ -151,6 +153,7 @@
       (new-sprite _ actual-delay #:animate animate?)
       ))
 
+
 (define (row->sprite sheet
                      #:columns     (c 4)
                      #:row-number  (n 1)
@@ -203,6 +206,12 @@
   (and (animated-sprite? as)
        (fast-image? (vector-ref (animated-sprite-frames as) 
                                 (animated-sprite-current-frame as)))))
+
+(define/contract (sprite->sheet s)
+  (-> animated-sprite? image?)
+  (apply beside (map frame->image
+                    (vector->list
+                     (animated-sprite-frames s)))))
 
 
 (define/contract (string-animated-sprite? as)
