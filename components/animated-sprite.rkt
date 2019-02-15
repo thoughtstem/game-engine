@@ -209,9 +209,12 @@
 
 (define/contract (sprite->sheet s)
   (-> animated-sprite? image?)
-  (apply beside (map frame->image
-                    (vector->list
-                     (animated-sprite-frames s)))))
+  (define image-list (map frame->image
+                          (vector->list
+                           (animated-sprite-frames s))))
+  (if (= (length image-list) 1)
+      (first image-list)
+      (apply beside image-list)))
 
 
 (define/contract (string-animated-sprite? as)
