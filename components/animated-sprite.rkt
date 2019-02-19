@@ -30,7 +30,7 @@
     (check-equal? (string-animated-sprite? s) #t)
 
     (check-equal? (animated-sprite-rgb s)
-                  (list 255 255 255))
+                  (list 0 0 0))
 
     (check-equal? (render s)
                   ;(text "Hello" 14 'white)
@@ -77,6 +77,7 @@
          render-text-frame
 
          (except-out (struct-out text-frame) text-frame)
+         ;(rename-out (text-frame text-frame-struct))
          (rename-out (make-text-frame text-frame))
          
          next-frame
@@ -124,6 +125,7 @@
          set-angle
          set-scale-xy
          set-text
+         set-font
 
          string-animated-sprite?
          image-animated-sprite?
@@ -251,6 +253,17 @@
   
   as)
 
+(define (set-font f as)
+
+  (define current-text-frame (render-text-frame as))
+  ;Does this really need mutation??
+  (vector-set! (animated-sprite-frames as)
+               (animated-sprite-current-frame as)
+               (struct-copy text-frame current-text-frame
+                            [font f]))
+  
+  as)
+
 (define (get-x-scale as)
   (animated-sprite-x-scale as))
 
@@ -317,7 +330,7 @@
                              #:animate [animate? #t]
                              #:x-offset (x-offset 0)
                              #:y-offset (y-offset 0)
-                             #:color    (color 'white)
+                             #:color    (color 'black)
                              #:scale    (scale #f)
                              #:x-scale  [x-scale 1]
                              #:y-scale  [y-scale 1])
@@ -357,9 +370,10 @@
 ; Is this only for string-animated-sprite?
 ; What abot when you apply mode-lambda rgb to a sprite?
 (define (animated-sprite-rgb as)
-  (-> string-animated-sprite? (listof byte?))
+  (-> animated-sprite? (listof byte?))
 
-  (define tf-color-symbol (text-frame-color (render-text-frame as)))
+  (define tf-color-symbol (and (string-animated-sprite? as)
+                               (text-frame-color (render-text-frame as))))
 
   (define c (if tf-color-symbol
                 (send the-color-database find-color (~a tf-color-symbol))
