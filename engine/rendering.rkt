@@ -561,10 +561,7 @@
   )
 
 (define (image-animated-sprite->ml:sprite e as layer)
-  
-
-
-  
+  (define c (animated-sprite-rgb as))
   (define f   (current-fast-frame as))
 
   (define id-sym    (fast-image->id f))
@@ -574,6 +571,7 @@
 
   (and sprite-id
        (ml:sprite #:layer layer
+                  #:r (first c) #:g (second c) #:b (third c)
                   (real->double-flonum
                    (+ (x e)
                       (animated-sprite-x-offset as)))
