@@ -77,8 +77,9 @@
          render-text-frame
 
          (except-out (struct-out text-frame) text-frame)
-         ;(rename-out (text-frame text-frame-struct))
          (rename-out (make-text-frame text-frame))
+
+         set-text-frame-font
          
          next-frame
          set-frame
@@ -174,6 +175,10 @@
                          #:font [font #f]
                          #:color [color #f])
   (text-frame s scale font color))
+
+(define (set-text-frame-font f tf)
+  (struct-copy text-frame tf
+               [font f]))
 
 
 (struct fast-image (data [id #:mutable]) #:transparent)
