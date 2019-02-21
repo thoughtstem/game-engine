@@ -34,18 +34,18 @@
 
     (check-equal? (render s)
                   ;(text "Hello" 14 'white)
-                  (text "Hello" 1 'white)
+                  (text "Hello" 13 'white)
                   )
 
     (check-equal? (render-string s)
                   "Hello")
 
     (check-equal? (render (increase-current-frame s))
-                  (text "Goodbye" 1 'white))
+                  (text "Goodbye" 13 'white))
 
     ;And back to the beginning
     (check-equal? (render (increase-current-frame (increase-current-frame s)))
-                  (text "Hello" 1 'white))
+                  (text "Hello" 13 'white))
 
     (check-equal? (render-string (set-text "New Text" s))
                   "New Text"))
@@ -77,8 +77,11 @@
          render-text-frame
 
          (except-out (struct-out text-frame) text-frame)
-         ;(rename-out (text-frame text-frame-struct))
          (rename-out (make-text-frame text-frame))
+
+         set-text-frame-scale
+         set-text-frame-font
+         set-text-frame-color
          
          next-frame
          set-frame
@@ -174,6 +177,19 @@
                          #:font [font #f]
                          #:color [color #f])
   (text-frame s scale font color))
+
+
+(define (set-text-frame-scale s tf)
+  (struct-copy text-frame tf
+               [scale s]))
+
+(define (set-text-frame-font f tf)
+  (struct-copy text-frame tf
+               [font f]))
+
+(define (set-text-frame-color c tf)
+  (struct-copy text-frame tf
+               [color c]))
 
 
 (struct fast-image (data [id #:mutable]) #:transparent)
@@ -439,7 +455,7 @@
 
 (define (text-frame->image thing)
   (text (text-frame-string thing)
-        (text-frame-scale thing)
+        (exact-round (* 13 (text-frame-scale thing)))
         (if (text-frame-color thing)
             (text-frame-color thing)
             'white)))

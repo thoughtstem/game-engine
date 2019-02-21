@@ -243,7 +243,7 @@
                                  (if (<= build-time 0)
                                      #f
                                      (list
-                                      (new-sprite short-ent-name #:y-offset 0 ;-7
+                                      (new-sprite short-ent-name #:y-offset 5
                                                   #:scale 0.5 #:color 'dimgray)
                                       (make-progress-bar 0 #:max build-time)))
                                  (on-start show)

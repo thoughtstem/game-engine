@@ -366,7 +366,12 @@
 ;Animated sprites are components, but we'll handle them specially
 ; at least until we can untangle them bettter...
 (define (update-animated-sprite g e c)
-  (update-entity e animated-sprite? next-frame))
+  (define all-as (get-components e animated-sprite?))
+  (define (animate-sprite sprite result)
+    (update-entity result (is-component? sprite) next-frame))
+  (foldl animate-sprite e all-as)
+  ;(update-entity e animated-sprite? next-frame)
+  )
 
 (new-component animated-sprite?
                update-animated-sprite)
