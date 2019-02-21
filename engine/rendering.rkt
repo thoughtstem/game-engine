@@ -553,7 +553,7 @@
                                   (animated-sprite-x-offset as)))
                               (real->double-flonum
                                (+ (y e)
-                                  -8
+                                  -10
                                   (animated-sprite-y-offset as)))
                               #:mx (real->double-flonum (* (animated-sprite-x-scale as) tf-scale))
                               #:my (real->double-flonum (* (animated-sprite-y-scale as) tf-scale)))))
