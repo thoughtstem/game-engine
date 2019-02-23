@@ -129,6 +129,9 @@
          set-scale-xy
          set-text
          set-font
+         
+         set-sprite-scale
+         set-sprite-color
 
          string-animated-sprite?
          image-animated-sprite?
@@ -329,6 +332,31 @@
       (set-x-scale v _)
       (set-y-scale v _))
   as)
+
+(define/contract (set-sprite-scale s as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+  
+  (define current-x (if (animated-sprite? as)
+                        (get-x-scale as)
+                        1))
+  (define current-y (if (animated-sprite? as)
+                        (get-y-scale as)
+                        1))
+  (if (animated-sprite? as)
+      (begin (~> as
+                 (set-x-scale (* current-x s) _)
+                 (set-y-scale (* current-x s) _))
+             as)
+      (new-sprite as #:scale s)))
+
+(define/contract (set-sprite-color c as)
+  (-> symbol? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (begin (set-animated-sprite-color! as c)
+             as)
+      (new-sprite as #:color c))
+  )
 
 (define (scale-xy v as)
 
