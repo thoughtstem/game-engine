@@ -10,13 +10,4 @@ the state of the game is fully defined by its entities and their components.
 In fact, the notion of entity is really just: a bundle of components.
 You can easily construct new entities from existing components.
 
-
-
-
-
-
-
-hi
-hi
-hi
 hi
