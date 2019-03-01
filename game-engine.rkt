@@ -49,6 +49,7 @@
  (all-from-out "ai.rkt")
  (all-from-out "entity-helpers/time-manager.rkt")
  (all-from-out "entity-helpers/particles.rkt")
+ (all-from-out "entity-helpers/ui-util.rkt")
 
 
  #%module-begin)
@@ -103,4 +104,5 @@
 (require "ai.rkt")
 (require "entity-helpers/time-manager.rkt")
 (require "entity-helpers/particles.rkt")
+(require "entity-helpers/ui-util.rkt")
 
