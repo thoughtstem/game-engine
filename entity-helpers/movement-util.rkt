@@ -21,7 +21,9 @@
          distance-between
          get-entities-near
          near?
-         player-is-near?)
+         player-is-near?
+         get-nearest-entity-to
+         entities-are-touching?)
 
 (require "../game-entities.rkt"
          "../components/direction.rkt"
@@ -30,7 +32,8 @@
          "../component-util.rkt"
          "../ai.rkt"
          2htdp/image
-         posn)
+         posn
+         threading)
 
 (define (randomly-relocate-me min-x max-x min-y max-y)
   (lambda (g e)
@@ -230,4 +233,61 @@
                               0))
     (define set-range (+ (/ target-width 2) (/ p-width 2) 20))
     ((near? name set-range) g player)))
+
+; touch check without chipmunk
+(define (entities-are-touching? e1 e2)
+  (define e1-pos (get-posn e1))
+  (define e1-x (posn-x e1-pos))
+  (define e1-y (posn-y e1-pos))
+  
+  (define e2-pos (get-posn e2))
+  (define e2-x (posn-x e2-pos))
+  (define e2-y (posn-y e2-pos))
+  
+  (define e1-w (width e1))
+  (define e1-h (height e1))
+  (define e2-w (width e2))
+  (define e2-h (height e2))
+
+  (define overlap 4)
+  
+  (define pad (if (and (<= overlap (/ e1-w 2))
+                       (<= overlap (/ e1-h 2))
+                       (<= overlap (/ e2-w 2))
+                       (<= overlap (/ e2-h 2)))
+                  overlap
+                  0))
+  (if (and (>= (- e1-x e2-x) (- (- (+ (/ e1-w 2) (/ e2-w 2)) pad)))
+           (<= (- e1-x e2-x)    (- (+ (/ e1-w 2) (/ e2-w 2)) pad))
+           (>= (- e1-y e2-y) (- (- (+ (/ e1-h 2) (/ e2-h 2)) pad)))
+           (<= (- e1-y e2-y)    (- (+ (/ e1-h 2) (/ e2-h 2)) pad)))
+      #t
+      #f))
+
+(define (get-nearest-entity-to e g #:filter [f identity])
+    (define all-es (filter f (game-entities g)))
+    (define (ui? e)
+      (and ((has-component? layer?) e)
+           (eq? (get-layer e) "ui")))
+
+    (define (not-ui? e)
+      (not (ui? e)))
+  
+    (define all-but-me-and-player
+      (~> all-es
+          (remove e      _ entity-eq?)
+          (filter not-ui? _)))
+
+    (define (closer-to-player? e1 e2)
+      (< (distance-between (get-posn e1) (get-posn e))
+         (distance-between (get-posn e2) (get-posn e))))
+
+    (define sorted-list (sort all-but-me-and-player
+                              closer-to-player?))
+
+    (displayln (~a "NEAREST ENTITY: " (if (empty? sorted-list)
+                                                    "NONE"
+                                                    (get-name (first sorted-list)))))
+  
+    (first (sorted-list)))
 
