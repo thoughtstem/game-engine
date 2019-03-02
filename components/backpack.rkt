@@ -7,6 +7,7 @@
 (require "../entity-helpers/sprite-util.rkt")
 (require "../entity-helpers/movement-util.rkt")
 (require "../entity-helpers/dialog-util.rkt")
+(require "../entity-helpers/ui-util.rkt")
 
 (require "./animated-sprite.rkt")
 (require "./on-start.rkt")
@@ -198,13 +199,17 @@
 
 (define (update-backpack-sprite g e)
   (define IMAGE-HEIGHT
-    40)
+    36)
   
-  (define bg-sprite (get-component e animated-sprite?))
+  ;(define bg-sprite (get-component e animated-sprite?))
 
-  (define sprite-list (map (curryr get-component animated-sprite?)
-                           (map item-entity
-                                (get-items (get-entity "player" g)))))
+  (define (clone-sprite s)
+    (struct-copy animated-sprite s))
+
+  (define sprite-list (map (compose clone-sprite
+                                    (curryr get-component animated-sprite?)
+                                    item-entity)
+                           (get-items (get-entity "player" g))))
   
   (define num-items (length sprite-list))
 
@@ -221,16 +226,19 @@
                            (image-height (render s))) _))))
 
   (~> e
-      (remove-components _ animated-sprite?)
+      (remove-components _ animated-sprite?) ; removes all animated-sprites
 
       ;Adjust the bg size by picking the right animation frame for the background
       ;Adjust its offset a tiny bit.
-      (add-component _  (~> bg-sprite
+      #;(add-component _  (~> bg-sprite
                             (set-x-scale 44         _)
                             (set-y-scale new-height _)))
 
       ;Add in the actual animated sprites of the entities
-      (add-components _ offset-sprite-list)))
+      (add-components _ (reverse (bordered-box-sprite 50 (if (= num-items 0)
+                                                             50
+                                                             (+ new-height 10))))
+                      offset-sprite-list)))
 
 (define (in-backpack? name)
   (lambda (g e)

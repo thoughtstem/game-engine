@@ -69,6 +69,7 @@
 (require "../components/backdrop.rkt")
 (require "./sprite-util.rkt")
 (require "./movement-util.rkt")
+(require "./ui-util.rkt")
 (require "../component-util.rkt")
 (require "../components/on-key.rkt")
 (require "../components/on-start.rkt")
@@ -105,14 +106,12 @@
                          #:components     [c #f]
                                           . custom-components)
 
+  ;(define bg-image (rectangle 1 1 'solid (make-color 0 0 0 100)))
 
-  (define bg-image (rectangle 1 1 'solid (make-color 0 0 0 100)))
-
-  (precompile! bg-image)
+  ;(precompile! bg-image)
   
   (define backpack-entity
-    (sprite->entity (new-sprite bg-image
-                                #:animate #f)
+    (sprite->entity (bordered-box-sprite 50 50) ;(new-sprite bg-image#:animate #f)
                     #:name       "backpack"
                     #:position   (posn 0 0) ;(posn 12 (/ HEIGHT 2))
                     #:components (static)
