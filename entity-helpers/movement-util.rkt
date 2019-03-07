@@ -285,9 +285,9 @@
     (define sorted-list (sort all-but-me-and-player
                               closer-to-player?))
 
-    (displayln (~a "NEAREST ENTITY: " (if (empty? sorted-list)
+    #;(displayln (~a "NEAREST ENTITY: " (if (empty? sorted-list)
                                                     "NONE"
                                                     (get-name (first sorted-list)))))
   
-    (first (sorted-list)))
+    (first sorted-list))
 
