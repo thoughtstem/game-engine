@@ -13,6 +13,7 @@
 (require "./on-start.rkt")
 (require "./sound-stream.rkt")
 (require "./on-key.rkt")
+(require "./storage.rkt")
 (require "../component-util.rkt")
 
 (require 2htdp/image
@@ -103,14 +104,15 @@
   (lambda (g e)
     (define old-items (get-items e))
     (define new-items (append old-items (list (item ent amount))))
-    (update-entity e backpack? (new-backpack new-items))))
+    (update-entity e backpack? (new-backpack new-items))
+    ))
 
 (define (store-item name)
   (lambda (g e)
     (define item-entity (get-entity name g))
     ((add-item item-entity) g e)))
 
-(define (store-nearby-item [name #f])
+(define (store-nearby-item [name #f] #:auto-select? [auto-select? #f])
   (lambda (g e)
     (define (not-disabled-and-storable? ent)
       (and (not (get-component ent disabled?))
@@ -124,7 +126,10 @@
     (displayln (map get-name nearby-ents))
     (if (empty? nearby-ents)
         e
-        ((add-item (first nearby-ents)) g e))))
+        (~> e
+            ((set-storage-named "Selected Weapon" (get-name (first nearby-ents))) g _)
+            ((add-item (first nearby-ents)) g _)))
+        ))
 
 
 
@@ -210,8 +215,15 @@
                                     (curryr get-component animated-sprite?)
                                     item-entity)
                            (get-items (get-entity "player" g))))
+  (define name-list (map (compose get-name
+                                  item-entity)
+                         (get-items (get-entity "player" g))))
   
   (define num-items (length sprite-list))
+  (define selected-item-index (if (and (get-storage-data "Selected Weapon" (get-entity "player" g))
+                                       (not (eq? (get-storage-data "Selected Weapon" (get-entity "player" g)) "None")))
+                                  (index-of name-list (get-storage-data "Selected Weapon" (get-entity "player" g))) ;returns #f if not found
+                                  (sub1 num-items)))
 
   (define new-height (* IMAGE-HEIGHT num-items))
 
@@ -224,6 +236,20 @@
                               (/ new-height 2))) _)
           (set-scale-xy (/ IMAGE-HEIGHT
                            (image-height (render s))) _))))
+
+  (define selection-box-offset (if (= num-items 0)
+                                   0
+                                   (+ (/ IMAGE-HEIGHT 2)
+                                      (- (* (or selected-item-index 0) IMAGE-HEIGHT)
+                                         (/ new-height 2)))))
+
+  (define selection-image (square 1 'solid (color 0 255 255 100)))
+  ;(precompile! selection-image)
+
+  (define selection-box-sprite (new-sprite selection-image
+                                           #:x-scale 44
+                                           #:y-scale 40
+                                           #:y-offset selection-box-offset))
 
   (~> e
       (remove-components _ animated-sprite?) ; removes all animated-sprites
@@ -238,6 +264,7 @@
       (add-components _ (reverse (bordered-box-sprite 50 (if (= num-items 0)
                                                              50
                                                              (+ new-height 10))))
+                      selection-box-sprite
                       offset-sprite-list)))
 
 (define (in-backpack? name)
