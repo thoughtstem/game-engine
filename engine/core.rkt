@@ -161,7 +161,8 @@
               [prev-input #:mutable]
               [mouse-input #:mutable]
               [mouse-prev-input #:mutable]
-              [collisions #:mutable]) #:transparent)
+              [collisions #:mutable]
+              [separations #:mutable]) #:transparent)
 
 ;For use in contracts
 
@@ -588,7 +589,7 @@
    (image-height i)))
 
 
-
+; ==== BEGIN ON-COLLIDE ====
 (provide (struct-out on-collide))
 
 (struct on-collide (name func))
@@ -602,7 +603,7 @@
   
   (add-physical-collider-if-necessary
    (if colliding?
-       ((on-collide-func c) g e)       
+       ((on-collide-func c) g e)
        e
        )))
 
@@ -614,8 +615,22 @@
 (new-component on-collide?
                update-on-collide)
 
+; ==== BEGIN ON-SEPARATE ===
+(provide (struct-out on-separate))
 
+(struct on-separate (name func))
 
+(define (update-on-separate g e c)
+  (define separating? (is-separating-with? (on-separate-name c) g e))
+  
+  (add-physical-collider-if-necessary
+   (if separating?
+       ((on-separate-func c) g e)
+       e
+       )))
+
+(new-component on-separate?
+               update-on-separate)
 
 ;Input
 
@@ -856,6 +871,16 @@
            (findf name es))]
         [else (error "What was that?")]))
 
+(define (is-separating-with? name g me)
+
+  (cond [(string? name)
+         (let [(names (map get-name (separating-with me g)))]
+           (member name names))]
+        [(procedure? name)
+         (let [(es (separating-with me g))]
+           (findf name es))]
+        [else (error "What was that?")]))
+
 (define (is-colliding-by-name? name1 name2 g)
   (define names (map (curry map get-name) (game-collisions g)))
   (or (member (list name1 name2) names)
@@ -873,6 +898,13 @@
            (map (curry extract-out e)
                 (filter (λ(other) (member e other entity-eq?))
                         (game-collisions g))))))
+
+(define (separating-with e g)
+  (filter identity
+          (flatten
+           (map (curry extract-out e)
+                (filter (λ(other) (member e other entity-eq?))
+                        (game-separations g))))))
 
 (define #;/contract (main-tick-component g e c)
   #;(-> any/c any/c any/c entity?)
@@ -1160,7 +1192,9 @@
         button-states
         (mouse-state #f #f (posn 0 0))
         (mouse-state #f #f (posn 0 0))
-        '()))
+        '()            ;game-collisions
+        '()            ;game-separations
+        ))
 
 
 (define (game-width g)
@@ -1370,11 +1404,22 @@
      (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
      (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
 
-     #;(displayln (~a "Colliding " (get-name e1) " " (get-name e2)))
+     ;(displayln (~a "Colliding " (get-name e1) " " (get-name e2)))
 
      (set-game-collisions! last-game-snapshot
                            (cons (list e1 e2)
                                  (game-collisions last-game-snapshot)))))
+
+  (phys:set-separate!
+   (λ(c1 c2)
+     (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
+     (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
+
+     ;(displayln (~a "Separating " (get-name e1) " " (get-name e2)))
+
+     (set-game-separations! last-game-snapshot
+                           (cons (list e1 e2)
+                                 (game-separations last-game-snapshot)))))
 
   (define new-es (map chipmunkify (game-entities g)))
 
@@ -1399,6 +1444,7 @@
 
 (define (cleanup-physics g)
   (set-game-collisions! g '())
+  (set-game-separations! g '())
   g)
 
 (define (has-chipmunk-body? e)
