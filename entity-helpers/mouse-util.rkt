@@ -11,7 +11,8 @@
 
 (define (mouse-in-game? g e)
   (define m-pos (get-mouse-pos g))
-  (not (equal? m-pos (posn 0 0))))
+  (not (equal? m-pos (posn 0 0)))
+  )
 
 (define (show-mouse-state g e)
   (define m-pos (get-mouse-pos g))
