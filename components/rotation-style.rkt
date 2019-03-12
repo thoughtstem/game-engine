@@ -18,19 +18,22 @@
 (define (switch-animations-if-necessary c e)
   (define mode (rotation-style-mode c))
   (define dir (get-direction e))
-  (define x-scale (abs (get-x-scale (get-component e animated-sprite?))))
+  (define old-x-scale (get-x-scale (get-component e animated-sprite?)))
+  ;(define x-scale (abs (get-x-scale (get-component e animated-sprite?))))
   (define e-with-new-animation
     (cond
       [(eq? mode 'left-right)
        (cond
-         [(and (< dir 270) (> dir 90))
+         [(and (< dir 270) (> dir 90) (positive? old-x-scale))
           (update-entity e animated-sprite?
-                         (curry set-x-scale (- x-scale)))]
-         [(and (or (> dir 270) (< dir 90)))
+                         (curry set-x-scale (- (abs old-x-scale))))
+          ]
+         [(and (or (> dir 270) (< dir 90)) (negative? old-x-scale))
           (update-entity e animated-sprite?
-                         (curry set-x-scale x-scale))]
+                         (curry set-x-scale (abs old-x-scale)))
+          ]
          [else e])]
-      [(eq? mode 'face-direction)
+      [(and (eq? mode 'face-direction) (not (= dir (get-rotation (get-component e animated-sprite?)))))
        (update-entity e animated-sprite?
                       (curry set-angle dir))
        ]

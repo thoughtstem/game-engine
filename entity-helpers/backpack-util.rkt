@@ -76,6 +76,7 @@
 (require "../components/sound-stream.rkt")
 (require "../components/observe-change.rkt")
 (require "../components/animated-sprite.rkt")
+(require "../components/storage.rkt")
 (require posn 2htdp/image)
 
 (define (drop-last-item)
@@ -105,11 +106,10 @@
                          #:pickup-rule    [rule (λ (g e) #t)]
                          #:components     [c #f]
                                           . custom-components)
-
-  ;(define bg-image (rectangle 1 1 'solid (make-color 0 0 0 100)))
-
-  ;(precompile! bg-image)
-  
+  (define selection-image (square 1 'solid (color 0 255 255 100)))
+  (precompile! selection-image)
+  (define (weapon-changed? g e)
+    (get-storage-data "Selected Weapon" (get-entity "player" g)))
   (define backpack-entity
     (sprite->entity (bordered-box-sprite 50 50) ;(new-sprite bg-image#:animate #f)
                     #:name       "backpack"
@@ -124,6 +124,7 @@
                                  (on-key drop-key die)
                                  (on-key backpack-key die)
                                  (observe-change backpack-changed? update-backpack)
+                                 (observe-change weapon-changed? update-backpack)
                                  (cons c custom-components)))
 
   (define (backpack-is-full? g e)

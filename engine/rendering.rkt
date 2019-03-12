@@ -186,15 +186,15 @@
 (define (get-gui #:width [w 480] #:height [h 360])
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
   (make-gui #:start-fullscreen? #f
-            #:frame-style (if (eq? (system-type 'os) 'windows)
-                              (list 'no-resize-border
-                                    'no-caption
-                                    )
-                              (list 'no-resize-border) ;DON'T CHANGE THIS
-                              )
-            #:mode gl:gui-mode
-            #:width w
-            #:height h))
+              #:frame-style (if (eq? (system-type 'os) 'windows)
+                                (list 'no-resize-border
+                                      'no-caption
+                                      )
+                                (list 'no-resize-border) ;DON'T CHANGE THIS
+                                )
+              #:mode gl:gui-mode
+              #:width w
+              #:height h))
 
 (define (get-render render-tick)
   (if last-game-snapshot
