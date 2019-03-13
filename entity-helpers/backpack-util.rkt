@@ -120,8 +120,8 @@
                                  (on-start (do-many update-backpack-sprite
                                                     (go-to-pos-inside 'top-right)
                                                     show))
-                                 (on-key store-key die)
-                                 (on-key drop-key die)
+                                 ;(on-key store-key die)
+                                 ;(on-key drop-key die)
                                  (on-key backpack-key die)
                                  (observe-change backpack-changed? update-backpack)
                                  (observe-change weapon-changed? update-backpack)
@@ -130,30 +130,37 @@
   (define (backpack-is-full? g e)
     (define num-items-in-backpack (length (get-backpack-entities e)))
     (>= num-items-in-backpack max-items))
+
+  (define (open-backpack-if-closed)
+    (lambda (g e)
+      (if (backpack-not-open? g e)
+          ((spawn #:relative? #f backpack-entity) g e)
+          e)))
   
   (define (storable-item item-name key)
     (on-key key #:rule (and/r storable-items-nearby?
                               (not/r backpack-is-full?)
                               rule) (if pickup-sound
                                                   (do-many (store-nearby-item item-name)
-                                                           (open-dialog backpack-entity)
+                                                           (open-backpack-if-closed)
                                                            (play-sound pickup-sound))
                                                   (do-many (store-nearby-item item-name)
-                                                           (open-dialog backpack-entity)))))
+                                                           (open-backpack-if-closed)
+                                                           ))))
   
   (append (list (backpack)
                 (on-key backpack-key #:rule backpack-not-open? (if backpack-sound
                                                                    (do-many (display-items)
-                                                                            (open-dialog backpack-entity)
+                                                                            (spawn #:relative? #f backpack-entity)
                                                                             (play-sound backpack-sound))
                                                                    (do-many (display-items)
-                                                                            (open-dialog backpack-entity))))
+                                                                            (spawn #:relative? #f backpack-entity))))
                 (on-key drop-key #:rule backpack-not-empty? (if drop-sound
                                                                 (do-many (drop-last-item)
-                                                                         (open-dialog backpack-entity)
+                                                                         (open-backpack-if-closed)
                                                                          (play-sound drop-sound))
                                                                 (do-many (drop-last-item)
-                                                                         (open-dialog backpack-entity)))))
+                                                                         (open-backpack-if-closed)))))
           (if storable-item-list
               (map (curryr storable-item store-key) storable-item-list)
               (list (on-key store-key #:rule (and/r storable-items-nearby?
@@ -161,7 +168,8 @@
                                                     rule)
                             (if pickup-sound
                                 (do-many (store-nearby-item)
-                                         (open-dialog backpack-entity)
+                                         (open-backpack-if-closed)
                                          (play-sound pickup-sound))
                                 (do-many (store-nearby-item)
-                                         (open-dialog backpack-entity))))))))
+                                         (open-backpack-if-closed)
+                                         )))))))
