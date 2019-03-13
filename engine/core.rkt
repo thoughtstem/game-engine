@@ -31,6 +31,9 @@
          not-ui?
          tops?
          not-tops?
+         sky-layer?
+         not-sky?
+         normal-entity?
          )
 
 ;For contracts
@@ -837,12 +840,21 @@
 (define (not-ui? e)
   (not (ui? e)))
 
+(define (sky-layer? e)  ; for treetops and rooftops
+    (and (get-component e layer?)
+         (eq? (get-layer e) "sky")))
+
+(define (not-sky? e)
+  (not (sky-layer? e)))
+
 (define (tops? e)  ; for treetops and rooftops
     (and (get-component e layer?)
          (eq? (get-layer e) "tops")))
 
 (define (not-tops? e)
   (not (tops? e)))
+
+(define normal-entity? (and/c not-ui? not-sky? not-tops?))
 
 (define #;/contract (draw g)
   #;(-> game? image?)
