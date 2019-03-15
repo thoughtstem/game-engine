@@ -121,6 +121,7 @@
          get-y-offset
 
          get-rotation
+         get-color
          
          set-x-offset
          set-y-offset
@@ -132,6 +133,7 @@
          
          set-sprite-scale
          set-sprite-color
+         set-sprite-angle
 
          string-animated-sprite?
          image-animated-sprite?
@@ -297,6 +299,9 @@
 
 (define (get-rotation as)
   (radians->degrees (animated-sprite-rotation as)))
+
+(define (get-color as)
+  (animated-sprite-color as))
  
 
 (define/contract (set-x-offset v as)
@@ -358,6 +363,14 @@
       (new-sprite as #:color c))
   )
 
+(define/contract (set-sprite-angle v as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (set-angle v as)
+      (new-sprite as #:rotation v))
+  )
+
 (define (scale-xy v as)
 
   (set-animated-sprite-x-scale! as (* 1.0 v (animated-sprite-x-scale as)))
@@ -377,7 +390,8 @@
                              #:color    (color 'black)
                              #:scale    (scale #f)
                              #:x-scale  [x-scale 1]
-                             #:y-scale  [y-scale 1])
+                             #:y-scale  [y-scale 1]
+                             #:rotation [deg 0])
   (->* ((or/c image? (listof image?)
               string?     (listof string?)
               text-frame? (listof text-frame?)))
@@ -387,7 +401,8 @@
                 #:color    symbol?
                 #:scale    number?
                 #:x-scale  number?
-                #:y-scale  number?) animated-sprite?)
+                #:y-scale  number?
+                #:rotation number?) animated-sprite?)
   (define list-costumes (if (list? costumes)
                             costumes
                             (list costumes)))
@@ -405,7 +420,7 @@
    animate?
    (if scale scale x-scale)
    (if scale scale y-scale)
-   0.0 ;theta (in radians)
+   (* 1.0 (degrees->radians deg)) ;theta (in radians)
    x-offset ;x offset
    y-offset ;y offset
    color
@@ -452,7 +467,6 @@
    (pick-frame s
                (animated-sprite-current-frame s))
    ))
-
 
 (define/contract (render-string as)
   (-> string-animated-sprite? string?)
@@ -576,5 +590,6 @@
 
 (define (get-image-id i)
   (equal-hash-code (~a (image->color-list i))))
+
 
 

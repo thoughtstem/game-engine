@@ -7,7 +7,10 @@
          get-storage-data
          set-storage
          set-storage-named
-
+         
+         remove-storage
+         remove-storage-named
+         
          entity-with-storage)
 
 (require "../game-entities.rkt")
@@ -29,6 +32,8 @@
                  (storage-with-name? name)
                  (new-storage name v)))
 
+(define (remove-storage name e)
+  (remove-component e (storage-with-name? name)))
 
 (define (get-storage-data name e)
   (if (get-storage name e)
@@ -46,7 +51,11 @@
    (game-entities g)))
 
 
-
+; ==== λ (g e) HANDLERS ====
 (define (set-storage-named key-name data)
   (lambda (g e)
     (set-storage key-name e data)))
+
+(define (remove-storage-named name)
+  (lambda (g e)
+    (remove-storage name e)))

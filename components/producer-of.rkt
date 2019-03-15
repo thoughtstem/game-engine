@@ -23,6 +23,7 @@
          "./on-rule.rkt"
          "../entity-helpers/dialog-util.rkt"
          ; =============================================
+         "../entity-helpers/render-util.rkt"
          posn
          threading
          2htdp/image)

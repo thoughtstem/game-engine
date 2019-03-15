@@ -3,7 +3,8 @@
 (module+ test
   (require rackunit
            2htdp/image
-           threading)
+           threading
+           "./render-util.rkt")
 
   (let ()
     

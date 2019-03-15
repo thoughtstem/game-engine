@@ -21,6 +21,7 @@
          "../components/spawn-once.rkt"
          "../components/counter.rkt"
          "../component-util.rkt"
+         "../entity-helpers/render-util.rkt"
          posn
          2htdp/image
          threading)

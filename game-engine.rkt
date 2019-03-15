@@ -50,6 +50,7 @@
  (all-from-out "entity-helpers/time-manager.rkt")
  (all-from-out "entity-helpers/particles.rkt")
  (all-from-out "entity-helpers/ui-util.rkt")
+ (all-from-out "entity-helpers/render-util.rkt")
 
 
  #%module-begin)
@@ -105,4 +106,5 @@
 (require "entity-helpers/time-manager.rkt")
 (require "entity-helpers/particles.rkt")
 (require "entity-helpers/ui-util.rkt")
+(require "entity-helpers/render-util.rkt")
 

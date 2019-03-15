@@ -58,8 +58,10 @@
          (struct-out game) 
          (struct-out bb)
 
-         draw-entities
-         draw-entity
+         ;draw-sprite
+         ;draw-entity
+         ;draw-entities
+         ;draw-game
 
          set-layer
          get-layer
@@ -95,7 +97,7 @@
 
          displayln-if
 
-         draw
+         ;draw
          game-width
          game-height
          width
@@ -149,6 +151,7 @@
 (require 2htdp/image)
 ;(require 2htdp/universe)
 (require "../components/animated-sprite.rkt")
+
 
 (require threading)
 
@@ -797,42 +800,6 @@
      [(eq? button 'right) (mouse-state-right prev-ms)]
      [else #f])))
 
-
-(define (draw-entity e)
-  (define ss (reverse (get-components e animated-sprite?)))
-
-
-  (if (empty? ss)
-      empty-image
-      (overlay-sprites ss)))
-
-
-(define/contract (overlay-sprites ss)
-  (-> (listof animated-sprite?)
-      image?)
-
-  (define current-image
-    (render (first ss)))
-
-  (if (= 1 (length ss))
-      current-image
-      (overlay/offset
-       current-image
-       (- (animated-sprite-x-offset (first ss)))
-       (- (animated-sprite-y-offset (first ss)))
-       (overlay-sprites (rest ss)))))
-
-
-(define (draw-entities es)
-  (if (= 1 (length es))
-      (draw-entity (first es))
-      (let* ([p (get-component (first es) posn?)]
-             [x (posn-x p)]
-             [y (posn-y p)])
-        (place-image (draw-entity (first es))
-                     x y
-                     (draw-entities (rest es))))))
-
 (define (ui? e)
     (and ((has-component? layer?) e)
          (eq? (get-layer e) "ui")))
@@ -856,7 +823,7 @@
 
 (define normal-entity? (and/c not-ui? not-sky? not-tops?))
 
-(define #;/contract (draw g)
+#|(define #;/contract (draw g)
   #;(-> game? image?)
   (define (not-hidden e) (and (not (get-component e hidden?))
                               (not (get-component e disabled?))))
@@ -865,10 +832,7 @@
   (define ui-entities (filter ui? not-hidden-entities))
   (define entities (append ui-entities regular-entities))
   ;(define entities (filter not-hidden (game-entities g)))
-  (draw-entities entities))
-
-
-
+  (draw-entities entities))|#
  
 (define (is-colliding? e g)
   (findf (curry member e entity-eq?) (game-collisions g)))
