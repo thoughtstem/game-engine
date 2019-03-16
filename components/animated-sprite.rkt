@@ -382,6 +382,10 @@
   (set-animated-sprite-rotation! as (* 1.0 (degrees->radians v)))
   as)
 
+(define (freeze-image thing)
+  (if (image? thing)
+      (freeze thing)
+      thing))
 
 (define/contract (new-sprite costumes (rate 1)
                              #:animate [animate? #t]
@@ -406,6 +410,10 @@
   (define list-costumes (if (list? costumes)
                             costumes
                             (list costumes)))
+  ; === TODO: TEST PERFORMANCE OF FREEZING ALL SPRITES ====
+  ;(define list-costumes (if (list? costumes)
+  ;                          (map freeze-image costumes)
+  ;                          (list (freeze-image costumes))))
 
   (animated-sprite
    ;Umm we don't need to be storing this two times do we?
@@ -464,8 +472,8 @@
   (scale/xy
    (max 1 (animated-sprite-x-scale s)) ;Breaks on negatives...
    (max 1 (animated-sprite-y-scale s)) ;Breaks on negatives...
-   (pick-frame s
-               (animated-sprite-current-frame s))
+   (freeze (pick-frame s
+                       (animated-sprite-current-frame s)))
    ))
 
 (define/contract (render-string as)
