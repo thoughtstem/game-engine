@@ -239,9 +239,10 @@
                       (~> s
                           (set-y-offset (+ (/ IMAGE-HEIGHT 2)
                                            (- (* i IMAGE-HEIGHT)
-                                              (/ new-height 2))) _)
+                                              (/ new-height 2))
+                                           (get-y-offset s)) _)
                           (set-scale-xy (/ IMAGE-HEIGHT
-                                           (image-height (draw-sprite s))) _)))
+                                           (image-height (draw-sprite (first ls)))) _)))
                     ls))))
 
   (define selection-box-offset (if (= num-items 0)
