@@ -145,7 +145,8 @@
          component?
          component-eq?
          component-id
-         component-or-system?)
+         component-or-system?
+         new-sprite)
 
 (require posn)
 (require 2htdp/image)
@@ -369,6 +370,54 @@
   (set! game-functions
         (append game-functions (list (list f-name update)))))
 
+; ======= NEW SPRITE ==========
+(define/contract (new-sprite costumes (rate 1)
+                             #:animate [animate? #t]
+                             #:x-offset (x-offset 0)
+                             #:y-offset (y-offset 0)
+                             #:color    (color 'black)
+                             #:scale    (scale #f)
+                             #:x-scale  [x-scale 1]
+                             #:y-scale  [y-scale 1]
+                             #:rotation [deg 0])
+  (->* ((or/c image? (listof image?)
+              string?     (listof string?)
+              text-frame? (listof text-frame?)))
+       (number? #:animate boolean?
+                #:x-offset number?
+                #:y-offset number?
+                #:color    symbol?
+                #:scale    number?
+                #:x-scale  number?
+                #:y-scale  number?
+                #:rotation number?) animated-sprite?)
+  #|(define list-costumes (if (list? costumes)
+                            costumes
+                            (list costumes)))|#
+  ; === TODO: TEST PERFORMANCE OF FREEZING ALL SPRITES ====
+  (define list-costumes (if (list? costumes)
+                            (map freeze-image costumes)
+                            (list (freeze-image costumes))))
+
+  (animated-sprite
+   (next-component-id)
+   ;Umm we don't need to be storing this two times do we?
+   ;JL: This is stored twice to preserve original costumes for functions like
+   ;    set-size and set-hue. This can be removed once we have a new way to
+   ;    set-hue and all functions in sprite-util are updated.
+   (list->vector (map prep-costumes list-costumes)) 
+   (list->vector (map prep-costumes list-costumes))
+   0
+   rate
+   0
+   animate?
+   (if scale scale x-scale)
+   (if scale scale y-scale)
+   (* 1.0 (degrees->radians deg)) ;theta (in radians)
+   x-offset ;x offset
+   y-offset ;y offset
+   color
+   ))
 
 ;Animated sprites are components, but we'll handle them specially
 ; at least until we can untangle them bettter...

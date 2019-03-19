@@ -112,7 +112,7 @@
 (define (update-progress-bar #:max [max-val 64])
   (lambda (g e)
     (define current-bar-sprite
-      (get-component e (get-storage-data "progress-bar-sprite" e)))
+      (get-component e (curry component-eq? (get-storage-data "progress-bar-sprite" e))))
     (define count (get-counter e))
     (define bar-width (* count (/ 64 max-val)))
     (define new-bar-sprite (~> current-bar-sprite

@@ -1,6 +1,6 @@
 #lang racket
 
-(module+ test
+#|(module+ test
   (require rackunit)
 
 
@@ -68,9 +68,9 @@
     (check-equal? (render (increase-current-frame (increase-current-frame s)))
                   (text "Hello" 14 'red))
     )
-  )
+  )|#
 
-(provide new-sprite
+(provide ;new-sprite
          
          render
          render-string
@@ -91,9 +91,9 @@
          (struct-out animated-sprite)
          sprite?
          animated-sprite-x-scale
-         sheet->sprite
+         ;sheet->sprite
          sprite->sheet
-         row->sprite
+         ;row->sprite
          sprite-map
          pick-frame
          pick-frame-original
@@ -131,14 +131,17 @@
          set-text
          set-font
          
-         set-sprite-scale
-         set-sprite-color
-         set-sprite-angle
+         ;set-sprite-scale
+         ;set-sprite-color
+         ;set-sprite-angle
 
          string-animated-sprite?
          image-animated-sprite?
 
-         animated-sprite-rgb)
+         animated-sprite-rgb
+         
+         freeze-image
+         prep-costumes)
 
 (require 2htdp/image)
 (require threading)
@@ -147,7 +150,7 @@
 
 ;Convenience methods for going from sheets to sprites
 
-(define (sheet->sprite sheet #:rows        (r 1)
+#|(define (sheet->sprite sheet #:rows        (r 1)
                              #:columns     (c 1)
                              #:row-number  (n 1)
                              #:speed       (speed #f)
@@ -174,6 +177,7 @@
                  #:columns c
                  #:row-number n
                  #:delay delay))
+|#
 
 (struct text-frame (string scale font color))
 
@@ -203,8 +207,9 @@
 ;Struct to encapsulate what an animation is
 (struct animated-sprite
         (
-         o-frames         ;List of original images.  This should be fast-images???
-         frames
+         id
+         [o-frames #:mutable]        ;List of original images.  This should be fast-images???
+         [frames  #:mutable]
          current-frame    ;Frame to show currently (integer)
          rate             ;How many ticks before switching frames (integer)
          ticks            ;How many ticks have passed since last frame change (integer)
@@ -217,7 +222,8 @@
          color
          )
   #:transparent
-  #:mutable)
+  ;#:mutable
+  )
 
 (define sprite? (or/c image? animated-sprite?))
 
@@ -303,42 +309,86 @@
 (define (get-color as)
   (animated-sprite-color as))
  
-
+;
 (define/contract (set-x-offset v as)
   (-> number? animated-sprite? animated-sprite?)
   
-  (set-animated-sprite-x-offset! as v)
-  as)
+  ;(set-animated-sprite-x-offset! as v)
+  ;as
+  (struct-copy animated-sprite as
+               [x-offset v])
+  )
 
 (define/contract (set-y-offset v as)
   (-> number? animated-sprite? animated-sprite?)
   
-  (set-animated-sprite-y-offset! as v)
-  as)
-
-
+  ;(set-animated-sprite-y-offset! as v)
+  ;as
+  (struct-copy animated-sprite as
+               [y-offset v])
+  )
 
 (define/contract (set-x-scale s as)
   (-> number? animated-sprite? animated-sprite?)
 
-  (set-animated-sprite-x-scale! as (* 1.0 s))
-  as)
+  ;(set-animated-sprite-x-scale! as (* 1.0 s))
+  ;as
+  (struct-copy animated-sprite as
+               [x-scale (* 1.0 s)])
+  )
 
 (define/contract (set-y-scale s as)
   (-> number? animated-sprite? animated-sprite?)
   
-  (set-animated-sprite-y-scale! as (* 1.0 s))
-  as)
+  ;(set-animated-sprite-y-scale! as (* 1.0 s))
+  ;as
+  (struct-copy animated-sprite as
+               [y-scale (* 1.0 s)])
+  
+  )
 
+; sets scale regardles of previous scale
 (define/contract (set-scale-xy v as)
   (-> number? animated-sprite? animated-sprite?)
   
-  (~> as
-      (set-x-scale v _)
-      (set-y-scale v _))
-  as)
+  ;(~> as
+  ;    (set-x-scale v _)
+  ;    (set-y-scale v _))
+  ;as
+  (struct-copy animated-sprite as
+               [x-scale (* 1.0 v)]
+               [y-scale (* 1.0 v)])
+  )
 
-(define/contract (set-sprite-scale s as)
+; multiplies new scale value by previous scale value
+(define (scale-xy v as)
+  
+  ;(set-animated-sprite-x-scale! as (* 1.0 v (animated-sprite-x-scale as)))
+  ;(set-animated-sprite-y-scale! as (* 1.0 v (animated-sprite-y-scale as)))
+  ;as
+  (define old-x-scale (get-x-scale as))
+  (define old-y-scale (get-y-scale as))
+
+  (struct-copy animated-sprite as
+               [x-scale (* 1.0 v old-x-scale)]
+               [y-scale (* 1.0 v old-y-scale)])
+
+  )
+
+(define (set-angle v as)
+  ;(set-animated-sprite-rotation! as (* 1.0 (degrees->radians v)))
+  ;as
+  (struct-copy animated-sprite as
+               [rotation (* 1.0 (degrees->radians v))])
+  )
+
+; === SPRITE MODIFIERS ===
+; These are meant to be used at the top level and can take
+; either an image or an animated sprite. These also perform
+; a struct copy on the sprite. For internal usage, use the
+; previous functions for faster performance.
+
+#|(define/contract (set-sprite-scale s as)
   (-> number? (or/c animated-sprite? image?) animated-sprite?)
   
   (define current-x (if (animated-sprite? as)
@@ -348,18 +398,15 @@
                         (get-y-scale as)
                         1))
   (if (animated-sprite? as)
-      (begin (~> as
-                 (set-x-scale (* current-x s) _)
-                 (set-y-scale (* current-x s) _))
-             as)
+      (scale-xy s as)
       (new-sprite as #:scale s)))
 
 (define/contract (set-sprite-color c as)
   (-> symbol? (or/c animated-sprite? image?) animated-sprite?)
 
   (if (animated-sprite? as)
-      (begin (set-animated-sprite-color! as c)
-             as)
+      (struct-copy animated-sprite as
+                   [color c])
       (new-sprite as #:color c))
   )
 
@@ -370,24 +417,15 @@
       (set-angle v as)
       (new-sprite as #:rotation v))
   )
+|#
 
-(define (scale-xy v as)
-
-  (set-animated-sprite-x-scale! as (* 1.0 v (animated-sprite-x-scale as)))
-  (set-animated-sprite-y-scale! as (* 1.0 v (animated-sprite-y-scale as)))
-  
-  as)
-
-(define (set-angle v as)
-  (set-animated-sprite-rotation! as (* 1.0 (degrees->radians v)))
-  as)
 
 (define (freeze-image thing)
   (if (image? thing)
       (freeze thing)
       thing))
 
-(define/contract (new-sprite costumes (rate 1)
+#;(define/contract (new-sprite costumes (rate 1)
                              #:animate [animate? #t]
                              #:x-offset (x-offset 0)
                              #:y-offset (y-offset 0)
@@ -407,15 +445,16 @@
                 #:x-scale  number?
                 #:y-scale  number?
                 #:rotation number?) animated-sprite?)
-  (define list-costumes (if (list? costumes)
+  #|(define list-costumes (if (list? costumes)
                             costumes
-                            (list costumes)))
+                            (list costumes)))|#
   ; === TODO: TEST PERFORMANCE OF FREEZING ALL SPRITES ====
-  ;(define list-costumes (if (list? costumes)
-  ;                          (map freeze-image costumes)
-  ;                          (list (freeze-image costumes))))
+  (define list-costumes (if (list? costumes)
+                            (map freeze-image costumes)
+                            (list (freeze-image costumes))))
 
   (animated-sprite
+   (next-component-id)
    ;Umm we don't need to be storing this two times do we?
    ;JL: This is stored twice to preserve original costumes for functions like
    ;    set-size and set-hue. This can be removed once we have a new way to
