@@ -7,15 +7,15 @@
          ;"../component-util.rkt"
          posn)
 
-(component observe-change (rule last-val previous-entity on-change))
+(struct observe-change (rule last-val previous-entity on-change))
 
 
 
 (define (make-observe-change rule on-change)
-  (new-observe-change rule (void) (void) on-change))
+  (observe-change rule (void) (void) on-change))
 
 
-#;(new-observe-change carried?
+#;(observe-change carried?
                   (λ(g e)
                     (if (carried? e)
                         (displayln "Picked up")
