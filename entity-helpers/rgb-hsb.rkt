@@ -4,6 +4,7 @@
 (provide tint-img)
 (provide mask)
 (provide name->color)
+(provide rgb->hue)
 (provide make-color-hue)
 (provide scale-to-fit)
 
@@ -137,7 +138,7 @@
                   (exact-round (* 100 (/ (- mx mn) mx)))))
   (define bright (exact-round (* (max r g b) 100)))
   (make-color-hsb hue sat bright a))
-  
+
 (define (rgb->hue red green blue)
   (define r (/ red 255))
   (define g (/ green 255))

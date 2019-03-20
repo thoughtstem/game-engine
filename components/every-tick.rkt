@@ -3,9 +3,10 @@
 (require "../game-entities.rkt")
 (require posn)
 
-(provide (struct-out every-tick))
+(provide (rename-out [new-every-tick every-tick])
+         (except-out (struct-out every-tick) every-tick))
 
-(struct every-tick (func))
+(component every-tick (func))
 
 (define (update-every-tick g e c)
   ((every-tick-func c) g e))

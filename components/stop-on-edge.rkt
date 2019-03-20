@@ -5,10 +5,10 @@
 (require posn)
 
 ;(provide (struct-out stop-on-edge))
-(provide (rename-out (make-stop-on-edge stop-on-edge)))
+(provide (except-out (struct-out stop-on-edge) stop-on-edge)
+         (rename-out (make-stop-on-edge stop-on-edge)))
 
-(struct stop-on-edge (left right top bottom))
-;TODO: mode = 'left 'right 'top 'bottom
+(component stop-on-edge (left right top bottom))
 
 (define (make-stop-on-edge  . args)
   ;(define sorted-args (sort (map symbol->string args) string<?))
@@ -34,10 +34,10 @@
                       (hash-set edges 'bottom #t)
                       (hash-set edges 'bottom #f)))))
 
-      (stop-on-edge (hash-ref edges 'left)
-                    (hash-ref edges 'right)
-                    (hash-ref edges 'top)
-                    (hash-ref edges 'bottom))
+      (new-stop-on-edge (hash-ref edges 'left)
+                        (hash-ref edges 'right)
+                        (hash-ref edges 'top)
+                        (hash-ref edges 'bottom))
   )
 
 (define (update-stop-on-edge g e c)

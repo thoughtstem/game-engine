@@ -5,43 +5,69 @@
 (require "./animated-sprite.rkt")
 (require posn)
 (require 2htdp/image)
+(require threading)
 
-(provide (rename-out (make-rotation-style rotation-style)))
-(provide (except-out (struct-out rotation-style) rotation-style))
+(provide (except-out (struct-out rotation-style) rotation-style)
+         (rename-out (new-rotation-style rotation-style))
+         set-rotation-style
+         horizontal-flip-sprite
+         vertical-flip-sprite)
 
-(struct rotation-style (mode facing-right?))
+(component rotation-style (mode))
 
-(define (make-rotation-style mode)
-  (rotation-style mode #t))
-
-
-(define (flip-frames frames)
-  (map freeze (map flip-horizontal (vector->list frames))))
-
-(define (update-rotation-style g e c)
+(define (switch-animations-if-necessary c e)
   (define mode (rotation-style-mode c))
   (define dir (get-direction e))
-  (define fr? (rotation-style-facing-right? c))
-  (define sprite (get-component e animated-sprite?))
-  (define f (animated-sprite-o-frames sprite))
-  ;(define rate (animated-sprite-rate sprite))
-  (define rot-func (λ(i) (rotate (- dir) i)))
-  (cond
-    [(eq? mode 'left-right) (cond
-                              [(and fr? (< dir 270)(> dir 90))
-                               (update-entity (update-entity e
-                                                             animated-sprite?
-                                                             (struct-copy animated-sprite sprite [frames (list->vector (flip-frames f))]))
-                                              rotation-style?
-                                              (rotation-style 'left-right (not fr?)))]
-                              [(and (not fr?) (or (> dir 270) (< dir 90)))
-                               (update-entity (update-entity e
-                                                             animated-sprite?
-                                                             (struct-copy animated-sprite sprite [frames f]))
-                                              rotation-style?
-                                              (rotation-style 'left-right (not fr?)))]
-                              [else e])]
-    [(eq? mode 'face-direction) (update-entity e animated-sprite? (curry sprite-map-original rot-func))]))
+  (define old-x-scale (get-x-scale (get-component e animated-sprite?)))
+  ;(define x-scale (abs (get-x-scale (get-component e animated-sprite?))))
+  (define e-with-new-animation
+    (cond
+      [(eq? mode 'left-right)
+       (cond
+         [(and (< dir 270) (> dir 90) (positive? old-x-scale))
+          (update-entity e animated-sprite?
+                         (curry set-x-scale (- (abs old-x-scale))))
+          ]
+         [(and (or (> dir 270) (< dir 90)) (negative? old-x-scale))
+          (update-entity e animated-sprite?
+                         (curry set-x-scale (abs old-x-scale)))
+          ]
+         [else e])]
+      [(and (eq? mode 'face-direction) (not (= dir (get-rotation (get-component e animated-sprite?)))))
+       (update-entity e animated-sprite?
+                      (curry set-angle dir))
+       ]
+      [else e]))
+  
+  ;(update-entity e-with-new-animation rotation-style? c)
+  e-with-new-animation
+  )
+
+(define (update-rotation-style g e c)
+  (switch-animations-if-necessary c e))
 
 (new-component rotation-style?
-               update-rotation-style) 
+               update-rotation-style)
+
+(define (get-rotation-style e)
+  (rotation-style-mode (get-component e rotation-style?)))
+
+
+; ==== HANDLERS ====
+(define (set-rotation-style mode)
+  (lambda (g e)
+    ;(displayln (~a "Current rotation-style: " (get-rotation-style e)))
+    ;(displayln (~a "Attempt rotation-style change: " mode))
+    (update-entity e rotation-style? (new-rotation-style mode))))
+
+(define (horizontal-flip-sprite)
+  (lambda (g e)
+    (define x-scale (get-x-scale (get-component e animated-sprite?)))
+    (update-entity e animated-sprite?
+                   (curry set-x-scale (- x-scale)))))
+
+(define (vertical-flip-sprite)
+  (lambda (g e)
+    (define y-scale (get-y-scale (get-component e animated-sprite?)))
+    (update-entity e animated-sprite?
+                   (curry set-y-scale (- y-scale)))))

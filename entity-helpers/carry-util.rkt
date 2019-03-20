@@ -2,6 +2,7 @@
 
 (provide movable
          nearest-to-player?
+         nearest-entity-to-player-is?
          near-player?
          get-carry-offset-x
          get-carry-offset-y
@@ -20,6 +21,7 @@
          "../components/spawn-once.rkt"
          "../components/counter.rkt"
          "../component-util.rkt"
+         "../entity-helpers/render-util.rkt"
          posn
          2htdp/image
          threading)
@@ -52,39 +54,58 @@
   ;(define e-height (image-height (render (get-component e animated-sprite?))))
   (define p-width  (image-width  (render (get-component player animated-sprite?))))
   ;(define p-height (image-height (render (get-component player animated-sprite?))))
-  (define range (+ (/ e-width 2) (/ p-width 2) 10))
+  (define range (+ (/ e-width 2) (/ p-width 2) 20))
   ;(displayln (~a "MIN RANGE: " range))
   ((near? "player" range) g e))
 
-(define (nearest-to-player? g e)
-  (define all-es (game-entities g) #;(filter (has-component? carriable?)
-                                             (game-entities g)))
+(define (nearest-to-player? #:filter [f identity]) 
+  (lambda (g e)
+    (define all-es (filter f (game-entities g)))
 
-  (define player (entity-with-name "player" g))
-
-  (define (ui? e)
-    (and ((has-component? layer?) e)
-         (eq? (get-layer e) "ui")))
-
-  (define (not-ui? e)
-    (not (ui? e)))
+    (define player (entity-with-name "player" g))
   
-  (define all-but-me-and-player
-    (~> all-es
-        (remove player _ entity-eq?)
-        (remove e      _ entity-eq?)
-        (filter not-ui? _)))
+    (define all-but-me-and-player
+      (~> all-es
+          (remove player _ entity-eq?)
+          (remove e      _ entity-eq?)
+          (filter normal-entity? _)))
   
-  (define my-dist (distance-between (get-posn e)
-                                    (get-posn player))) 
+    (define my-dist (distance-between (get-posn e)
+                                      (get-posn player))) 
 
-  (define other-distances (map (curry distance-between (get-posn player))
-                               (map get-posn all-but-me-and-player)))
+    (define other-distances (map (curry distance-between (get-posn player))
+                                 (map get-posn all-but-me-and-player)))
 
-  #;(displayln (list (get-name e) (get-id e) my-dist other-distances))
+    #;(displayln (list (get-name e) (get-id e) my-dist other-distances))
 
-  (or (empty? other-distances)
-      (< my-dist (apply min other-distances))))
+    (or (empty? other-distances)
+        (< my-dist (apply min other-distances)))))
+
+(define (nearest-entity-to-player-is? name #:filter [f identity]) 
+  (lambda (g e)
+    (define all-es (filter f (game-entities g)))
+
+    (define player (entity-with-name "player" g))
+
+    (define all-but-me-and-player
+      (~> all-es
+          (remove player _ entity-eq?)
+          (remove e      _ entity-eq?)
+          (filter normal-entity? _)))
+
+    (define (closer-to-player? e1 e2)
+      (< (distance-between (get-posn e1) (get-posn player))
+         (distance-between (get-posn e2) (get-posn player))))
+
+    (define sorted-list (sort all-but-me-and-player
+                              closer-to-player?))
+
+    (displayln (~a "NEAREST ENTITY TO PLAYER: " (if (empty? sorted-list)
+                                                    "NONE"
+                                                    (get-name (first sorted-list)))))
+  
+    (and (not (empty? sorted-list))
+         (eq? (get-name (first sorted-list)) name))))
 
 (define (carried? g e)
   (get-component e lock-to?))
@@ -183,7 +204,7 @@
                  #:show-info?     [show-info? #f]
                  #:on-drop        [on-drop display-entity])
   (list (carriable)
-        (on-key pickup-key #:rule (and/r nearest-to-player?
+        (on-key pickup-key #:rule (and/r (nearest-to-player? #:filter (has-component? on-key?))
                                          near-player?
                                          (not/r carried?)
                                          (not/r (other-entity-locked-to? "player")))

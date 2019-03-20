@@ -3,9 +3,11 @@
 ;(define collection 'multi)
 
 (define version "0.0.1")
-(define scribblings '(("game-engine.scrbl" ())))
+(define scribblings '(("scribblings/game-engine.scrbl" ())))
 
 (define deps '("threading"
+               "memoize"
+               "mode-lambda"
                "drracket"
                "htdp-lib"
                "https://github.com/jeapostrophe/lux.git#f6edd2e"
@@ -14,3 +16,6 @@
                "https://github.com/thoughtstem/racket-chipmunk.git"
                "base"))
 
+(define compile-omit-paths '(
+  "test"
+))

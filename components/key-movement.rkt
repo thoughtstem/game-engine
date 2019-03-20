@@ -1,11 +1,16 @@
 #lang racket
 
 (require "../game-entities.rkt")
-(require posn)
+(require "./after-time.rkt")
+(require posn
+         threading)
 
-(provide (rename-out (make-key-movement key-movement))
+(provide (except-out (struct-out key-movement) key-movement)
+         (rename-out (make-key-movement key-movement))
          key-movement?
+         set-speed-to
          change-speed-by
+         multiply-speed-by
          get-speed
          (struct-out on-no-key-movement)
          (struct-out on-key-movement)
@@ -13,15 +18,18 @@
          moving?
          player-is-moving?
          stop-movement
+         get-current-velocity
+         get-key-mode
+         remove-key-movement
          )
 
-(struct key-movement (speed mode rule?) #:transparent)
+(component key-movement (speed mode rule?))
 
 ;This just puts the units we usually use into units that Chimpmunk physics understands.
 (define MAGIC-SPEED-MULTIPLIER 50)
 
 (define (make-key-movement speed #:mode [mode 'arrow-keys] #:rule [rule? (lambda (g e) #t)])
-  (key-movement speed mode rule?))
+  (new-key-movement speed mode rule?))
 
 (define (update-key-movement g e c)
   (define rule? (key-movement-rule? c))
@@ -46,12 +54,51 @@
         (+ upVel downVel)))
 
 ;Not clear either...  Move or simplify with better API
-(define (change-speed-by n)
+
+(define (set-speed-to n #:for [d #f])
   (lambda (g e)
+    (define original (get-component e key-movement?))
+    (define (revert-speed g e)
+      (update-entity e key-movement? original))
+    (define increase (lambda (k)
+                       (struct-copy key-movement k
+                                    [speed  n])))
+    (~> e
+        (update-entity _ key-movement? increase)
+        (add-components _ (if d
+                              (after-time d revert-speed)
+                              #f)))
+            ))
+
+(define (change-speed-by n #:for [d #f])
+  (lambda (g e)
+    (define original (get-component e key-movement?))
+    (define (revert-speed g e)
+      (update-entity e key-movement? original))
     (define increase (lambda (k)
                        (struct-copy key-movement k
                                     [speed (+ (key-movement-speed k) n)])))
-    (update-entity e key-movement? increase)))
+    (~> e
+        (update-entity _ key-movement? increase)
+        (add-components _ (if d
+                              (after-time d revert-speed)
+                              #f)))
+            ))
+
+(define (multiply-speed-by n #:for [d #f])
+  (lambda (g e)
+    (define original (get-component e key-movement?))
+    (define (revert-speed g e)
+      (update-entity e key-movement? original))
+    (define increase (lambda (k)
+                       (struct-copy key-movement k
+                                    [speed (* (key-movement-speed k) n)])))
+    (~> e
+        (update-entity _ key-movement? increase)
+        (add-components _ (if d
+                              (after-time d revert-speed)
+                              #f)))
+            ))
 
 (define (get-speed e)
   (key-movement-speed (get-component e key-movement?)))
@@ -92,7 +139,7 @@
 
 (define (set-player-speed n)
   (lambda (g e)
-    (update-entity e key-movement? (key-movement n))))
+    (update-entity e key-movement? (new-key-movement n))))
 
 (define (stop-movement)
   (lambda (g e)
@@ -105,3 +152,6 @@
 (define (player-is-moving? g e)
   (define vel (get-current-velocity g (get-entity "player" g)))
   (not (equal? vel (posn 0 0))))
+
+(define (remove-key-movement g e)
+  (remove-component e key-movement?))

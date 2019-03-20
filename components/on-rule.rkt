@@ -2,12 +2,11 @@
 
 (require "../game-entities.rkt")
 
-(provide (struct-out on-rule)
+(provide (except-out (struct-out on-rule) on-rule)
+         (rename-out (new-on-rule on-rule))
          remove-rule)
 
-;(provide (rename-out (make-on-edge on-edge)))
-
-(struct on-rule (rule? func))
+(component on-rule (rule? func))
 
 (define (update-on-rule g e c)
   (if ((on-rule-rule? c) g e)

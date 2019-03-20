@@ -2,7 +2,8 @@
 
 (provide producer-of
          producer
-         crafter-of) 
+         crafter-of
+         crafting?) 
 
 (require "../game-entities.rkt"
          "../entity-helpers/carry-util.rkt"
@@ -15,12 +16,14 @@
          "../component-util.rkt"
 
          ; === These are needed for the progress bar ===
+         "./storage.rkt"
          "./counter.rkt"
          "./animated-sprite.rkt"
          "./do-every.rkt"
          "./on-rule.rkt"
          "../entity-helpers/dialog-util.rkt"
          ; =============================================
+         "../entity-helpers/render-util.rkt"
          posn
          threading
          2htdp/image)
@@ -67,7 +70,7 @@
     ((change-sprite (new-sprite count-image)) g e)))
 
 (define/contract (draw-progress-bar amount #:max [max-val 50])
-  (-> exact-nonnegative-integer? #:max exact-nonnegative-integer? image?)
+  (->* (exact-nonnegative-integer?) (#:max exact-nonnegative-integer?) image?)
   (define progress-bar  (if (= max-val 0)
                                empty-image
                                (pad (rectangle (* amount (/ 50 max-val)) 10 "solid" "lightblue")4 4)))
@@ -81,14 +84,46 @@
                      (overlay
                       (rectangle (+ 4 (image-width max-progress-bar)) (+ 4 (image-height max-progress-bar)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
                       (rectangle (+ 8 (image-width max-progress-bar)) (+ 8 (image-height max-progress-bar)) "solid"  (make-color 20 20 20 150))))))
-
-(define (update-progress-bar #:max [max-val 50])
+  
+(define (make-progress-bar amount #:max [max-val 64])
+  (define progress-bar-slice (if (= max-val 0)
+                                 empty-image
+                                 (square 1 'solid 'lightblue)))
+  (define bg-image (square 1 'solid 'dimgray))
+  (precompile! bg-image progress-bar-slice)
+  (define bar-width (* amount (/ 64 max-val)))
+  (define bar-sprite (~> progress-bar-slice
+                         (new-sprite _ #:animate #f)
+                         (set-x-scale bar-width _)
+                         (set-y-scale 10 _)
+                         (set-x-offset (/ (- bar-width 64) 2) _)
+                         ))
+  (define border-sprite (~> bg-image
+                        (new-sprite _ #:animate #f)
+                        (set-x-scale 66 _)
+                        (set-y-scale 12 _)))
+  ; Not sure why, but the top of the list is added last.
+  (list (storage "progress-bar-sprite" bar-sprite)
+        bar-sprite
+        border-sprite
+        )
+  )
+  
+(define (update-progress-bar #:max [max-val 64])
   (lambda (g e)
+    (define current-bar-sprite
+      (get-component e (curry component-eq? (get-storage-data "progress-bar-sprite" e))))
     (define count (get-counter e))
-    (define progress-bar (draw-progress-bar count #:max max-val))
+    (define bar-width (* count (/ 64 max-val)))
+    (define new-bar-sprite (~> current-bar-sprite
+                               (set-x-scale bar-width _)
+                               (set-x-offset (/ (- bar-width 64) 2) _)
+                               ))
     (if (= max-val 0)
         e
-        ((change-sprite (new-sprite progress-bar)) g e))))
+        (update-entity e
+                       (is-component? current-bar-sprite)
+                       new-bar-sprite))))
 
 (define (change-progress-by amount #:min [min-val 0] #:max [max-val 50])
   (lambda (g e)
@@ -112,15 +147,27 @@
     (define progress-bar (get-entity progress-entity-name g))
     (and progress-bar
          (>= (get-counter progress-bar) build-time)))
+
+  (define bg-image (square 1 'solid 'white #;(make-color 20 20 20 150)))
+  
+  (precompile! bg-image)
+  
+  (define bg-sprite (~> bg-image
+                        (new-sprite _ #:animate #f)
+                        (set-x-scale 68 _)
+                        (set-y-scale 14 _)))
   
   (define progress-counter
-    (sprite->entity #;(draw-dialog "Progress: 0") (if (<= build-time 0)
-                                                      empty-image
-                                                      (draw-progress-bar 0 #:max build-time))
+    (sprite->entity (if (<= build-time 0)
+                        empty-image
+                        bg-sprite)
                     #:position   (posn 0 0)
                     #:name       progress-entity-name
                     #:components (static)
                                  (hidden)
+                                 (if (<= build-time 0)
+                                     #f
+                                     (make-progress-bar 0 #:max build-time))
                                  (counter 0)
                                  (on-start show)
                                  (do-every 10 (change-progress-by 1 #:max build-time))
@@ -136,7 +183,7 @@
            #:rule (and/r rule
                          (λ (g e) (not (get-entity progress-entity-name g)))
                          near-player?
-                         nearest-to-player? 
+                         (nearest-to-player? #:filter (has-component? on-key?))
                          (not/r (other-entity-locked-to? "player")))
            ;(do-many (spawn to-clone))
            (spawn progress-counter)
@@ -158,25 +205,48 @@
     (if (procedure? to-carry)
         (thunk (start-movable-and-locked (to-carry) on-drop show-info?))
         (start-movable-and-locked to-carry on-drop show-info?)))
+
+  (define ent-name (get-name (if (procedure? to-clone)
+                                 (to-clone)
+                                 to-clone)))
   
-  (define progress-entity-name (~a (get-name (if (procedure? to-clone)
-                                                 (to-clone)
-                                                 to-clone)) "-progress-counter"))
+  (define short-ent-name (~a ent-name
+                             #:min-width 14
+                             #:max-width 14
+                             #:align 'center))
+  
+  (define progress-entity-name (~a ent-name "-progress-counter"))
   
   (define (build-ready? g e)
     (define progress-bar (get-entity progress-entity-name g))
     (and progress-bar
          (>= (get-counter progress-bar) build-time)))
+
+  (define bg-image (square 1 'solid 'white #;(make-color 20 20 20 150)))
+  
+  (precompile! bg-image)
+  
+  (define bg-sprite (~> bg-image
+                        (new-sprite _ #:animate #f)
+                        (set-x-scale 68 _)
+                        (set-y-scale 14 _)))
   
   (define progress-counter
-    (sprite->entity #;(draw-dialog "Progress: 0") (if (<= build-time 0)
-                                                      empty-image
-                                                      (draw-progress-bar 0 #:max build-time))
+    (sprite->entity (if (<= build-time 0)
+                        empty-image
+                        bg-sprite)
                     #:position   (posn 0 0)
                     #:name       progress-entity-name
                     #:components (static)
                                  (hidden)
+                                 (layer "ui")
                                  (counter 0)
+                                 (if (<= build-time 0)
+                                     #f
+                                     (list
+                                      (new-sprite short-ent-name #:y-offset 5
+                                                  #:scale 0.5 #:color 'dimgray)
+                                      (make-progress-bar 0 #:max build-time)))
                                  (on-start show)
                                  (do-every 10 (change-progress-by 1 #:max build-time))
                                  (on-rule (λ (g e) (or (> (get-counter e) build-time)
@@ -193,6 +263,7 @@
           ((spawn updated-to-spawn) g e2)
           e2)))
   (list
+   ;(precompiler (map (λ (t) (draw-progress-bar t #:max build-time)) (range 0 (add1 build-time))))
    (on-key 'enter
            #:rule (and/r rule
                          (λ (g e)(get-entity "crafting list" g))
@@ -203,12 +274,22 @@
                            (eq? sel selection))
                          (λ (g e) (not (get-entity progress-entity-name g)))
                          near-player?
-                         nearest-to-player? 
-                         (not/r (other-entity-locked-to? "player")))
+                         (nearest-to-player? #:filter (and/c (has-component? on-key?)
+                                                             not-tops?
+                                                             not-ui?))
+                         (not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? on-key?)
+                                                                                  not-tops?
+                                                                                  not-ui?))))
            ;(do-many (spawn to-clone))
            (spawn progress-counter)
            )
    (observe-change build-ready? (spawn-if-ready to-clone))))
+
+(define (crafting? name)
+  (lambda (g e)
+    (if (get-entity (~a name "-progress-counter") g)
+        #t
+        #f)))
 
 
 

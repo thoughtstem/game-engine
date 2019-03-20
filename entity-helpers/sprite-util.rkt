@@ -3,6 +3,7 @@
 (provide change-sprite)
 (provide set-size)
 (provide scale-sprite)
+(provide rotate-sprite)
 (provide random-dec)
 (provide random-size)
 (provide set-color)
@@ -26,9 +27,11 @@
 (require "../components/spawn-once.rkt")
 (require "../components/spawn-dialog.rkt")
 (require "./rgb-hsb.rkt")
+(require "../components/after-time.rkt")
 ;(require "../ai.rkt")
 
-(require posn)
+(require posn
+         threading)
 
 (define (change-sprite sprite-or-func)
   (lambda (g e)
@@ -42,27 +45,64 @@
 
 (define (set-size amount)
   (lambda (g e)
-    (define s (get-component e animated-sprite?))
-    (define frames (animated-sprite-o-frames s))
-    (define new-list (map (curry scale amount) (vector->list frames)))
-    (define resized-sprite (struct-copy animated-sprite s [frames (list->vector new-list)]))
-    (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? resized-sprite)
-                   bb?
-                   new-bb)))
+    (update-entity e animated-sprite?
+                   (curry set-scale-xy amount))))
 
-(define (scale-sprite amount)
+(define (scale-sprite amount #:for [d #f])
   (lambda (g e)
-    (define s (get-component e animated-sprite?))
-    (define frames (animated-sprite-o-frames s))
-    (define new-list (map (curry scale amount) (vector->list frames)))
-    (define resized-sprite (struct-copy animated-sprite s
-                                        [frames   (list->vector new-list)]
-                                        [o-frames (list->vector new-list)]))
-    (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? resized-sprite)
-                   bb?
-                   new-bb)))
+    (define all-sprites (get-components e animated-sprite?))
+    (define original-sprites (map (λ (as) (struct-copy animated-sprite as)) all-sprites))
+    
+    (define (revert-back g e)
+      (~> e
+          (remove-components _ animated-sprite?)
+          (add-components _ original-sprites))
+      )
+
+    (define (scale-a-sprite as)
+      (define xs (get-x-scale as))
+      (define ys (get-y-scale as))
+      (define xo (get-x-offset as))
+      (define yo (get-y-offset as))
+      (struct-copy animated-sprite as
+                   [x-scale (* xs amount)]
+                   [y-scale (* ys amount)]
+                   [x-offset (* xo amount)]
+                   [y-offset (* yo amount)]))
+
+    (define new-sprites (map scale-a-sprite original-sprites))
+    
+    (~> e
+        (remove-components _ animated-sprite?)
+        (add-components _ new-sprites)
+        (add-components _ (if d
+                              (after-time d revert-back)
+                              #f)))))
+
+(define (rotate-sprite amount #:for [d #f])
+  (lambda (g e)
+    (define all-sprites (get-components e animated-sprite?))
+    (define original-sprites (map (λ (as) (struct-copy animated-sprite as)) all-sprites))
+    
+    (define (revert-back g e)
+      (~> e
+          (remove-components _ animated-sprite?)
+          (add-components _ original-sprites))
+      )
+
+    (define (rotate-a-sprite as)
+      (define rot (get-rotation as))
+      (struct-copy animated-sprite as
+                   [rotation (degrees->radians (+ rot amount))]))
+
+    (define new-sprites (map rotate-a-sprite original-sprites))
+    
+    (~> e
+        (remove-components _ animated-sprite?)
+        (add-components _ new-sprites)
+        (add-components _ (if d
+                              (after-time d revert-back)
+                              #f)))))
 
 (define (random-dec min max)
   (define new-min (exact-round (* min 100)))
@@ -71,22 +111,22 @@
 
 (define (random-size min max)
   (lambda (g e)
-    (define s (get-component e animated-sprite?))
-    (define frames (animated-sprite-o-frames s))
-    (define new-min (exact-round (* min 100)))
-    (define new-max (exact-round (* max 100)))
-    (define new-list (map (curry scale (/ (random new-min (add1 new-max)) 100)) (vector->list frames)))
-    (define resized-sprite (struct-copy animated-sprite s [frames (list->vector new-list)]))
-    (define new-bb (image->bb (render resized-sprite)))
-    (update-entity (update-entity e animated-sprite? resized-sprite)
-                   bb?
-                   new-bb)))
+    (update-entity e animated-sprite?
+                   (curry set-scale-xy (+ min (* (random) (- max min)))))))
 
+;This is broken...
+;Not broken anymore, but recompiles each color change.
+;todo: use mode lambda for color changing
 (define (change-color-by amount)
   (lambda (g e)
     (define s (get-component e animated-sprite?))
     (define frames (animated-sprite-o-frames s))
-    (define new-list (map (curry change-img-hue amount) (vector->list frames)))
+    (define (ensure-image image-or-fast-image)
+      (if (fast-image? image-or-fast-image)
+          (fast-image-data image-or-fast-image)
+          image-or-fast-image))
+    (define image-frames (map ensure-image (vector->list frames)))
+    (define new-list (map fast-image (map (curry change-img-hue amount) image-frames)))
     (update-entity e animated-sprite? (struct-copy animated-sprite s
                                                    [frames   (list->vector new-list)]
                                                    [o-frames (list->vector new-list)]
@@ -149,3 +189,77 @@
                                 [current-frame 0]
                                 [ticks 0]
                                 [animate? #f]))))
+
+; === MOVED FROM ANIMATED-SPRITE ===
+(provide sheet->sprite
+         row->sprite
+         set-sprite-scale
+         set-sprite-color
+         set-sprite-angle)
+
+;Convenience methods for going from sheets to sprites
+
+(define (sheet->sprite sheet #:rows        (r 1)
+                             #:columns     (c 1)
+                             #:row-number  (n 1)
+                             #:speed       (speed #f)
+                             #:delay       (delay #f)
+                             #:animate?     [animate? #t])
+  
+  (define actual-delay (or delay speed 1))
+  
+  (~> sheet
+      (sheet->costume-list _ c r (* r c))
+      (drop _ (* (- n 1) c))
+      (take _ c)
+      (new-sprite _ actual-delay #:animate animate?)
+      ))
+
+
+(define (row->sprite sheet
+                     #:columns     (c 4)
+                     #:row-number  (n 1)
+                     #:delay       (delay 1))
+  
+  (sheet->sprite sheet
+                 #:rows 1
+                 #:columns c
+                 #:row-number n
+                 #:delay delay))
+
+; === SPRITE MODIFIERS ===
+; These are meant to be used at the top level and can take
+; either an image or an animated sprite. These also perform
+; a struct copy on the sprite. For internal usage, use the
+; previous functions for faster performance.
+
+(define/contract (set-sprite-scale s as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+  
+  (define current-x (if (animated-sprite? as)
+                        (get-x-scale as)
+                        1))
+  (define current-y (if (animated-sprite? as)
+                        (get-y-scale as)
+                        1))
+  (if (animated-sprite? as)
+      (scale-xy s as)
+      (new-sprite as #:scale s)))
+
+(define/contract (set-sprite-color c as)
+  (-> symbol? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (struct-copy animated-sprite as
+                   [color c])
+      (new-sprite as #:color c))
+  )
+
+(define/contract (set-sprite-angle v as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (set-angle v as)
+      (new-sprite as #:rotation v))
+  )
+

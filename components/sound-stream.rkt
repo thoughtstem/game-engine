@@ -10,15 +10,15 @@
                   pstream-play
                   stop))
 
-(provide (rename-out (make-sound-stream sound-stream))
+(provide (except-out (struct-out sound-stream) sound-stream)
+         (rename-out (make-sound-stream sound-stream))
          make-sound
          set-sound-stream
          get-sound-stream
          play-sound
          play-sound-from
          stop-all-sounds
-         stop-sound-streams
-         sound-stream?)
+         stop-sound-streams)
 
 (default-sample-rate 48000)
 
@@ -26,17 +26,19 @@
   ;'()
   (resample-to-rate 48000 (rs-read (string->path string-path))))
 
-(struct sound-stream (ps))
+(component sound-stream (ps))
 
 (define (make-sound-stream)
-  (sound-stream ;'()
-                (make-pstream)))
+  (new-sound-stream
+                 ;'()
+                (make-pstream)
+                ))
 
 (define (update-sound-stream g e c) e)
 
 (define (set-sound-stream ps)
  (lambda (g e)
-     (update-entity e sound-stream? (sound-stream ps))))
+     (update-entity e sound-stream? (new-sound-stream ps))))
 
 (define (get-sound-stream e)
   (sound-stream-ps (get-component e sound-stream?)))

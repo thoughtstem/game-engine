@@ -5,13 +5,13 @@
 
 ;(provide (struct-out on-edge))
 
-(provide (rename-out (make-on-edge on-edge))
-         on-edge?)
+(provide (except-out (struct-out on-edge) on-edge)
+         (rename-out (make-on-edge on-edge)))
 
-(struct on-edge (pos offset rule? func))
+(component on-edge (pos offset rule? func))
 
 (define (make-on-edge pos #:rule [rule? (lambda (g e) #t)] #:offset [offset 0] func)
-  (on-edge pos offset rule? func))
+  (new-on-edge pos offset rule? func))
 
 (define (update-on-edge g e c)
   (define WIDTH (game-width g))

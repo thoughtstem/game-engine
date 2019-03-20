@@ -4,25 +4,36 @@
 ;(require "../components/after-time.rkt")
 (require "./direction.rkt")
 (require "./rotation-style.rkt")
-(require posn)
+(require "./animated-sprite.rkt")
+(require posn
+         threading)
 
 ;(displayln "LOADING ON START")
 
 (provide spawn-many-from
-         spawn-once-spawn
-         spawn-once-speed
-         spawn-once-accum
-         spawn-once-next
+         spawn-once-inc
+         update-what-will-spawn
+         spawn-once-ready?
+         spawn-once-almost-ready?
+         (except-out (struct-out spawn-once) spawn-once)
          (rename-out [make-spawn-once spawn-once]))
 
-(struct spawn-once (spawn speed accum next relative?))
+(component spawn-once (spawn speed accum next relative?))
 
 (define (make-spawn-once spawn #:relative? [relative? #t])
-  (spawn-once spawn 1 0 #f relative?))
+  (new-spawn-once spawn 1 0 #f relative?))
+
+(define (update-what-will-spawn so f)
+  (struct-copy spawn-once so
+               [spawn (f (spawn-once-spawn so))]))
 
 (define (spawn-once-ready? s)
   (>= (spawn-once-accum s)
       (spawn-once-speed s)))
+
+(define (spawn-once-almost-ready? s)
+  (= (spawn-once-accum s)
+     (sub1 (spawn-once-speed s))))
 
 (define (spawn-once-reset s)
   (struct-copy spawn-once s
@@ -46,14 +57,20 @@
                     (get-direction e)
                     #f))
     (define offset (get-component to-spawn posn?))
-    (define rot-offset (unless (eq? dir #f)(posn-rotate-origin-ccw dir offset)))
+    (define rot-offset (unless (eq? dir #f)
+                         (posn-rotate-origin-ccw (modulo (exact-round dir) 360) offset)))
     (define rs? (get-component e rotation-style?))
     (define m (if rs?
                   (rotation-style-mode rs?)
                   #f))
-    (define facing-right? (if (eq? m 'left-right)
-                              (rotation-style-facing-right? rs?)
-                              #t))
+
+    
+    (define facing-right?
+      (if (eq? m 'left-right)
+          (positive? (animated-sprite-x-scale (get-component e animated-sprite?)))
+          #t))
+
+    
     (define new-posn (cond
                        [(and (eq? m 'left-right) (eq? facing-right? #t)) (posn (+ (posn-x pos) (posn-x offset))
                                                                                (+ (posn-y pos) (posn-y offset)))]
@@ -64,8 +81,13 @@
                        [else (posn (+ (posn-x pos) (posn-x offset))
                                    (+ (posn-y pos) (posn-y offset)))]))
                        
-    (define new-entity (update-entity to-spawn posn?
-                                      new-posn))
+    (define new-entity (if (and (get-component to-spawn direction?)
+                                (get-component e direction?))
+                           (~> to-spawn
+                               (update-entity _ posn? new-posn)
+                               (update-entity _ direction? (direction dir)))
+                           (update-entity to-spawn posn?
+                                      new-posn)))
     
     (if relative?
         (struct-copy spawn-once s
@@ -105,7 +127,7 @@
   (define es     (game-entities g))
   (define new-es (collect-spawn-once es))
 
-  (and (not (empty? new-es))
+  #;(and (not (empty? new-es))
        (displayln (~a "Spawning: " (map get-name new-es))))
   
   (define all    (append #;new-es

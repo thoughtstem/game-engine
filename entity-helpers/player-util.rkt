@@ -5,11 +5,13 @@
          player-info-closed?
          update-move-info
          show-move-info
+         key-is-down?
          )
 
 (require 2htdp/image
          posn)
 (require "../game-entities.rkt")
+(require "../component-util.rkt")
 (require "../components/animated-sprite.rkt")
 (require "../components/backdrop.rkt")
 (require "../components/key-movement.rkt")
@@ -23,18 +25,35 @@
 (require "../components/on-rule.rkt")
 (require "../entity-helpers/sprite-util.rkt")
 (require "../entity-helpers/dialog-util.rkt")
+(require "../entity-helpers/mouse-util.rkt")
 
 (define (start-stop-animation g e1 e2)
   (if (moving? g e2)
       ((start-animation) g e2)
       ((stop-animation) g e2)))
 
-(define (key-animator-system)
+(define (set-key-direction)
+  (lambda (g e)
+    (define vel (get-current-velocity g e))
+    (define new-dir (if (equal? vel (posn 0 0))
+                        0
+                        (radians->degrees (atan (posn-y vel) (posn-x vel)))))
+    (update-entity e direction? (direction (modulo new-dir 360)))))
+
+(define (key-animator-system #:mode [mode 'arrow-keys] #:face-mouse? [face-mouse? #f])
+  (define key-list
+    (cond [(eq? mode 'arrow-keys) (list 'left  'right 'up    'down)]
+          [(eq? mode 'wasd)       (list 'a     'd     'w     's)]
+          [else                   (list 'left  'right 'up    'down)]))
   (list (direction 0)
-        (rotation-style 'left-right)
-        (on-key 'right (set-direction 0))
-        (on-key 'left  (set-direction 180))
+        (if face-mouse?
+            (on-rule mouse-in-game? point-to-mouse)
+            (list (on-key (first  key-list) (set-key-direction))
+                  (on-key (second key-list) (set-key-direction))
+                  (on-key (third  key-list) (set-key-direction))
+                  (on-key (fourth key-list) (set-key-direction))))
         (observe-change moving? start-stop-animation)
+        (rotation-style 'left-right)
         ))
 
 (define (player-info-closed? g e)
@@ -74,3 +93,7 @@
                                  (on-key "o" die)
                                  (on-rule player-is-moving? (update-move-info))))
   (add-component e (spawn-once info-entity)))
+
+(define (key-is-down? key)
+  (lambda (g e)
+    (button-down? key g)))

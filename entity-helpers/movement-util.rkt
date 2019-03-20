@@ -5,10 +5,12 @@
          go-to
          go-to-pos
          go-to-pos-inside
+         go-to-entity
          respawn
          move-with-speed
          move-random-speed
          point-to
+         point-to-posn
          bounce
          change-x-by
          change-y-by
@@ -19,7 +21,9 @@
          distance-between
          get-entities-near
          near?
-         player-is-near?)
+         player-is-near?
+         get-nearest-entity-to
+         entities-are-touching?)
 
 (require "../game-entities.rkt"
          "../components/direction.rkt"
@@ -28,7 +32,8 @@
          "../component-util.rkt"
          "../ai.rkt"
          2htdp/image
-         posn)
+         posn
+         threading)
 
 (define (randomly-relocate-me min-x max-x min-y max-y)
   (lambda (g e)
@@ -46,12 +51,12 @@
 
 
 (define alignment? (or/c 'left        'right        'top         'bottom
-              'top-left    'top-right    'bottom-left 'bottom-right
-              'left-center 'right-center 'top-center  'bottom-center
-              'center))
+                         'top-left    'top-right    'bottom-left 'bottom-right
+                         'left-center 'right-center 'top-center  'bottom-center
+                         'center))
 
-(define/contract (go-to-pos pos #:offset [offset 0])
-  (->* (alignment?) (#:offset number?) procedure?) 
+(define/contract (go-to-pos pos #:offset [offset 0] #:posn-offset (posn-offset (posn 0 0)))
+  (->* (alignment?) (#:offset number? #:posn-offset posn?) procedure?) 
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
@@ -59,7 +64,10 @@
     (define pos-x (posn-x p))
     (define pos-y (posn-y p))
     (update-entity e posn?
-                   (cond
+
+                   (posn-add
+                    posn-offset
+                    (cond
                      [(eq? pos 'left)         (posn offset           pos-y)]
                      [(eq? pos 'right)        (posn (+ WIDTH offset) pos-y)]
                      [(eq? pos 'top)          (posn pos-x            offset)]
@@ -72,10 +80,11 @@
                      [(eq? pos 'right-center) (posn (+ WIDTH offset) (/ HEIGHT 2))]
                      [(eq? pos 'top-center)   (posn (/ WIDTH 2)      offset)]
                      [(eq? pos 'bottom-center)(posn (/ WIDTH 2)      (+ HEIGHT offset))]
-                     [(eq? pos 'center)       (posn (/ WIDTH 2)      (/ HEIGHT 2))]))))
+                     [(eq? pos 'center)       (posn (/ WIDTH 2)      (/ HEIGHT 2))]))
+                   )))
                          
-(define/contract (go-to-pos-inside pos #:offset [offset 0])
-  (->* ((and/c alignment? (not/c 'center))) (#:offset number?) procedure?) 
+(define/contract (go-to-pos-inside pos #:offset [offset 0] #:posn-offset (posn-offset (posn 0 0)))
+  (->* ((and/c alignment? (not/c 'center))) (#:offset number? #:posn-offset posn?) procedure?) 
   (lambda (g e)
     (define WIDTH (game-width g))
     (define HEIGHT (game-height g))
@@ -89,19 +98,28 @@
     (define pos-x (posn-x p))
     (define pos-y (posn-y p))
     (update-entity e posn?
-                   (cond
-                     [(eq? pos 'left)         (posn (+ offset hw)           pos-y)]
-                     [(eq? pos 'right)        (posn (+ (- WIDTH hw) offset) pos-y)]
-                     [(eq? pos 'top)          (posn pos-x                   (+ offset hh))]
-                     [(eq? pos 'bottom)       (posn pos-x                   (+ (- HEIGHT hh) offset))]
-                     [(eq? pos 'top-left)     (posn hw                      hh)]
-                     [(eq? pos 'top-right)    (posn (- WIDTH hw)            hh)]
-                     [(eq? pos 'bottom-left)  (posn hw                      (- HEIGHT hh))]
-                     [(eq? pos 'bottom-right) (posn (- WIDTH hw)            (- HEIGHT hh))]
-                     [(eq? pos 'left-center)  (posn (+ hw offset)           (/ HEIGHT 2))]
-                     [(eq? pos 'right-center) (posn (+ (- WIDTH hw) offset) (/ HEIGHT 2))]
-                     [(eq? pos 'top-center)   (posn (/ WIDTH 2)             (+ hh offset))]
-                     [(eq? pos 'bottom-center)(posn (/ WIDTH 2)             (+ (- HEIGHT hh) offset))]))))    
+                   (posn-add
+                    posn-offset
+                    (cond
+                      [(eq? pos 'left)         (posn (+ offset hw)           pos-y)]
+                      [(eq? pos 'right)        (posn (+ (- WIDTH hw) offset) pos-y)]
+                      [(eq? pos 'top)          (posn pos-x                   (+ offset hh))]
+                      [(eq? pos 'bottom)       (posn pos-x                   (+ (- HEIGHT hh) offset))]
+                      [(eq? pos 'top-left)     (posn hw                      hh)]
+                      [(eq? pos 'top-right)    (posn (- WIDTH hw)            hh)]
+                      [(eq? pos 'bottom-left)  (posn hw                      (- HEIGHT hh))]
+                      [(eq? pos 'bottom-right) (posn (- WIDTH hw)            (- HEIGHT hh))]
+                      [(eq? pos 'left-center)  (posn (+ hw offset)           (/ HEIGHT 2))]
+                      [(eq? pos 'right-center) (posn (+ (- WIDTH hw) offset) (/ HEIGHT 2))]
+                      [(eq? pos 'top-center)   (posn (/ WIDTH 2)             (+ hh offset))]
+                      [(eq? pos 'bottom-center)(posn (/ WIDTH 2)             (+ (- HEIGHT hh) offset))])))))    
+
+(define (go-to-entity name #:offset [offset (posn 0 0)])
+  (lambda (g e)
+    (define target? (get-entity name g))
+    (if target?
+        (update-entity e posn? (posn-add (get-component target? posn?) offset))
+        e)))
 
 (define (respawn edge #:offset [offset 0])
   (lambda (g e)
@@ -139,6 +157,15 @@
     (if target?
         (update-entity e direction? (direction (modulo (exact-round new-dir) 360)))
         e)))
+
+(define (point-to-posn target-pos)
+  (lambda (g e)
+    (define target-x (posn-x target-pos))
+    (define target-y (posn-y target-pos))
+    (define x (posn-x (get-component e posn?)))
+    (define y (posn-y (get-component e posn?)))
+    (define new-dir (radians->degrees (atan (- target-y y) (- target-x x))))
+    (update-entity e direction? (direction (modulo (exact-round new-dir) 360)))))
 
 (define (bounce)
   (lambda (g e)
@@ -196,8 +223,71 @@
     (define nearby-ents (filter (curry name-eq? name) (get-entities-near e g range)))
     (not (empty? nearby-ents))))
 
-(define (player-is-near? item [range 80])
+(define (player-is-near? name [range 80])
   (lambda (g e)
     (define player (get-entity "player" g))
-    ((near? item range) g player)))
+    (define p-width  (image-width  (render (get-component player animated-sprite?))))
+    (define target (get-entity name g))
+    (define target-width  (if target
+                              (image-width (render (get-component target animated-sprite?)))
+                              0))
+    (define set-range (+ (/ target-width 2) (/ p-width 2) 20))
+    ((near? name set-range) g player)))
+
+; touch check without chipmunk
+(define (entities-are-touching? e1 e2)
+  (define e1-pos (get-posn e1))
+  (define e1-x (posn-x e1-pos))
+  (define e1-y (posn-y e1-pos))
+  
+  (define e2-pos (get-posn e2))
+  (define e2-x (posn-x e2-pos))
+  (define e2-y (posn-y e2-pos))
+  
+  (define e1-w (width e1))
+  (define e1-h (height e1))
+  (define e2-w (width e2))
+  (define e2-h (height e2))
+
+  (define overlap 4)
+  
+  (define pad (if (and (<= overlap (/ e1-w 2))
+                       (<= overlap (/ e1-h 2))
+                       (<= overlap (/ e2-w 2))
+                       (<= overlap (/ e2-h 2)))
+                  overlap
+                  0))
+  (if (and (>= (- e1-x e2-x) (- (- (+ (/ e1-w 2) (/ e2-w 2)) pad)))
+           (<= (- e1-x e2-x)    (- (+ (/ e1-w 2) (/ e2-w 2)) pad))
+           (>= (- e1-y e2-y) (- (- (+ (/ e1-h 2) (/ e2-h 2)) pad)))
+           (<= (- e1-y e2-y)    (- (+ (/ e1-h 2) (/ e2-h 2)) pad)))
+      #t
+      #f))
+
+(define (get-nearest-entity-to e g #:filter [f identity])
+    (define all-es (filter f (game-entities g)))
+    (define (ui? e)
+      (and ((has-component? layer?) e)
+           (eq? (get-layer e) "ui")))
+
+    (define (not-ui? e)
+      (not (ui? e)))
+  
+    (define all-but-me-and-player
+      (~> all-es
+          (remove e      _ entity-eq?)
+          (filter not-ui? _)))
+
+    (define (closer-to-player? e1 e2)
+      (< (distance-between (get-posn e1) (get-posn e))
+         (distance-between (get-posn e2) (get-posn e))))
+
+    (define sorted-list (sort all-but-me-and-player
+                              closer-to-player?))
+
+    #;(displayln (~a "NEAREST ENTITY: " (if (empty? sorted-list)
+                                                    "NONE"
+                                                    (get-name (first sorted-list)))))
+  
+    (first sorted-list))
 
