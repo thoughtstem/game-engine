@@ -81,19 +81,28 @@
 
   ;Define that we'll have one layer of sprites (for now).
   ;Fix its position at the center of the screen
-  (define layers (vector (ml:layer (real->double-flonum W/2)
-                                   (real->double-flonum H/2)
-                                   ;#:mx 0.1
-                                   ;#:my 0.1
-                                   ;#:mode7 2.0
-                                   ;#:horizon 50.0
-                                   )
-                         (ml:layer (real->double-flonum W/2)
-                                   (real->double-flonum H/2))
-                         (ml:layer (real->double-flonum W/2)
-                                   (real->double-flonum H/2))
-                         (ml:layer (real->double-flonum W/2)
-                                   (real->double-flonum H/2))))
+  (define layers (vector
+                  ; LAYER 0 - MOST ENTITIES
+                  (ml:layer (real->double-flonum W/2)
+                            (real->double-flonum H/2)
+                            ;#:mx 0.1
+                            ;#:my 0.1
+                            ;#:mode7 2.0
+                            ;#:horizon 50.0
+                            )
+                  ; LAYER 1 - TREE TOPS AND ROOF TOPS
+                  (ml:layer (real->double-flonum W/2)
+                            (real->double-flonum H/2)
+                            )
+                  ; LAYER 2 - SKY
+                  (ml:layer (real->double-flonum W/2)
+                            (real->double-flonum H/2)
+                            )
+                  ; LAYER 3 - UI
+                  (ml:layer (real->double-flonum W/2)
+                            (real->double-flonum H/2)
+                            )
+                  ))
 
   ;Set up our open gl render function with the current sprite database
   (define ml:render (gl:stage-draw/dc csd W H 8))
@@ -501,7 +510,8 @@
   ;  (and (get-component e layer?)
   ;       (eq? (get-layer e) "tops")))
 
-  (define layer (cond [(ui? e)   2]
+  (define layer (cond [(ui? e)   3]
+                      [(sky-layer? e)  2]
                       [(tops? e) 1]
                       [else      0]))
 

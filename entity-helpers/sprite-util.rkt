@@ -190,3 +190,76 @@
                                 [ticks 0]
                                 [animate? #f]))))
 
+; === MOVED FROM ANIMATED-SPRITE ===
+(provide sheet->sprite
+         row->sprite
+         set-sprite-scale
+         set-sprite-color
+         set-sprite-angle)
+
+;Convenience methods for going from sheets to sprites
+
+(define (sheet->sprite sheet #:rows        (r 1)
+                             #:columns     (c 1)
+                             #:row-number  (n 1)
+                             #:speed       (speed #f)
+                             #:delay       (delay #f)
+                             #:animate?     [animate? #t])
+  
+  (define actual-delay (or delay speed 1))
+  
+  (~> sheet
+      (sheet->costume-list _ c r (* r c))
+      (drop _ (* (- n 1) c))
+      (take _ c)
+      (new-sprite _ actual-delay #:animate animate?)
+      ))
+
+
+(define (row->sprite sheet
+                     #:columns     (c 4)
+                     #:row-number  (n 1)
+                     #:delay       (delay 1))
+  
+  (sheet->sprite sheet
+                 #:rows 1
+                 #:columns c
+                 #:row-number n
+                 #:delay delay))
+
+; === SPRITE MODIFIERS ===
+; These are meant to be used at the top level and can take
+; either an image or an animated sprite. These also perform
+; a struct copy on the sprite. For internal usage, use the
+; previous functions for faster performance.
+
+(define/contract (set-sprite-scale s as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+  
+  (define current-x (if (animated-sprite? as)
+                        (get-x-scale as)
+                        1))
+  (define current-y (if (animated-sprite? as)
+                        (get-y-scale as)
+                        1))
+  (if (animated-sprite? as)
+      (scale-xy s as)
+      (new-sprite as #:scale s)))
+
+(define/contract (set-sprite-color c as)
+  (-> symbol? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (struct-copy animated-sprite as
+                   [color c])
+      (new-sprite as #:color c))
+  )
+
+(define/contract (set-sprite-angle v as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (set-angle v as)
+      (new-sprite as #:rotation v))
+  )
+

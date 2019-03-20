@@ -11,7 +11,8 @@
            "every-tick.rkt"
            "do-every.rkt"
            "key-movement.rkt"
-           "../ai.rkt")
+           "../ai.rkt"
+           "../entity-helpers/render-util.rkt")
   
 
   (define red   (rectangle 10 10 'solid 'red))

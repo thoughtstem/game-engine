@@ -8,6 +8,7 @@
 (require "../entity-helpers/movement-util.rkt")
 (require "../entity-helpers/dialog-util.rkt")
 (require "../entity-helpers/ui-util.rkt")
+(require "../entity-helpers/render-util.rkt")
 
 (require "./animated-sprite.rkt")
 (require "./on-start.rkt")
@@ -211,8 +212,12 @@
   (define (clone-sprite s)
     (struct-copy animated-sprite s))
 
-  (define sprite-list (map (compose clone-sprite
-                                    (curryr get-component animated-sprite?)
+  (define (clone-sprites s-list)
+    (map clone-sprite s-list))
+
+  ;sprites-list is a list of list of sprites
+  (define sprite-list (map (compose clone-sprites
+                                    (curryr get-components animated-sprite?)
                                     item-entity)
                            (get-items (get-entity "player" g))))
   (define name-list (map (compose get-name
@@ -228,14 +233,17 @@
   (define new-height (* IMAGE-HEIGHT num-items))
 
   (define offset-sprite-list
-    (for/list ([s sprite-list]
-               [i (range (length sprite-list))])
-      (~> s
-          (set-y-offset (+ (/ IMAGE-HEIGHT 2)
-                           (- (* i IMAGE-HEIGHT)
-                              (/ new-height 2))) _)
-          (set-scale-xy (/ IMAGE-HEIGHT
-                           (image-height (render s))) _))))
+    (flatten (for/list ([ls sprite-list]
+                        [i (range (length sprite-list))])
+               (map (λ (s)
+                      (~> s
+                          (set-y-offset (+ (/ IMAGE-HEIGHT 2)
+                                           (- (* i IMAGE-HEIGHT)
+                                              (/ new-height 2))
+                                           (get-y-offset s)) _)
+                          (set-scale-xy (/ IMAGE-HEIGHT
+                                           (image-height (draw-sprite (first ls)))) _)))
+                    ls))))
 
   (define selection-box-offset (if (= num-items 0)
                                    0

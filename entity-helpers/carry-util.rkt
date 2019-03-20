@@ -21,6 +21,7 @@
          "../components/spawn-once.rkt"
          "../components/counter.rkt"
          "../component-util.rkt"
+         "../entity-helpers/render-util.rkt"
          posn
          2htdp/image
          threading)
@@ -59,23 +60,15 @@
 
 (define (nearest-to-player? #:filter [f identity]) 
   (lambda (g e)
-    (define all-es (filter f (game-entities g)) #;(filter (has-component? carriable?)
-                                               (game-entities g)))
+    (define all-es (filter f (game-entities g)))
 
     (define player (entity-with-name "player" g))
-
-    (define (ui? e)
-      (and ((has-component? layer?) e)
-           (eq? (get-layer e) "ui")))
-
-    (define (not-ui? e)
-      (not (ui? e)))
   
     (define all-but-me-and-player
       (~> all-es
           (remove player _ entity-eq?)
           (remove e      _ entity-eq?)
-          (filter not-ui? _)))
+          (filter normal-entity? _)))
   
     (define my-dist (distance-between (get-posn e)
                                       (get-posn player))) 
@@ -94,18 +87,11 @@
 
     (define player (entity-with-name "player" g))
 
-    (define (ui? e)
-      (and ((has-component? layer?) e)
-           (eq? (get-layer e) "ui")))
-
-    (define (not-ui? e)
-      (not (ui? e)))
-  
     (define all-but-me-and-player
       (~> all-es
           (remove player _ entity-eq?)
           (remove e      _ entity-eq?)
-          (filter not-ui? _)))
+          (filter normal-entity? _)))
 
     (define (closer-to-player? e1 e2)
       (< (distance-between (get-posn e1) (get-posn player))

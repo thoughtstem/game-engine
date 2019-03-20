@@ -31,6 +31,9 @@
          not-ui?
          tops?
          not-tops?
+         sky-layer?
+         not-sky?
+         normal-entity?
          )
 
 ;For contracts
@@ -55,8 +58,10 @@
          (struct-out game) 
          (struct-out bb)
 
-         draw-entities
-         draw-entity
+         ;draw-sprite
+         ;draw-entity
+         ;draw-entities
+         ;draw-game
 
          set-layer
          get-layer
@@ -92,7 +97,7 @@
 
          displayln-if
 
-         draw
+         ;draw
          game-width
          game-height
          width
@@ -140,12 +145,14 @@
          component?
          component-eq?
          component-id
-         component-or-system?)
+         component-or-system?
+         new-sprite)
 
 (require posn)
 (require 2htdp/image)
 ;(require 2htdp/universe)
 (require "../components/animated-sprite.rkt")
+
 
 (require threading)
 
@@ -363,6 +370,54 @@
   (set! game-functions
         (append game-functions (list (list f-name update)))))
 
+; ======= NEW SPRITE ==========
+(define/contract (new-sprite costumes (rate 1)
+                             #:animate [animate? #t]
+                             #:x-offset (x-offset 0)
+                             #:y-offset (y-offset 0)
+                             #:color    (color 'black)
+                             #:scale    (scale #f)
+                             #:x-scale  [x-scale 1]
+                             #:y-scale  [y-scale 1]
+                             #:rotation [deg 0])
+  (->* ((or/c image? (listof image?)
+              string?     (listof string?)
+              text-frame? (listof text-frame?)))
+       (number? #:animate boolean?
+                #:x-offset number?
+                #:y-offset number?
+                #:color    symbol?
+                #:scale    number?
+                #:x-scale  number?
+                #:y-scale  number?
+                #:rotation number?) animated-sprite?)
+  #|(define list-costumes (if (list? costumes)
+                            costumes
+                            (list costumes)))|#
+  ; === TODO: TEST PERFORMANCE OF FREEZING ALL SPRITES ====
+  (define list-costumes (if (list? costumes)
+                            (map freeze-image costumes)
+                            (list (freeze-image costumes))))
+
+  (animated-sprite
+   (next-component-id)
+   ;Umm we don't need to be storing this two times do we?
+   ;JL: This is stored twice to preserve original costumes for functions like
+   ;    set-size and set-hue. This can be removed once we have a new way to
+   ;    set-hue and all functions in sprite-util are updated.
+   (list->vector (map prep-costumes list-costumes)) 
+   (list->vector (map prep-costumes list-costumes))
+   0
+   rate
+   0
+   animate?
+   (if scale scale x-scale)
+   (if scale scale y-scale)
+   (* 1.0 (degrees->radians deg)) ;theta (in radians)
+   x-offset ;x offset
+   y-offset ;y offset
+   color
+   ))
 
 ;Animated sprites are components, but we'll handle them specially
 ; at least until we can untangle them bettter...
@@ -794,48 +849,19 @@
      [(eq? button 'right) (mouse-state-right prev-ms)]
      [else #f])))
 
-
-(define (draw-entity e)
-  (define ss (reverse (get-components e animated-sprite?)))
-
-
-  (if (empty? ss)
-      empty-image
-      (overlay-sprites ss)))
-
-
-(define/contract (overlay-sprites ss)
-  (-> (listof animated-sprite?)
-      image?)
-
-  (define current-image
-    (render (first ss)))
-
-  (if (= 1 (length ss))
-      current-image
-      (overlay/offset
-       current-image
-       (- (animated-sprite-x-offset (first ss)))
-       (- (animated-sprite-y-offset (first ss)))
-       (overlay-sprites (rest ss)))))
-
-
-(define (draw-entities es)
-  (if (= 1 (length es))
-      (draw-entity (first es))
-      (let* ([p (get-component (first es) posn?)]
-             [x (posn-x p)]
-             [y (posn-y p)])
-        (place-image (draw-entity (first es))
-                     x y
-                     (draw-entities (rest es))))))
-
 (define (ui? e)
     (and ((has-component? layer?) e)
          (eq? (get-layer e) "ui")))
 
 (define (not-ui? e)
   (not (ui? e)))
+
+(define (sky-layer? e)  ; for treetops and rooftops
+    (and (get-component e layer?)
+         (eq? (get-layer e) "sky")))
+
+(define (not-sky? e)
+  (not (sky-layer? e)))
 
 (define (tops? e)  ; for treetops and rooftops
     (and (get-component e layer?)
@@ -844,7 +870,9 @@
 (define (not-tops? e)
   (not (tops? e)))
 
-(define #;/contract (draw g)
+(define normal-entity? (and/c not-ui? not-sky? not-tops?))
+
+#|(define #;/contract (draw g)
   #;(-> game? image?)
   (define (not-hidden e) (and (not (get-component e hidden?))
                               (not (get-component e disabled?))))
@@ -853,10 +881,7 @@
   (define ui-entities (filter ui? not-hidden-entities))
   (define entities (append ui-entities regular-entities))
   ;(define entities (filter not-hidden (game-entities g)))
-  (draw-entities entities))
-
-
-
+  (draw-entities entities))|#
  
 (define (is-colliding? e g)
   (findf (curry member e entity-eq?) (game-collisions g)))
