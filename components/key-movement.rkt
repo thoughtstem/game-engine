@@ -8,6 +8,7 @@
 (provide (except-out (struct-out key-movement) key-movement)
          (rename-out (make-key-movement key-movement))
          key-movement?
+         set-speed-to
          change-speed-by
          multiply-speed-by
          get-speed
@@ -53,6 +54,22 @@
         (+ upVel downVel)))
 
 ;Not clear either...  Move or simplify with better API
+
+(define (set-speed-to n #:for [d #f])
+  (lambda (g e)
+    (define original (get-component e key-movement?))
+    (define (revert-speed g e)
+      (update-entity e key-movement? original))
+    (define increase (lambda (k)
+                       (struct-copy key-movement k
+                                    [speed  n])))
+    (~> e
+        (update-entity _ key-movement? increase)
+        (add-components _ (if d
+                              (after-time d revert-speed)
+                              #f)))
+            ))
+
 (define (change-speed-by n #:for [d #f])
   (lambda (g e)
     (define original (get-component e key-movement?))
