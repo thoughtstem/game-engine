@@ -20,6 +20,9 @@
          stop-all-sounds
          stop-sound-streams)
 
+(displayln "=== CLEARING SOUND THREADS ===")
+(stop) ;shutting down any loose sound threads at least until a try-catch is made.
+
 (default-sample-rate 48000)
 
 (define (make-sound string-path)

@@ -8,6 +8,8 @@
 
 (require "./engine/core.rkt")
 (require "./engine/rendering.rkt")
+(require (prefix-in rs: (only-in rsound
+                                 stop)))
 
 (require threading
          posn)
@@ -20,8 +22,6 @@
 (define headless? (make-parameter #f))
 
 (define (start-game . entities)
-  
-  
   (if (headless?)
       (~> (filter identity entities)
           ;Filter identity to Remove any #f's.
@@ -67,6 +67,8 @@
   (lux-start game))
 
 (define (game++->game:postprocess lux-game)
+  (displayln "=== CLEANING UP SOUND THREADS ===")
+  (rs:stop) ;need to add a try-catch to handle improper shutdowns.
   (final-state lux-game))
 
 
