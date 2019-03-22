@@ -507,9 +507,6 @@
 ;Here, we register the backdop component
 (new-component backdrop?  update-backdrop)
 
-
-
-
 ; === HANDLER FUNCTIONS ===
 (define/contract (next-tile direction)
   (-> symbol? (-> game? entity? entity?))
