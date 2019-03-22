@@ -47,16 +47,17 @@
   (sound-stream-ps (get-component e sound-stream?)))
 
 (define (play-sound rs)
-  (lambda (g e)
-    (if (and rs
-             (get-component e sound-stream?))
-        (begin
-          (pstream-play (get-sound-stream e) rs)
-          e)
-        (begin
-          ;(displayln "WARNING: Missing sound-stream component. Sound will not play.")
-          e)
-        )))
+  (with-handlers ([exn:fail? (thunk* (displayln "Error while playing sound"))])
+                 (lambda (g e)
+                   (if (and rs
+                            (get-component e sound-stream?))
+                     (begin
+                       (pstream-play (get-sound-stream e) rs)
+                       e)
+                     (begin
+                       ;(displayln "WARNING: Missing sound-stream component. Sound will not play.")
+                       e)
+                     ))))
 
 (define (play-sound-from entity-name rs)
   (lambda (g e)
