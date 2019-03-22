@@ -26,16 +26,14 @@
 (default-sample-rate 48000)
 
 (define (make-sound string-path)
-  ;'()
   (resample-to-rate 48000 (rs-read (string->path string-path))))
 
 (component sound-stream (ps))
 
 (define (make-sound-stream)
-  (new-sound-stream
-                 ;'()
-                (make-pstream)
-                ))
+  (with-handlers ([exn:fail? (thunk* (displayln "Error creating sound stream"))])
+                 (new-sound-stream
+                   (make-pstream))))
 
 (define (update-sound-stream g e c) e)
 
