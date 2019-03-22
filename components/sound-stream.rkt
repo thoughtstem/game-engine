@@ -48,7 +48,8 @@
 
 (define (play-sound rs)
   (lambda (g e)
-    (if (get-component e sound-stream?)
+    (if (and rs
+             (get-component e sound-stream?))
         (begin
           (pstream-play (get-sound-stream e) rs)
           e)
