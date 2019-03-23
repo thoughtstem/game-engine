@@ -1,7 +1,5 @@
 language: c
 
-dist: xenial
-
 # Based from: https://github.com/greghendershott/travis-racket
 
 # Optional: Remove to use Travis CI's older infrastructure.
