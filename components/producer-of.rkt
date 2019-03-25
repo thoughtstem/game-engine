@@ -86,12 +86,13 @@
                       (rectangle (+ 8 (image-width max-progress-bar)) (+ 8 (image-height max-progress-bar)) "solid"  (make-color 20 20 20 150))))))
   
 (define (make-progress-bar amount #:max [max-val 64])
-  (define progress-bar-slice (if (= max-val 0)
-                                 empty-image
-                                 (square 1 'solid 'lightblue)))
+  (define progress-bar-slice ;(if (= max-val 0)
+                             ;    empty-image
+                                 (square 1 'solid 'lightblue))
+   ; )
   (define bg-image (square 1 'solid 'dimgray))
   (precompile! bg-image progress-bar-slice)
-  (define bar-width (* amount (/ 64 max-val)))
+  (define bar-width (* amount (/ 64 (max max-val 1))))
   (define bar-sprite (~> progress-bar-slice
                          (new-sprite _ #:animate #f)
                          (set-x-scale bar-width _)
@@ -246,10 +247,11 @@
                                      (list
                                       (new-sprite short-ent-name #:y-offset 5
                                                   #:scale 0.5 #:color 'dimgray)
-                                      (make-progress-bar 0 #:max build-time)))
+                                      (make-progress-bar 0 #:max build-time)
+                                      (do-every 10 (change-progress-by 1 #:max build-time))
+                                      ))
                                  (on-start show)
-                                 (do-every 10 (change-progress-by 1 #:max build-time))
-                                 (on-rule (λ (g e) (or (> (get-counter e) build-time)
+                                 (on-rule (λ (g e) (or (>= (get-counter e) build-time)
                                                        (tile-changed? g e))) die)
                                  ))
 
@@ -280,8 +282,9 @@
                          (not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? on-key?)
                                                                                   not-tops?
                                                                                   not-ui?))))
-           ;(do-many (spawn to-clone))
-           (spawn progress-counter)
+           (if (= build-time 0)
+               (spawn to-clone)
+               (spawn progress-counter))
            )
    (observe-change build-ready? (spawn-if-ready to-clone))))
 
