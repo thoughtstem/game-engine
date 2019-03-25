@@ -51,7 +51,8 @@
  (all-from-out "entity-helpers/particles.rkt")
  (all-from-out "entity-helpers/ui-util.rkt")
  (all-from-out "entity-helpers/render-util.rkt")
-
+ rsound?
+ 
 
  #%module-begin)
 
@@ -60,6 +61,7 @@
 (require 2htdp/image)
 (require threading)
 (require posn)
+(require rsound)
 (require "game-entities.rkt")
 (require "components/key-movement.rkt")
 (require "components/after-time.rkt")

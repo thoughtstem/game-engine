@@ -8,7 +8,8 @@
                   rs-read
                   make-pstream
                   pstream-play
-                  stop))
+                  stop
+                  rsound?))
 
 (provide (except-out (struct-out sound-stream) sound-stream)
          (rename-out (make-sound-stream sound-stream))
@@ -46,17 +47,16 @@
 
 (define (play-sound rs)
   (with-handlers ([exn:fail? (thunk* (displayln "Error while playing sound"))])
-                 (lambda (g e)
-                   (if (and rs
-                            (not (eq? rs '()))
-                            (get-component e sound-stream?))
-                     (begin
-                       (pstream-play (get-sound-stream e) rs)
-                       e)
-                     (begin
-                       ;(displayln "WARNING: Missing sound-stream component. Sound will not play.")
-                       e)
-                     ))))
+    (lambda (g e)
+      (if (and (rsound? rs)
+               (get-component e sound-stream?))
+          (begin
+            (pstream-play (get-sound-stream e) rs)
+            e)
+          (begin
+            ;(displayln "WARNING: Missing sound-stream component. Sound will not play.")
+            e)
+          ))))
 
 (define (play-sound-from entity-name rs)
   (lambda (g e)
