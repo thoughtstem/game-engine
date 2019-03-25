@@ -48,6 +48,7 @@
   (with-handlers ([exn:fail? (thunk* (displayln "Error while playing sound"))])
                  (lambda (g e)
                    (if (and rs
+                            (not (eq? rs '()))
                             (get-component e sound-stream?))
                      (begin
                        (pstream-play (get-sound-stream e) rs)
