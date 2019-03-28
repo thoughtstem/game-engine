@@ -48,7 +48,9 @@
          (struct-out entity)
          (struct-out entity-name)
          
-         (struct-out hidden)
+         (except-out (struct-out hidden) hidden)
+         (rename-out [new-hidden hidden])
+         
          (struct-out disabled)
 
          (struct-out mouse-state)
@@ -226,8 +228,11 @@
 
 (define (component-id c)
   ;There must be a better way than this...
-  (with-handlers ([exn:fail? (thunk* #f)])
-      (string->number (second (string-split (~a c) " ")))))
+  (with-handlers ([exn:fail? (thunk* ;(displayln "This is probably bad.  Couldn't get a component id from that....")
+                                     #f)])
+      (string->number (string-replace
+                       (second (string-split (~a c) " "))
+                       ")" ""))))
 
 (define (component-eq? c1 c2)
   (eq? (component-id c1)
@@ -252,6 +257,14 @@
            (define (construct-with-id field ...)
              (name (next-component-id) field ...))
            ))]))
+
+;HIDDEN
+
+(component hidden ())
+
+;END HIDDEN
+
+;HIDDEN
 
 
 
@@ -1178,13 +1191,7 @@
 
 ;END DEAD ENTITIES
 
-;HIDDEN
 
-(struct hidden ())
-
-;END HIDDEN
-
-;HIDDEN
 
 (struct disabled ())
 
