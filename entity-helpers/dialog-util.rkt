@@ -9,10 +9,16 @@
          draw-dialog-text
          draw-dialog-sheet
          draw-dialog-sheet-text
+         
          draw-dialog-list
+         fast-dialog-list
+         
          draw-crafting-list
+         fast-crafting-list
+         
          draw-dialog-lg
          fast-dialog-lg
+         
          draw-avatar-box
          dialog->sprites
          dialog->response-sprites
@@ -55,6 +61,7 @@
 (require "../entity-helpers/movement-util.rkt")
 (require "../entity-helpers/sprite-util.rkt")
 (require "../entity-helpers/rgb-hsb.rkt")
+(require "../entity-helpers/ui-util.rkt")
 
 (require 2htdp/image
          posn
@@ -149,6 +156,33 @@
            (rectangle (+ 16 (image-width message-list)) (+ 16 (image-height message-list)) "solid"  (make-color 20 20 20 150))))
 ; -----
 
+(define (fast-crafting-list msg-list icon-list)
+  (define GAME-MAX-WIDTH (- (/ 480 10) 2))
+  (define MSG-MAX-WIDTH (apply max (map string-length msg-list)))
+  (define MSG-WIDTH (min MSG-MAX-WIDTH GAME-MAX-WIDTH))
+  (define LINE-HEIGHT 24)
+  (define (pad-text t)
+    (~a t
+        #:width MSG-WIDTH
+        #:limit-marker "..."
+        #:align 'left))
+  (define message-list (map pad-text msg-list))
+  (define num-items (length msg-list))
+  (define main-box-width  (* MSG-WIDTH 10))
+  (define main-box-height (* LINE-HEIGHT num-items))
+  (define offset-sprite-list
+    (for/list ([msg message-list]
+               [i (range (length message-list))])
+      (new-sprite msg
+                  #:animate #f
+                  #:color 'yellow
+                  #:y-offset (+ (/ LINE-HEIGHT 2)
+                                (- (* i LINE-HEIGHT)
+                                   (/ main-box-height 2))))))
+  (append offset-sprite-list
+          (bordered-box-sprite (+ main-box-width 10)
+                             (+ main-box-height 10))))
+
 (define (draw-dialog-list msg-list font-size selection)
   (define message-list (foldr (lambda (new-text text-img)
                                 (above/align "left"
@@ -160,6 +194,32 @@
            (rectangle (+ 12 (image-width message-list)) (+ 12 (image-height message-list)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
            (rectangle (+ 16 (image-width message-list)) (+ 16 (image-height message-list)) "solid"  (make-color 20 20 20 150))))
 
+(define (fast-dialog-list msg-list)
+  (define GAME-MAX-WIDTH (- (/ 480 10) 2))
+  (define MSG-MAX-WIDTH (apply max (map string-length msg-list)))
+  (define MSG-WIDTH (min MSG-MAX-WIDTH GAME-MAX-WIDTH))
+  (define LINE-HEIGHT 24)
+  (define (pad-text t)
+    (~a t
+        #:width MSG-WIDTH
+        #:limit-marker "..."
+        #:align 'left))
+  (define message-list (map pad-text msg-list))
+  (define num-items (length msg-list))
+  (define main-box-width  (* MSG-WIDTH 10))
+  (define main-box-height (* LINE-HEIGHT num-items))
+  (define offset-sprite-list
+    (for/list ([msg message-list]
+               [i (range (length message-list))])
+      (new-sprite msg
+                  #:animate #f
+                  #:color 'yellow
+                  #:y-offset (+ (/ LINE-HEIGHT 2)
+                                (- (* i LINE-HEIGHT)
+                                   (/ main-box-height 2))))))
+  (append offset-sprite-list
+          (bordered-box-sprite (+ main-box-width 10)
+                               (+ main-box-height 10))))
 
 (define (draw-avatar-box e)
   (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
@@ -372,9 +432,13 @@
 
 (define (dialog-list dialog-list pos #:sound [rsound #f])
   (define selection 0)
-  (define font-size 18)
-  (define dialog-list-sprite (draw-dialog-list dialog-list font-size selection))
-  (sprite->entity dialog-list-sprite
+  (define font-size 13)
+  (define dialog-list-sprites (fast-dialog-list dialog-list))
+  (define GAME-MAX-WIDTH (- (/ 480 10) 2))
+  (define MSG-MAX-WIDTH (apply max (map string-length dialog-list)))
+  (define MSG-WIDTH (min MSG-MAX-WIDTH GAME-MAX-WIDTH))
+  (define selection-width (* (+ MSG-WIDTH 2) 10))
+  (sprite->entity dialog-list-sprites
                   #:name       "player dialog"
                   #:position   pos
                   #:components (static)
@@ -383,7 +447,7 @@
                                (on-start (do-many (go-to-pos 'center)
                                                   show
                                                   (spawn (dialog-selection dialog-list
-                                                                           (image-width dialog-list-sprite)
+                                                                           selection-width
                                                                            font-size
                                                                            selection
                                                                            rsound)
