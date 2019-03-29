@@ -168,7 +168,7 @@
         #:align 'left))
   (define message-list (map pad-text msg-list))
   (define num-items (length msg-list))
-  (define main-box-width  (* MSG-WIDTH 10))
+  (define main-box-width  (* (+ MSG-WIDTH 4) 10))
   (define main-box-height (* LINE-HEIGHT num-items))
   (define offset-sprite-list
     (for/list ([msg message-list]
@@ -206,7 +206,7 @@
         #:align 'left))
   (define message-list (map pad-text msg-list))
   (define num-items (length msg-list))
-  (define main-box-width  (* MSG-WIDTH 10))
+  (define main-box-width  (* (+ MSG-WIDTH 2) 10))
   (define main-box-height (* LINE-HEIGHT num-items))
   (define offset-sprite-list
     (for/list ([msg message-list]
@@ -438,6 +438,11 @@
   (define MSG-MAX-WIDTH (apply max (map string-length dialog-list)))
   (define MSG-WIDTH (min MSG-MAX-WIDTH GAME-MAX-WIDTH))
   (define selection-width (* (+ MSG-WIDTH 2) 10))
+  (precompile! (dialog-selection dialog-list
+                                 selection-width
+                                 font-size
+                                 selection
+                                 rsound))
   (sprite->entity dialog-list-sprites
                   #:name       "player dialog"
                   #:position   pos
