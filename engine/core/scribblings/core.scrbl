@@ -17,10 +17,27 @@
 }
 
 @defstruct[component ([id positive?] 
-                      [update (-> game? entity? component? entity?)])]{
-  A component is, at minimum, an id and an update function.
-  Often, though, you will use @racket[define-component] to create your own component types, which may have have additional fields.  
+                      [handler component-handler?]
+                      [entity-handler entity-handler?])]{
+  A component is, at minimum, an two update functions (only one of which needs to be populated).  
+
+  Usually you will use @racket[define-component] to create your own component types, which may have have additional fields.  And you will use the constructor generated from @racket[define-component] to construct instances of your defined component.
 }
+
+
+@defthing[game-handler? (-> game? entity? component? game?)]{
+  Currently for internal use only.  You could construct a function with this type, but you can't register it with the engine.  Internally, though, the less powerful functions of type @racket[entity-handler?] and @racket[component-handler?] attached to components are lifted to type @racket[game-handler?] before they run.
+}
+
+@defthing[entity-handler? (-> entity? component? entity?)]{
+  Signature for the kind of function you would attach to your components with @racket[#:entity-handler], and which returns the next desired state for that @racket[entity].
+}
+
+@defthing[component-handler? (-> component? component?)]{
+  Signature for the kind of function you would attach to your components with @racket[#:entity], and which returns the next desired state for that @racket[component].
+}
+
+
 
 @defproc[(game [entities (listof entity?)] ...)
          game?]{
@@ -33,22 +50,48 @@
 }
 
 @defform[(define-component name (fields ...))]{
-  Creates a new component type named @racket[name].  This is essentially a struct type with @racket[fields], plus an id field, and an update field.  Defining a new component type gives you a constructor function, e.g.:
+  Creates a new component type named @racket[name].  This is essentially a struct type with @racket[fields] whose super type is @racket[component].
+
+  It has a special constructor, which we shall show in context below.
+
+  A common usecase is that you'll want to bind a function that takes and returns something of your component type:
 
         @codeblock{
-          ;TODO: Fix semantics of #:update, add #:update-entity
-          ;      Redoc.  Retest.
           (define-component health (amount))
 
+          ;Simple function for updating the state of a health component
           (define (decrement-health h) 
-            ;TODO: Macroified lenses could clean this up?
             (health (sub1 (health-amount h))))
 
+          ;Since the type of our update function is health? -> health?, we can use #:handler
           (define hero-health 
-            (health 100 #:update decrease-over-time))
+            (health 100 #:handler decrease-over-time))
 
           (define hero (entity hero-health))
         } 
+
+  Another common usecase is that you'll want to update the whole entity that the component is attached to.  In that case, you'll use @racket[#:entity-handler]:
+
+ 
+        @codeblock{
+          (define-component health (amount))
+
+          ;Simple function for updating the state of a health component
+          (define (decrement-health h) 
+            (health (sub1 (health-amount h))))
+
+          (define (entity:decrement-health e h)
+            (define new (update-entity e h decrement-health))
+
+            (other-entity-updates new))
+
+          ;Since the type of our update function is entity? health? -> entity?, we can use #:entity-handler
+          (define hero-health 
+            (health 100 #:entity-handler entity:decrement-health))
+
+          (define hero (entity hero-health))
+        } 
+
 }
 
 
@@ -90,6 +133,9 @@
   Whether it will truly be the next state is not controlled by this function.  That is handled by the index of this component within its parent entity's components.
 
   Note that the @racket[entity-id] field of the returned entity will be ignored in the game.  Component functions are not allowed to change an entity's id.
+
+
+  In theory, you shouldn't use this method to modify the id of a component.  There's nothing explicitly preventing that, though, at the moment.  (Why would you want to anyway?)   
 }
 
 
