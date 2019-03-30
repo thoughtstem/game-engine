@@ -5,10 +5,13 @@
 
 (provide (except-out (struct-out health) health)
          (rename-out (new-health health))
-         get-health
-         set-health
-         change-health-by
+         ;get-health
+         ;set-health
+         ;change-health-by
          )
+
+; This component is obsolete and here for compatibility
+; the new stat system should be used instead
 
 (component health (amount))
 
@@ -20,7 +23,7 @@
 (new-component health?
                update-health)
 
-(define (get-health e)
+#|(define (get-health e)
   (health-amount (get-component e health?)))
 
 ; === HANDLERS ===
@@ -30,4 +33,4 @@
 
 (define (change-health-by amt)
   (lambda (g e)
-    (update-entity e health? (new-health (+ (get-health e) amt)))))
+    (update-entity e health? (new-health (+ (get-health e) amt)))))|#
