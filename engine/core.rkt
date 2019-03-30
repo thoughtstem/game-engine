@@ -399,7 +399,7 @@
        (number? #:animate boolean?
                 #:x-offset number?
                 #:y-offset number?
-                #:color    symbol?
+                #:color    (or/c symbol? string?) ;TODO: also take color object
                 #:scale    number?
                 #:x-scale  number?
                 #:y-scale  number?
