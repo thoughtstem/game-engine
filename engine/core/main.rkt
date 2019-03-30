@@ -1,6 +1,9 @@
 #lang racket
 
+;TODO: Need to figure out the handler combinators.
+
 ;TODO: Need to document the big four CRUDs: update-component, get-component, add-component, and remove-component.   Especially the predicate behaviour (remove all? remove first?) (update all?  update first?).  Are we overloading the function too much?  Should we break the functionality out into different functions?
+  ; Also all the nice stuff that define-component gives you
 
 ;TODO: 
 ;  Sprite management is the big one...

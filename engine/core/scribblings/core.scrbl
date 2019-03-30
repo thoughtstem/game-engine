@@ -61,11 +61,14 @@
 
           ;Simple function for updating the state of a health component
           (define (decrement-health h) 
-            (health (sub1 (health-amount h))))
+            ;Note that the syntax is exactly as if health were a normal struct.
+            ;   However, using define-component will also give an even cleaner syntax shown in a later example
+            (struct-copy health h
+                         [amount (sub1 (health-amount h))]))
 
           ;Since the type of our update function is health? -> health?, we can use #:handler
           (define hero-health 
-            (health 100 #:handler decrease-over-time))
+            (health 100 #:handler decrement-health))
 
           (define hero (entity hero-health))
         } 
@@ -91,6 +94,34 @@
 
           (define hero (entity hero-health))
         } 
+
+  Using @racket[define-component] uses the fields you give it to generate some nice convenience functions for building common handlers.
+  For example, here's a cleaner way to build and attach a the same @racket[decrement-health] behaviour as above.
+
+        @codeblock{
+          (define-component health (amount))
+
+          (define decrement-health (update-health-amount sub1))
+
+          (define hero (entity (health #:handler decrement-health)))
+        } 
+
+  Here's the same idea, but using a generated function for creating an entity-handler:
+
+        @codeblock{
+          (define-component health (amount))
+
+          (define decrement-health (update-entity-health-amount sub1)) 
+
+          (define hero (entity (health #:entity-handler decrement-health)))
+        } 
+
+  Those last two examples are precisely the same.  You might use the second one, though, if you had more work to do on the entity -- in which case you might compose @racket[decrement-health] with other handlers (see @racket[do-many]) 
+
+
+  Fuck, what about do-many?  Is that going to be gross now that we've abandoned game-functions as the norm?
+     No.  Can just inspect and lift the functions as necessary, I think...
+  
 
 }
 
