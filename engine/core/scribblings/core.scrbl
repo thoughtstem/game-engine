@@ -7,6 +7,42 @@
 
 @defmodule[game-engine/engine/core]
 
+Why is this a purely functional game engine?  Easier to write that way.  Easier to maintain.  Hyper modular.  Optimized for portability between components.  Optimized for the creation of new game specification languages.  
+
+Gives you a truly building-blocks approach to game design.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
+
+The simplicity comes from the fact that any gaine is just a collection of entities.  
+
+
+Manipulating games programatically is quite easy.  Nice API for that:
+
+
+           (define e (entity (new-health 5 #:entity-handler entity:gain-health)))
+           (define g (initialize-game (game e e e)))
+
+           (define g2 (tick g))
+
+This, in turn, makes unit testing very easy.  (See our test suite.) 
+
+
+You can use this to start games, run them for a bit, rewind them, serialize them out, paralellize them, whatever.  
+
+This works recursively too.  You can create new games at runtime and swap to them if you want...  Turns out to be a nice primitive for things like level loading, etc. 
+
+Roadmap: In any even, the attempt is to make a purely functional core with certain runtime guarantees.  Will that be too slow?  Probably.  So we'll try to provide ways of switching off the purity, at the expence of losing the guarantees.  We'll make the compromises as they come up, and try to make them optional.
+
+Trying to make it easy to use and fast.  That's hard -- since most of the code bloat in games comes from tweaks to try to make things fast...  But maybe in a simple model we'll come up with clever optimizations that make it passibly fast for modest numbers of entities.  I think the potential for exploding a whole ecosystem of composable game parts will yeild really cool, innovative games, and bring game programming's difficulty down considerably.  If the games must be modest to make this a reality, so be it. :)
+
+
+TODO: Implement the CRUD model for entities
+TODO: Test the CRUD model for entities
+TODO: Document CRUD model for entities
+TODO: Document CRUD model for components
+
+
+Can you make entities that store games on components?  Sounds powerful...  Is there something cool you could do with that?
+
+
 @defstruct[game ([entities (listof entity?)])]{
   A game is simply a list of entities.
 }
