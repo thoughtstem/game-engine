@@ -8,8 +8,7 @@
 
 (require "./engine/core.rkt")
 (require "./engine/rendering.rkt")
-(require (prefix-in rs: (only-in rsound
-                                 stop)))
+(require "./engine/extensions/sound.rkt")
 
 (require threading
          posn)
@@ -68,7 +67,7 @@
 
 (define (game++->game:postprocess lux-game)
   (displayln "=== CLEANING UP SOUND THREADS ===")
-  (rs:stop) ;need to add a try-catch to handle improper shutdowns.
+  (stop-sound-streams) ;need to add a try-catch to handle improper shutdowns.
   (final-state lux-game))
 
 

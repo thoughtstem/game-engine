@@ -12,7 +12,7 @@
                "htdp-lib"
                "https://github.com/jeapostrophe/lux.git#f6edd2e"
                "jack-posn"
-               "rsound"
+          ;     "rsound"
                "https://github.com/thoughtstem/racket-chipmunk.git"
                "base"))
 
