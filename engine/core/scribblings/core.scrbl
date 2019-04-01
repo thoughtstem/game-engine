@@ -5,64 +5,128 @@
 @title{core}
 @author{thoughtstem}
 
-@defmodule[game-engine/engine/core]
+@defmodule[game-engine/engine/core/main]
 
-Why is this a purely functional game engine?  Easier to write that way.  Easier to maintain.  Hyper modular.  Optimized for portability between components.  Optimized for the creation of new game specification languages.  
+Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
 
-Gives you a truly building-blocks approach to game design.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
+Manipulating games programatically is quite easy.
 
-The simplicity comes from the fact that any gaine is just a collection of entities.  
-
-
-Manipulating games programatically is quite easy.  Nice API for that:
-
-
-           (define e (entity (new-health 5 #:entity-handler entity:gain-health)))
-           (define g (initialize-game (game e e e)))
-
-           (define g2 (tick g))
-
-This, in turn, makes unit testing very easy.  (See our test suite.) 
-
-
-You can use this to start games, run them for a bit, rewind them, serialize them out, paralellize them, whatever.  
-
-This works recursively too.  You can create new games at runtime and swap to them if you want...  Turns out to be a nice primitive for things like level loading, etc. 
-
-Roadmap: In any even, the attempt is to make a purely functional core with certain runtime guarantees.  Will that be too slow?  Probably.  So we'll try to provide ways of switching off the purity, at the expence of losing the guarantees.  We'll make the compromises as they come up, and try to make them optional.
-
-Trying to make it easy to use and fast.  That's hard -- since most of the code bloat in games comes from tweaks to try to make things fast...  But maybe in a simple model we'll come up with clever optimizations that make it passibly fast for modest numbers of entities.  I think the potential for exploding a whole ecosystem of composable game parts will yeild really cool, innovative games, and bring game programming's difficulty down considerably.  If the games must be modest to make this a reality, so be it. :)
-
-
-TODO: Implement the CRUD model for entities
-TODO: Test the CRUD model for entities
-TODO: Document CRUD model for entities
-TODO: Document CRUD model for components
-
-
-Can you make entities that store games on components?  Sounds powerful...  Is there something cool you could do with that?
-
-
-@defstruct[game ([entities (listof entity?)])]{
-  A game is simply a list of entities.
+@codeblock{
+  (define e (entity (new-health 5 #:entity-handler entity:gain-health)))
+  (define g (initialize-game (game e e e)))
+  (define g2 (tick g))
 }
 
-@defstruct[entity ([id positive?] 
-                   [components (listof component?)])]{
-  An entity is simply a list of components
+Roadmap: In any even, the attempt is to make a purely functional core with certain runtime guarantees.  Will that be slow?  Probably.  So we'll try to provide ways of switching off the purity, at the expence of losing the guarantees.  We'll make the compromises as they come up, and try to make them optional.
+
+I think the potential for exploding a whole ecosystem of composable game parts will yeild really cool, innovative games, and bring game programming's difficulty down considerably.  If the games must be modest to make this a reality, so be it. :)
+
+@section{Basic Data Structures}
+
+@defproc[(game [entity entity?] ...)
+         game?]{
+  Constructor for a @racket[game].  Takes nothing but a list of entities.
 }
 
-@defstruct[component ([id positive?] 
-                      [handler component-handler?]
-                      [entity-handler entity-handler?])]{
-  A component is, at minimum, an two update functions (only one of which needs to be populated).  
-
-  Usually you will use @racket[define-component] to create your own component types, which may have have additional fields.  And you will use the constructor generated from @racket[define-component] to construct instances of your defined component.
+@defproc[(entity [component component?] ...)
+         entity?]{
+  Constructor for a @racket[entity].  Takes nothing but a list of components.  Internally, though, entities have an id.  This id remains the same even as an entity is updated at runtime.  
 }
 
+@defform[(define-component name (fields ...))]{
+  Creates a new component type named @racket[name] and the given @racket[fields].  Creating a component causes a bunch of useful functions to bedefined for you.
+
+  The most obvious one is the constructor, which we shall show in context below.
+
+  A common usecase is that you'll want to bind a function that takes and returns something of your component type:
+
+        @codeblock{
+          (define-component health (amount))
+
+          ;We use update-health-amount, which was created for us.
+          ;This lets us define decrement-health in point-free form.
+          ;The function's type is health? -> health?
+          (define decrement-health (update-health-amount sub1))
+
+          ;Since the type of our update function is health? -> health?, we can use #:handler in our constructor
+          (define hero-health (health 100 #:handler decrement-health))
+
+          ;Now it can be attached to an entity, and so on...
+          (define hero (entity hero-health))
+        } 
+
+  Another common usecase is that you'll want to update the whole entity that the component is attached to.  In that case, you'll use @racket[#:entity-handler]:
+
+ 
+        @codeblock{
+          (define-component health (amount))
+
+          ;We can update the health by updating the entity.
+          ;  The type of this function is entity? health? -> entity?
+          (define decrement-health (update-entity-health-amount sub1))
+
+          ;Since the type of our update function is entity? health? -> entity?, we can use #:entity-handler
+          (define hero-health (health 100 #:entity-handler decrement-health))
+        } 
+
+  @racket[define-component] uses the fields you give it to generate some nice convenience functions.
+
+  Much like using racket @racket[struct], you get getters and setters (which are immutable by default).  Getters look like @racket[COMPONENT-FIELD].  Setters look like @racket[set-COMPONENT-FIELD].   And you get a predicate @racket[component?]. 
+
+  Here we'll use those to define a component and new functions on that component type.
+  
+  @codeblock{
+    (define-component counter (current max))
+
+    ;Takes and r
+    (define/contract (inc c)
+      (-> counter? counter?)
+      (set-counter-current 
+        (add1 (counter-current c))))
+
+    (define/contract (safe-inc c)
+      (-> counter? counter?)
+      (if (< (counter-current c)
+             (counter-max c))
+          (inc c)
+          c))
+  }
+
+  In addition to getters and setters, you also get, for each field in your component, a builder for a @racket[component-handler?] function that looks like:
+
+  @racket[update-COMPONENT-FIELD] -- e.g. @racket[update-health-amount]. 
+  This function is not a component handler, but it builds component handlers when given a function that takes and returns a values of your field's type.  Since health amount is a number, you can create component handlers like @racket[(update-health-amount sub1)], which expresses that the health will decrease whenever the handler runs.
+
+  Moving up the handler heirarchy, you also get an entity handler that works the same way:
+
+  @racket[update-entity-COMPONENT-FIELD] -- e.g. @racket[update-entity-health-amount]. 
+
+  Likewise, you must give this function a function that would adjust one of your fields, and it gives you an entity hander function (suitable for use with @racket[#:entity-handler]).
+
+  If you can do the same thing with an entity handler and a component handler, which should you pick?  The rule of thumb is always: Stay as low in the heirarchy as possible.  If you can use a component handler, do that.  It'll be faster.  If you must make other adjustmenst to the entity, use an entity handler.
+
+  The above two handler builders are for operating on a particular field of a component.  But it'll be quite common that you'll want to operate at the level of an entire component. 
+
+  The example counter component above has some @racket[(-> counter? counter?)] functions already defined.  These could be passed into @racket[#:handler] directly, or they could be lifted to entity handlers with the @racket[update-entity-COMPONENT] function.
+
+  @codeblock{
+    (entity (counter #:entity-handler (update-entity-counter safe-inc)))
+  }
+  
+  That's the same as the more efficient:
+
+  @codeblock{
+    (entity (counter #:handler safe-inc))
+  }
+
+  TODO: Document functions like update-entity-first-component -- e.g. less targeted 
+} 
+
+
+We've been talking about the handler heirarchy.  Here is a more formal listing of the three handler types:
 
 @defthing[game-handler? (-> game? entity? component? game?)]{
-  Currently for internal use only.  You could construct a function with this type, but you can't register it with the engine.  Internally, though, the less powerful functions of type @racket[entity-handler?] and @racket[component-handler?] attached to components are lifted to type @racket[game-handler?] before they run.
+  The most powerful and slowest.  This essentially has read access to the entire game state and returns a new game state.  You can attach these through a component's @racket[#:game-handler] keyword.
 }
 
 @defthing[entity-handler? (-> entity? component? entity?)]{
@@ -74,137 +138,153 @@ Can you make entities that store games on components?  Sounds powerful...  Is th
 }
 
 
+You can control games programmatically with @racket[init] and @racket[tick].  The idea is that you do a single call to @racket[init] followed by as many calls to @racket[tick] as you want.
 
-@defproc[(game [entities (listof entity?)] ...)
+@defproc[(init [game game?])
          game?]{
-  Constructor for a @racket[game].
+  Does any necessary setup on a game.  This includes enforcing properties like uniqueness of ids across entities and components.
+
+  When we have features like @racket[#:on-start], they would execute at this time.
 }
-
-@defproc[(entity [components (listof component?)] ...)
-         entity?]{
-  Constructor for a @racket[entity].
-}
-
-@defform[(define-component name (fields ...))]{
-  Creates a new component type named @racket[name].  This is essentially a struct type with @racket[fields] whose super type is @racket[component].
-
-  It has a special constructor, which we shall show in context below.
-
-  A common usecase is that you'll want to bind a function that takes and returns something of your component type:
-
-        @codeblock{
-          (define-component health (amount))
-
-          ;Simple function for updating the state of a health component
-          (define (decrement-health h) 
-            ;Note that the syntax is exactly as if health were a normal struct.
-            ;   However, using define-component will also give an even cleaner syntax shown in a later example
-            (struct-copy health h
-                         [amount (sub1 (health-amount h))]))
-
-          ;Since the type of our update function is health? -> health?, we can use #:handler
-          (define hero-health 
-            (health 100 #:handler decrement-health))
-
-          (define hero (entity hero-health))
-        } 
-
-  Another common usecase is that you'll want to update the whole entity that the component is attached to.  In that case, you'll use @racket[#:entity-handler]:
-
- 
-        @codeblock{
-          (define-component health (amount))
-
-          ;Simple function for updating the state of a health component
-          (define (decrement-health h) 
-            (health (sub1 (health-amount h))))
-
-          (define (entity:decrement-health e h)
-            (define new (update-entity e h decrement-health))
-
-            (other-entity-updates new))
-
-          ;Since the type of our update function is entity? health? -> entity?, we can use #:entity-handler
-          (define hero-health 
-            (health 100 #:entity-handler entity:decrement-health))
-
-          (define hero (entity hero-health))
-        } 
-
-  Using @racket[define-component] uses the fields you give it to generate some nice convenience functions for building common handlers.
-  For example, here's a cleaner way to build and attach a the same @racket[decrement-health] behaviour as above.
-
-        @codeblock{
-          (define-component health (amount))
-
-          (define decrement-health (update-health-amount sub1))
-
-          (define hero (entity (health #:handler decrement-health)))
-        } 
-
-  Here's the same idea, but using a generated function for creating an entity-handler:
-
-        @codeblock{
-          (define-component health (amount))
-
-          (define decrement-health (update-entity-health-amount sub1)) 
-
-          (define hero (entity (health #:entity-handler decrement-health)))
-        } 
-
-  Those last two examples are precisely the same.  You might use the second one, though, if you had more work to do on the entity -- in which case you might compose @racket[decrement-health] with other handlers (see @racket[do-many]) 
-
-
-  Fuck, what about do-many?  Is that going to be gross now that we've abandoned game-functions as the norm?
-     No.  Can just inspect and lift the functions as necessary, I think...
-  
-
-}
-
 
 @defproc[(tick [game game?])
          game?]{
   The returned game is the previous game, advanced one tick.
- 
-  It does this by mapping @racket[tick-entity] across all of the
-  game's entities.  
+
+  The simple runtime model is that the engine loops over every entity and every component in order, giving each component a chance to run its handlers.  Each component may have a component handler, an entity handler, and/or a game-hander attached.  These handlers run in the aforementioned order -- meaning that the game-handler takes precedience because it runs last.
+
+  TODO: As we inevitably encounter the need to make ticks faster, we'll adjust the above simple model with various optimizations.  If those optimizations could cause any of the game's immutability guarantees to break, they will be optional.  My hope is that developers can begin with the simple immutable model as they are prototyping and unit testing their games.  Then they can increase the speed when necessary (basically by adding more mutability).
 }
 
-@defproc[(tick-entity [game game?] [entity entity?])
+@defproc[(tick-list [game game?]
+                    [n positive?])
+         (listof game?)]{
+  Returns a list of games beginning with the input game.  The list has length @racket[n].  Each subsequent game in the list is one @racket[tick] away from each other.
+
+  Useful in debugging and analysis of games and simulations.  Also useful for getting all the frames of an animation for subsequent processing.
+}
+
+When you are writing your game logic, you will mostly be defining components (or using other people's components).  And you'll be defining functions that specify how components and/or entities change over time.  There's a basic CRUD (create, read, update, destroy) model for both components and entities.
+
+
+@defproc[(add-component [entity entity?]
+                        [component component?])
          entity?]{
-  Returns a ticked entity by looping over each of its component's
-  @racket[component-update] functions.  These functions always
-  match the signature of @racket[tick-component], which
-  means they all return an @racket[entity].
+  Create.
 
-  This @racket[entity] becomes the entity on the next loop's iteration.
-  Since it is the @racket[component] that produces entities,
-  they can effectively do the following: add and remove components,
-  update their own state, update the state of other components
-  on the entity.
-
-  They also effectively have read-only access to the rest of the @racket[game] state.  
-
-  The ordering of components is
-  important.  An upstream component's result can be overwritten by a downstream component's result.  In other words, the upstream component is handled first, which means later components changes take precidence. 
+  Adds the component to the beginning of the entity's list of components. 
+  Returns a new entity where this is the case.  Does not change the original. 
 }
 
-@defproc[(tick-component [game game?] [parent-entity entity?] [parent-component component?])
+@defproc[(get-component [entity entity?]
+                        [query? (or/c component? (-> component? boolean?))]) 
+         (or/c #f component?)]{
+  Read.
+
+  Finds and returns the first component on the entity where @racket[pred?] is true.
+}
+
+@defproc[(update-component [entity entity?]
+                           [old    (or/c component? (-> component? boolean?))]
+                           [new    (or/c component? (-> component? component?))])
          entity?]{
-  This isn't a real provided function.  This just documents how @racket[component]'s update functions should behave in general.  
+  Update.
 
-  Such a function should be a pure function that returns a new entity based on a game, an entity, and a component.  Generally speaking, this will be attached to a @racket[component] which will, itself, be in the compent list of some @racket[entity].  We'll call those the @racket[parent-entity] and @racket[parent-component] respectively.
+  Finds an existing component based on @racket[old].  If @racket[old] is a component, then its id will be used to find a matching component on the entity.  If @racket[old] is a predicate, it will find the first component for which that predicate is true.
 
-  Such a function will be generally be called in the context of a @racket[tick-entity] function, so the entity being returned is the entity that this function "wants" to be the state of the @racket[entity] in the next tick.  
-
-  Whether it will truly be the next state is not controlled by this function.  That is handled by the index of this component within its parent entity's components.
-
-  Note that the @racket[entity-id] field of the returned entity will be ignored in the game.  Component functions are not allowed to change an entity's id.
-
-
-  In theory, you shouldn't use this method to modify the id of a component.  There's nothing explicitly preventing that, though, at the moment.  (Why would you want to anyway?)   
+  Either way, it will be updated according to @racket[new].  If @racket[new] is a component, that component will be swapped in (but @racket[old]'s id will remain).  If it is a function, that function will be called on @racket[old] to get the new component.
 }
 
+@defproc[(remove-component [entity entity?]
+                           [old    (or/c component? (-> component? boolean?))])
+         entity?]{
+  Destroy.
+
+  Finds an existing component based on @racket[old].  If @racket[old] is a component, then its id will be used to find a matching component on the entity.  If @racket[old] is a predicate, it will find the first component for which that predicate is true.
+
+  The resulting entity no longer has @racket[old] in its list.
+}
+
+
+With entities, the CRUD model is similar.
+
+@defproc[(add-entity [game game?]
+                     [new  entity?] )
+         game?]{
+  Create.
+
+  Adds the new entity to the beginning of the game's entity list.  Returns a new game where this is the case.  Does not modify the old game.
+}
+
+@defproc[(get-entity [game game?]
+                     [query    (or/c entity? (-> entity? boolean?))] )
+         entity?]{
+  Read.
+
+  Finds the entity within the game.  The entity can be described either by a generic function or by an existing entity (in which case the id is used to find the match)
+}
+
+
+@defproc[(update-entity [game game?]
+                        [old    (or/c entity? (-> entity? boolean?))]
+                        [new    (or/c entity? (-> entity? component?))])
+         game?]{
+  Update.
+
+  Finds and updates an old entity. See @racket[update-componet]; this function has the same flexibility of types when it comes to @racket[old] and @racket[new].
+
+
+}
+
+
+@defproc[(remove-entity [game game?]
+                        [old    (or/c entity? (-> entity? boolean?))])
+         game?]{
+  Destroy.
+
+  Finds and removes an entity described by @racket[old].
+}
+
+
+
+
+A useful function for constructing a function of the type @racket[(-> entity? boolean?)] is @racket[has-component].
+
+@defproc[(has-component [query (-> component? boolean?)])
+         (-> entity? boolean?)]{
+Given the component query, returns an entity query that matches if the entity has a component matching the component query.
+
+        @codeblock{
+        (update-entity g 
+                     (has-component health?)
+                     (update-entity-health-amount add1))
+        }
+}
+
+
+
+Working with handlers is most of what you do as you develop in game-engine.  There are various combinators for building more sophisticated handlers from simpler ones.  And also just utilities for working with handlers in the first place.
+
+
+
+@defproc[(do-many [h (or/c component-handler? entity-handler? game-handler?)] ...)
+         game-handler?]{
+  Given an arbitrary number of handlers, returns a handler that runs each in sequence (meaning that the later handlers may overwrite changes from previous ones).
+
+  TODO: Currently this function always returns a game handler.  But I think we should make it more polymorphic than that.  That is: @racket[(do-many ch1 ch2 ch3)] would return a @racket[component-handler?] if all the inputs were component handlers.  If one were an @racket[entity-handler?], though, then this would be the return type.  In other words, it would do the minimal amount of function lifting.
+}
+
+
+
+@defproc[(component-handler->game-handler [component-handler component-handler?])
+         game-handler?]{
+  Lifts a component handler to a game handler.  
+}
+
+@defproc[(entity-handler->game-handler [entity-handler entity-handler?])
+         game-handler?]{
+  Lifts an entity handler to a game handler.  
+}
 
 
 

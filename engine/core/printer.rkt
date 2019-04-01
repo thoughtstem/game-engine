@@ -4,7 +4,7 @@
          pretty-print-entity
          pretty-print-component)
 
-(require "./base.rkt" racket/struct)
+(require "./base.rkt")
 
 (define (pretty-print-game g)
   (displayln (~a "GAME:" ))
@@ -17,9 +17,9 @@
     (pretty-print-component c)) )
 
 (define (pretty-print-component c)
-  (displayln (~a "    COMPONENT: " (object-name c)))
+  (displayln (~a "    COMPONENT: " (vector-ref c 1)))
   
-  (define vs (struct->list c))
+  (define vs (vector->list c))
 
   (for ([v vs])
     (displayln (~a "      " v))))

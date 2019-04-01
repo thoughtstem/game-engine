@@ -2,54 +2,45 @@
 
 (require rackunit 
          "../main.rkt"
-         "./health-setup.rkt")
+         "./util.rkt")
 
-(test-case "Basic test for entity handlers" 
+(define (check-game g0)
+  (define g (init g0))
+  (check-all-entities-health g 5)
+  (check-all-entities-health (tick g) 6))
+
+(test-case "Basic test for entity handlers"
            (define e (entity (new-health 5 #:entity-handler entity:gain-health)))
-           (define g (game e e e))
-
-           (health-test g))
+           (check-game (game e e e)))
 
 
 (test-case "Basic test for component handlers" 
            (define e (entity (new-health 5 #:handler gain-health)))
-           (define g (game e e e))
-
-           (health-test g) )
+           (check-game (game e e e)))
 
 (test-case "Testing auto-generated component handler builder function "
            (define e (entity (new-health 5 #:handler (update-health-amount add1))))
-           (define g (game e e e))
-
-           (health-test g) )
+           (check-game (game e e e)))
 
 (test-case "Testing auto-generated entity handler builder function "
 
            (define e (entity (new-health 5 #:entity-handler (update-entity-health-amount add1))))
-           (define g (game e e e))
-
-           (health-test g) )
+           (check-game (game e e e)) )
 
 (test-case "Testing auto-generated entity handler builder function"
 
            (define e (entity (new-health 5 #:entity-handler (update-entity-health (update-health-amount add1)))))
-           (define g (game e e e))
-
-           (health-test g) )
+           (check-game (game e e e)))
 
 (test-case "Testing auto-generated entity handler builder function "
 
            (define e (entity (new-health 5 #:entity-handler (update-entity-health (new-health 6))))) ;This is different from most of the other tests.  After one tick, this entity will get a health component that stops updating, because it will get replaced with the version that has no handlers
-           (define g (game e e e))
-
-           (health-test g))
+           (check-game (game e e e)) )
 
 (test-case "Testing auto-generated entity handler builder function "
 
            (define e (entity (new-health 5 #:entity-handler (update-entity-first-health (update-health-amount add1)))))
-           (define g (game e e e))
-
-           (health-test g) )
+           (check-game (game e e e)) )
 
 (test-case "Testing adding a component "
 
@@ -58,9 +49,7 @@
            (define e (add-component no-health
                                     (new-health 5 #:entity-handler (update-entity-health-amount add1))))
 
-           (define g (game e e e))
-
-           (health-test g) )
+           (check-game (game e e e)))
 
 (test-case "Testing removing a component by predicate "
 
