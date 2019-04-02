@@ -5,7 +5,7 @@
 (require "../engine/extensions/sound.rkt")
 
 (provide (except-out (struct-out sound-stream) sound-stream)
-         (rename-out (make-sound-stream sound-stream))
+         (rename-out (construct-sound-stream sound-stream))
          (rename-out ( sound make-sound))
          set-sound-stream
          get-sound-stream
@@ -20,10 +20,10 @@
 
 (define (update-sound-stream g e c) e)
 
-(define (make-sound-stream)
+(define (construct-sound-stream)
   (with-handlers ([exn:fail? (thunk* (displayln "Error creating sound stream"))])
     (new-sound-stream
-     (sound-stream))))
+     (make-sound-stream))))
 
 (define (set-sound-stream ps)
  (lambda (g e)
