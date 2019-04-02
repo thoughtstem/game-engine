@@ -273,8 +273,8 @@
            #:rule (and/r rule
                          (λ (g e)(get-entity "crafting list" g))
                          (λ (g e)
-                           (define sel (if (get-entity "crafting selection" g)
-                                           (get-counter (get-entity "crafting selection" g))
+                           (define sel (if (get-entity "crafting list" g)
+                                           (get-counter (get-entity "crafting list" g))
                                            #f))
                            (eq? sel selection))
                          (λ (g e) (not (get-entity progress-entity-name g)))
@@ -282,9 +282,11 @@
                          (nearest-to-player? #:filter (and/c (has-component? on-key?)
                                                              not-tops?
                                                              not-ui?))
+                         ; the line below prevents holding two crafted items in hand.
                          (not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? on-key?)
                                                                                   not-tops?
-                                                                                  not-ui?))))
+                                                                                  not-ui?)))
+                         )
            (if (= build-time 0)
                (spawn to-clone)
                (spawn progress-counter))
