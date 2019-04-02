@@ -57,6 +57,7 @@
 (require "../components/on-rule.rkt")
 (require "../components/sound-stream.rkt")
 (require "../components/dialog.rkt")
+(require "../components/storage.rkt")
 (require "../component-util.rkt")
 (require "../entity-helpers/movement-util.rkt")
 (require "../entity-helpers/sprite-util.rkt")
@@ -194,7 +195,7 @@
            (rectangle (+ 12 (image-width message-list)) (+ 12 (image-height message-list)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
            (rectangle (+ 16 (image-width message-list)) (+ 16 (image-height message-list)) "solid"  (make-color 20 20 20 150))))
 
-(define (fast-dialog-list msg-list)
+(define (fast-dialog-list msg-list [selected-item-index 0])
   (define GAME-MAX-WIDTH (- (/ 480 10) 2))
   (define MSG-MAX-WIDTH (apply max (map string-length msg-list)))
   (define MSG-WIDTH (min MSG-MAX-WIDTH GAME-MAX-WIDTH))
@@ -217,7 +218,17 @@
                   #:y-offset (+ (/ LINE-HEIGHT 2)
                                 (- (* i LINE-HEIGHT)
                                    (/ main-box-height 2))))))
+  (define selection-box-offset (+ (/ LINE-HEIGHT 2)
+                                  (- (* selected-item-index LINE-HEIGHT)
+                                     (/ main-box-height 2))))
+  (define selection-image (square 1 'solid (color 0 255 255 100)))
+  (precompile! selection-image)
+  (define selection-box-sprite (new-sprite selection-image
+                                           #:x-scale main-box-width
+                                           #:y-scale LINE-HEIGHT
+                                           #:y-offset selection-box-offset))
   (append offset-sprite-list
+          (list selection-box-sprite)
           (bordered-box-sprite (+ main-box-width 10)
                                (+ main-box-height 10))))
 
@@ -430,34 +441,71 @@
                   ))
 
 
-(define (dialog-list dialog-list pos #:sound [rsound #f])
-  (define selection 0)
-  (define font-size 13)
-  (define dialog-list-sprites (fast-dialog-list dialog-list))
-  (define GAME-MAX-WIDTH (- (/ 480 10) 2))
-  (define MSG-MAX-WIDTH (apply max (map string-length dialog-list)))
-  (define MSG-WIDTH (min MSG-MAX-WIDTH GAME-MAX-WIDTH))
-  (define selection-width (* (+ MSG-WIDTH 2) 10))
-  (precompile! (dialog-selection dialog-list
-                                 selection-width
-                                 font-size
-                                 selection
-                                 rsound))
+(define (dialog-list dialog-list pos
+                     #:selection    [selection 0]
+                     #:select-sound [select-sound #f])
+  (define LINE-HEIGHT 24)
+  (define main-box-height (* LINE-HEIGHT (length dialog-list)))
+  (define dialog-list-sprites (fast-dialog-list dialog-list selection))
+
+  (define (next-option)
+    (lambda (g e)
+      (define new-index (modulo (add1 (get-counter e)) (length dialog-list)))
+      (define selection-box-sprite
+        (get-component e (curry component-eq? (get-storage-data "selection-box-sprite" e))))
+      
+      (define new-offset (+ (/ LINE-HEIGHT 2)
+                            (- (* new-index LINE-HEIGHT)
+                               (/ main-box-height 2))))
+      
+      (define new-selection-box-sprite
+        (set-y-offset new-offset selection-box-sprite))
+      (~> e
+          (update-entity _ (curry component-eq? selection-box-sprite) new-selection-box-sprite)
+          (update-entity _ counter? (counter new-index)))))
+
+  (define (previous-option)
+    (lambda (g e)
+      (define new-index (modulo (sub1 (get-counter e)) (length dialog-list)))
+      (define selection-box-sprite
+        (get-component e (curry component-eq? (get-storage-data "selection-box-sprite" e))))
+      
+      (define new-offset (+ (/ LINE-HEIGHT 2)
+                            (- (* new-index LINE-HEIGHT)
+                               (/ main-box-height 2))))
+      
+      (define new-selection-box-sprite
+        (set-y-offset new-offset selection-box-sprite))
+      (~> e
+          (update-entity _ (curry component-eq? selection-box-sprite) new-selection-box-sprite)
+          (update-entity _ counter? (counter new-index)))))
+  
   (sprite->entity dialog-list-sprites
                   #:name       "player dialog"
                   #:position   pos
                   #:components (static)
                                (hidden)
                                (layer "ui")
+                               (counter selection)
+                               (storage "selection-box-sprite" (list-ref dialog-list-sprites (length dialog-list)))
                                (on-start (do-many (go-to-pos 'center)
                                                   show
-                                                  (spawn (dialog-selection dialog-list
+                                                  #|(spawn (dialog-selection dialog-list
                                                                            selection-width
                                                                            font-size
                                                                            selection
                                                                            rsound)
-                                                         #:relative? #f)))
+                                                         #:relative? #f)|#
+                                                  ))
                                (on-key 'enter die)
+                               (on-key 'up   (if select-sound
+                                                 (do-many (previous-option)
+                                                          (play-sound-from "player" select-sound))
+                                                 (previous-option)))
+                               (on-key 'down (if select-sound
+                                                 (do-many (next-option)
+                                                          (play-sound-from "player" select-sound))
+                                                 (next-option)))
                                ))
 
 (define (get-selection-offset max-options box-height selection)
@@ -513,7 +561,7 @@
 
 (define (get-dialog-selection)
   (lambda (g e)
-    (define selection (get-counter (get-entity "player dialog selection" g)))
+    (define selection (get-counter (get-entity "player dialog" g)))
     ;(displayln (~a "Player Selection: " selection))
     (update-entity e counter? (counter selection))))
 
@@ -591,7 +639,8 @@
 
 (define (player-dialog-open? g e)
   (and (get-entity "player dialog" g)
-       (get-entity "player dialog selection" g)))
+       ;(get-entity "player dialog selection" g)
+       ))
 
 (define (get-dialog-length dialog)
   (length dialog))
