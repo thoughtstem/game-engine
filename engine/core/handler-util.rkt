@@ -56,10 +56,9 @@
 
 
 ;Wow.  I like how short and generalizable these combinators are.  But I don't love the thunk or the inner lambda.  Maybe some syntax for helping to define these??
-(define (sequence . gens)
+(define (sequence . hs)
    (thunk
      (define i  0)   
-     (define hs (map init-script gens))
 
      (lambda (g e c)
        (if (= i (length hs))
@@ -74,10 +73,18 @@
              [(noop? ret) #f] 
              [else ret]))))))
 
-(define (for-ticks n gen)
-  (thunk
+
+(define (lift-to-handler h)
+  (match (procedure-arity h) 
+    [1 (lambda (g e c) 
+         (h c))]
+    
+    ) )
+
+
+(define (for-ticks n h)
+
     (define to-go 0)
-    (define h (init-script gen))
 
     (lambda (g e c)
       (set! to-go (add1 to-go)) 
@@ -86,13 +93,13 @@
 
       (if (> to-go n)
         'done
-        (h g e c)))))
+        (h g e c)))
+  )
 
-(define (times n gen)
-  (thunk
+(define (times n h)
+
     (define done #f)
     (define to-go 0)
-    (define h (init-script gen))
 
     (lambda (g e c)
       (define ret (h g e c))
@@ -105,10 +112,11 @@
            (begin
              (set! to-go (add1 to-go))
              (unless (= to-go n)
-               (set! h (init-script gen))) 
+               (set! h #f)) 
              (h g e c)))] 
         [(noop? ret) #f] 
-        [else ret]))))
+        [else ret]))  
+  )
 
 
 

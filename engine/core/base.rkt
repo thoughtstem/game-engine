@@ -6,7 +6,7 @@
   game?
   game-entities
   copy-game
-  game-op?
+  operation?
 
   entity
   new-entity
@@ -22,24 +22,15 @@
   component-id
   set-component-id
   component-handler
-  component-entity-handler
-  component-game-handler
   component=?
+  component-done
   
-  entity-handler?
-  component-handler?
+  handler?
   
   set-ids!
   
   done?
-  noop?
-  noop
-  done
-  apply-script
-  init-script
-
-  game-handler-script-generator?
-  )
+  noop?)
 
 (require "./util.rkt")
 
@@ -52,19 +43,13 @@
   (and (vector? c) 
        (eq? 'component (vector-ref c 0))))
 
-(define game-op? (or/c game? #f 'done))
+(define operation? 
+  (or/c game? entity? component? 'noop 'done
+        (listof (or/c game? entity? component? 'noop 'done))))
 
-;Our basic function types
-(define game-handler? (-> game? entity? component? game-op?))
-(define entity-handler? (-> entity? component? entity?))
-(define component-handler? (-> component? component?))
+(define handler?
+  (-> game? entity? component? operation?))
 
-(define game-handler-script? 
-  (-> game? entity? component? game-op?))
-
-(define game-handler-script-generator?
-  (or/c game-handler-script?
-        (-> game-handler-script?)))
 
 
 ;Component can be a bit more light weight
@@ -89,19 +74,14 @@
   (-> component? symbol?)
   (vector-ref c 1))
 
+(define/contract (component-done c)
+  (-> component? component?)
+  (vector-set! c 3 #f))
+
 
 (define/contract (component-handler c)
-  (-> component? component-handler?)
+  (-> component? handler?)
   (vector-ref (vector-ref c 3) 0))
-
-(define/contract (component-entity-handler c)
-  (-> component? entity-handler?)
-  (vector-ref (vector-ref c 3) 1))
-
-(define/contract (component-game-handler c)
-  (-> component? game-handler-script-generator?)
-  (vector-ref (vector-ref c 3) 2))
-
 
 (define/contract (component=? c1 c2)
   (-> component? component? boolean?)
@@ -114,14 +94,11 @@
        (entity-id e2)))
 
 (define/contract 
-  (new-component #:handler        (handler (lambda (c) c))
-                 #:entity-handler (entity-handler (lambda (e c) e))
-                 #:game-handler   (game-handler (lambda (g e c) g)))
-  (->* () (#:handler component-handler?
-           #:entity-handler entity-handler?
-           #:game-handler game-handler?) component?)
-  (component #f 
-             (vector handler entity-handler game-handler)))
+  (new-component #:update        (handler (lambda (c) c)))
+  (->* () 
+       (#:update handler?) 
+       component?)
+  (component #f (vector handler)))
 
 
 
@@ -172,35 +149,8 @@
   (eq? s 'done))
 
 (define (noop? s)
-  (eq? s #f))
+  (eq? s 'noop))
 
-(define (noop)
-  (const #f))
-
-(define (done)
-  (const 'done))
-
-
-
-(define (init-script s)
-  (if (and (procedure? s)
-           (= 0 (procedure-arity s))) ;Cuz I don't think we can use game-handler-script-generator? to detect if s is a script generator...  So arity hack is the best I can think of...
-    (s)
-    s))
-
-(define/contract (apply-op g op)
-                 (-> game? game-op? game?)               
-                 (if (game? op)
-                   op ;If it's not #f or 'done, it's the new state.
-                   g  ;Else no change.  In the end 'done is an optimization that stops calling the script.
-                   ))
-
-(define/contract (apply-script g e c s)
-   (-> game? entity? component? game-handler-script-generator? game?)
-   (define real-s (init-script s))
-
-   (define op (real-s g e c))
-   (apply-op g op)) 
 
 (define (init g)
   (init-ids g))

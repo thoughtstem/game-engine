@@ -8,7 +8,7 @@
 (test-case "for-ticks"
            (define e (entity 
                        (new-health 5 
-                                   #:game-handler 
+                                   #:update 
                                    (for-ticks 5 
                                               ;TODO: Gross, can we not have to lift the function?
                                               (component-handler->game-handler gain-health)))))
@@ -36,11 +36,11 @@
 (test-case "times + for-ticks"
            (define e (entity 
                        (new-health 5 
-                                   #:game-handler 
+                                   #:update 
                                    (times 2
                                           ;TODO: Gross, can we not have to lift the function?
                                           (for-ticks 2
-                                                     (component-handler->game-handler gain-health))))))
+                                                     gain-health)))))
 
            (define g0 (game e))
            (define e0 (first (game-entities g0)))
@@ -60,25 +60,3 @@
 
 
 
-(test-case "times + do-many"
-           (define e (entity 
-                       (new-health 5 
-                                   #:game-handler 
-                                   (times 2
-                                          ;TODO: Gross, can we not have to lift the function?
-                                          (once-each
-                                             (component-handler->game-handler gain-health)
-                                             (component-handler->game-handler gain-health))))))
-
-           (define g0 (game e))
-           (define e0 (first (game-entities g0)))
-
-           (define gs (tick-list g0 10))
-
-           (map pretty-print-game gs)
-           
-           (check-true
-             #f
-             "I haven't written this test, but I know once-each is not working.  We need a better combinator for stacking a bunch of handlers in a row on a single tick...  I'm worried it's not working with entity and component handlers."
-             )
-           )

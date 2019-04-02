@@ -43,17 +43,13 @@
 
 
              (define/contract (new-name 
-                                #:handler (handler (lambda (c) c)) 
-                                #:entity-handler (entity-handler (lambda (e h) e))  
-                                #:game-handler (game-handler (lambda (g e h) g))  
+                                #:update (update #f) 
                                 field ...)
               (->* anys 
-                   [#:handler (-> name? name?) 
-                    #:entity-handler (-> entity? name? entity?)
-                    #:game-handler game-handler-script-generator?] 
+                   [#:update (or/c handler? #f)]
                    name?)
                (name #f  
-                     (vector handler entity-handler (init-script game-handler)) 
+                     (vector update) 
                      field ...))))]))
 
 (define-syntax (generate-getter stx)

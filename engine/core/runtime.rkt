@@ -21,15 +21,33 @@
   (for ([e (game-entities g)])
     (for ([c (entity-components e)])
 
-      (define handler (component-handler->game-handler (component-handler c)))
-      (define entity-handler (entity-handler->game-handler (component-entity-handler c)))
-      (define game-handler (component-game-handler c))
+      (define handler (component-handler c))
 
-      (set! temp-g (apply-script temp-g e c handler))
-      (set! temp-g (apply-script temp-g e c entity-handler))
-      (set! temp-g (apply-script temp-g e c game-handler))))
+      (when handler
+        (set! temp-g (apply-script temp-g e c handler)))
+
+      ))
   
   temp-g)
+
+(define (apply-script g e c h)
+  (define o (h g e c)) 
+
+  (apply-op o g e c))
+
+(define (apply-op o g e c)
+  (cond
+    [(game? o) o]
+    [(entity? o) (update-entity g e o)]
+    [(component? o) (update-entity g e 
+                                   (update-component e o))]
+    [(noop? o) g]
+    [(done? o) (update-entity g e 
+                                (component-done c))]
+    [(list? o) (foldl (lambda (next-op g)
+                        (apply-op next-op g)) 
+                      g o)]
+    [else (raise (~a "Unsupported handler return value: " o))]))
 
 (define/contract (tick-list g n)
    (-> game? positive? (listof game?))

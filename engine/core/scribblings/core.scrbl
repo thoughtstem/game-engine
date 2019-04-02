@@ -7,6 +7,22 @@
 
 @defmodule[game-engine/engine/core/main]
 
+TODO: Make the handlers return leaner game operations (CRUD OPs).  '(update (e 1)
+                            (remove (c 0)))
+   Make the op language and application functions
+   Redo our existing crud functions to use ops
+
+   Can we make the ops hidden to the user?  Can they learn an API that seems purely functional (crud functions take and return games, entities, and components).  But then, under the hood, can we not call these functions but rather call our op functions instead?
+   (Let's not get sidetracked by that, though.  It's not that bad to expose the ops to the user.)
+
+ACTUALLY, I don't think we need crud ops so much as we need lazy evaluation -- but only on games, entities, and compoents and their crud operations.  Maybe the just need a field for queued up changes.  Then they all happen at some point in the future -- on the tick.
+
+
+
+TODO: Drop the various handler keywords and just use @racket[#:handler].
+
+TODO: Doc the rest of the cool handlers.
+
 Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
 
 Manipulating games programatically is quite easy.
@@ -262,8 +278,79 @@ Given the component query, returns an entity query that matches if the entity ha
 }
 
 
+@section{Handlers}
 
 Working with handlers is most of what you do as you develop in game-engine.  There are various combinators for building more sophisticated handlers from simpler ones.  And also just utilities for working with handlers in the first place.
+
+The nice thing about game-engine is that you can express your logic however you want, in whatever language you want.  As long as you can make a handler out of it, you can run it in game-engine, and compose your functionality with the rest of the handler ecosystem.
+
+We've looked at the basic handler heirarchy: @racket[component-handler], @racket[entity-handler], and @racket[game-handler].  But really, these are all members of a more general type:
+
+
+@defthing[handler? (-> game? entity? component? operation?)]{
+  Like a @racket[game-handler], but returns a more general type -- basically anything that the other handlers types can return, plus the additional values @racket['noop] and @racket['done].  Or it could be a list of the aforementioned things.
+
+  Semantically, when the engine executes a @racket[handler?], it always does so with three things in its context: a game, an entity, and a component.  If the handler returns one of these, the corresponding input of that type is updated.  If the handler returns @racket['noop], this means no changes occur.  A @racket['done'] is like a noop, but means that the handler will no longer produce game, entity, and component values.  A list of these things means: apply the operations in the given order.  
+}
+
+@defthing[operation? (or/c game? entity? component? 'noop 'done (list (or/c game? entity? component? 'noop 'done))) ]{
+  Return type for a @racket[handler?].
+}
+
+@defproc[(compose-handlers [input handler?] ... ) handler?]{
+   A returns a handler that, when called, produeces a list of the return values that the input handlers would have produced.  
+}
+
+
+
+The fun thing with handlers is using them to change the behaviour of other handlers.  Suppose you have some function you've written or generated.  For example:
+
+@codeblock{
+  (define-component health (amount))
+  (define reduce-health (update-health-amount sub1))
+
+  (define (entity (health 100 
+                          #:handler reduce-health ))) 
+}
+
+This entity will lose one health per tick (and there's nothing stopping it from going negative -- but that's not the point, right now).   But you can use the @racket[ticks] combinator to change that from the (by default) infinite handler to one that only happens once.
+
+@codeblock{
+  (define-component health (amount))
+  (define reduce-health (update-health-amount sub1))
+
+  (define (entity (health 100 
+                          #:handler (for-ticks 1 reduce-health)))) 
+}
+
+
+@defproc[(for-ticks [n number?] [h handler?]) handler?]{
+  The handler (wrapped in the producer) returned by this function will behave like @racket[h] for @racket[n] calls.  After that, it will return @racket['done].
+
+  Note that this has the ability to "cut short" a handler that might have much longer term behaviour.   @racket[(ticks 1 h)] can turn an infinite producer into a one-shot.
+}
+
+Another useful one is @racket[times], but it only makes sense to use this one with non-infinitely producing handlers.  It will run some handler to completion some number of times.  So obviously an infinite handler never completes, so times will be infinite too. 
+
+But suppose we've been using @racket[for-ticks] to create handlers that do complete:
+
+@codeblock{
+  (define-component health (amount))
+  (define reduce-health (update-health-amount sub1))
+  (define gain-health   (update-health-amount add1))
+  (define lose-1-health (for-ticks 1 reduce-health))
+  (define gain-1-health (for-ticks 1 gain-health))
+
+  (define (entity (health 100 
+                          #:handler 
+                          (times 2 gain-1-health)))) 
+}
+
+That's kind of cool.  We started with the auto generated handler @racket[update-health-amount] to describe an infinite change over time.  Then we cut it short with @racket[for-ticks], and we elongated it again with @racket[times].  (Of course, we could have just used @racket[(for-ticks 2 gain-health)] to get the same effect.  But this example is just for educational purposes.)
+
+
+
+
 
 
 
