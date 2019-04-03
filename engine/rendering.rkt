@@ -348,8 +348,9 @@
 
 (define (register-sprites-from-images! images)
   (define uncompiled-images
-    (filter-not seen-image-before
-                images))
+    (remove-duplicates (filter-not seen-image-before
+                                   images)
+                       fast-equal?))
 
   (for ([image (in-list uncompiled-images)])
     (remember-image! image))

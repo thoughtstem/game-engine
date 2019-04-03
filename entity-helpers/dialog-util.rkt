@@ -9,22 +9,30 @@
          draw-dialog-text
          draw-dialog-sheet
          draw-dialog-sheet-text
-         draw-dialog-list
-         draw-crafting-list
-         draw-dialog-lg
+         
+         ;draw-dialog-list
+         fast-dialog-list
+         
+         ;draw-crafting-list
+         fast-crafting-list
+         
+         ;draw-dialog-lg
          fast-dialog-lg
+         
          draw-avatar-box
+         ;TODO: make fast-avatar-box
+         
          dialog->sprites
          dialog->response-sprites
+         
          next-dialog
          next-response
-         next-dialog-option
-         previous-dialog-option
+         
          reached-frame?
          create-dialog
          dialog-lg
          dialog-list
-         dialog-selection
+         
          start-blips
          stop-blips
          get-dialog-selection
@@ -36,7 +44,6 @@
          player-dialog-open?
          last-dialog?
          not-last-dialog?
-         get-selection-offset
          )
 
 (require "../game-entities.rkt")
@@ -51,10 +58,12 @@
 (require "../components/on-rule.rkt")
 (require "../components/sound-stream.rkt")
 (require "../components/dialog.rkt")
+(require "../components/storage.rkt")
 (require "../component-util.rkt")
 (require "../entity-helpers/movement-util.rkt")
 (require "../entity-helpers/sprite-util.rkt")
 (require "../entity-helpers/rgb-hsb.rkt")
+(require "../entity-helpers/ui-util.rkt")
 
 (require 2htdp/image
          posn
@@ -126,7 +135,6 @@
                           (pad (text (list->string (take msg-list i)) 18 "yellow") 6 8)
                           (rectangle (/ (* game-width 3) 4) (+ 12 (image-height message)) "solid" "transparent")))))
 
-; ----- Added icon-list
 (define (draw-crafting-list msg-list icon-list font-size selection)
   (define list-of-entries (map (λ (msg icon) (freeze (beside
                                               (pad (scale-to-fit icon (image-height (text "" font-size "yellow"))) 4 2)
@@ -134,20 +142,63 @@
     (define message-list (if (= 1 (length list-of-entries))
                              (first list-of-entries)
                              (apply (curry above/align "left") list-of-entries)))
-
-  #|  (foldr (lambda (icon new-text text-img)
-                                (above/align "left"
-                                             (pad (beside
-                                                   (pad (scale-to-fit icon font-size) 4 0)
-                                                   (text new-text font-size "yellow")) 4 4))
-                                             text-img))
-                              empty-image
-                              icon-list
-                              msg-list))|#
   (overlay message-list
            (rectangle (+ 12 (image-width message-list)) (+ 12 (image-height message-list)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
            (rectangle (+ 16 (image-width message-list)) (+ 16 (image-height message-list)) "solid"  (make-color 20 20 20 150))))
-; -----
+
+(define (fast-crafting-list msg-list icon-list [selected-item-index 0])
+  (define GAME-MAX-WIDTH (- (/ 480 10) 2))
+  (define MSG-MAX-WIDTH (apply max (map string-length msg-list)))
+  (define MSG-WIDTH (min MSG-MAX-WIDTH GAME-MAX-WIDTH))
+  (define LINE-HEIGHT 24)
+  (define (pad-text t)
+    (~a t
+        #:width MSG-WIDTH
+        #:limit-marker "..."
+        #:align 'left))
+  (define message-list (map pad-text msg-list))
+  (define num-items (length msg-list))
+  (define main-box-width  (* (+ MSG-WIDTH 4) 10))
+  (define main-box-height (* LINE-HEIGHT num-items))
+
+  ; ==== ADDING ICONS TO EACH MENU ITEM ====
+  ;for now, icon-list is a list of images
+  (define (option-with-icon msg icon)
+    (list (new-sprite (scale-to-fit icon LINE-HEIGHT)
+                      #:x-offset (- (/ main-box-width 2)))
+          (new-sprite msg
+                      #:animate #f
+                      #:color 'yellow
+                      #:x-offset (+ (/ LINE-HEIGHT 2)))))
+
+  (define list-of-entries (map option-with-icon message-list icon-list))
+
+  ; ========================================
+  
+  (define offset-sprite-list
+    (flatten (for/list ([ls list-of-entries]
+                        [i (range (length message-list))])
+               (map (λ (s)
+                      (~> s
+                          (set-y-offset (+ (/ LINE-HEIGHT 2)
+                                           (- (* i LINE-HEIGHT)
+                                              (/ main-box-height 2))
+                                           (get-y-offset s)) _)))
+                    ls))))
+  
+  (define selection-box-offset (+ (/ LINE-HEIGHT 2)
+                                  (- (* selected-item-index LINE-HEIGHT)
+                                     (/ main-box-height 2))))
+  (define selection-image (square 1 'solid (color 0 255 255 100)))
+  (precompile! selection-image)
+  (define selection-box-sprite (new-sprite selection-image
+                                           #:x-scale (+ main-box-width LINE-HEIGHT)
+                                           #:y-scale LINE-HEIGHT
+                                           #:y-offset selection-box-offset))
+  (append offset-sprite-list
+          (list selection-box-sprite)
+          (bordered-box-sprite (+ (+ main-box-width LINE-HEIGHT) 10)
+                               (+ main-box-height 10))))
 
 (define (draw-dialog-list msg-list font-size selection)
   (define message-list (foldr (lambda (new-text text-img)
@@ -160,6 +211,42 @@
            (rectangle (+ 12 (image-width message-list)) (+ 12 (image-height message-list)) "outline" (pen "white" 2 "solid" "butt" "bevel"))
            (rectangle (+ 16 (image-width message-list)) (+ 16 (image-height message-list)) "solid"  (make-color 20 20 20 150))))
 
+(define (fast-dialog-list msg-list [selected-item-index 0])
+  (define GAME-MAX-WIDTH (- (/ 480 10) 2))
+  (define MSG-MAX-WIDTH (apply max (map string-length msg-list)))
+  (define MSG-WIDTH (min MSG-MAX-WIDTH GAME-MAX-WIDTH))
+  (define LINE-HEIGHT 24)
+  (define (pad-text t)
+    (~a t
+        #:width MSG-WIDTH
+        #:limit-marker "..."
+        #:align 'left))
+  (define message-list (map pad-text msg-list))
+  (define num-items (length msg-list))
+  (define main-box-width  (* (+ MSG-WIDTH 2) 10))
+  (define main-box-height (* LINE-HEIGHT num-items))
+  (define offset-sprite-list
+    (for/list ([msg message-list]
+               [i (range (length message-list))])
+      (new-sprite msg
+                  #:animate #f
+                  #:color 'yellow
+                  #:y-offset (+ (/ LINE-HEIGHT 2)
+                                (- (* i LINE-HEIGHT)
+                                   (/ main-box-height 2))))))
+  (define selection-box-offset (+ (/ LINE-HEIGHT 2)
+                                  (- (* selected-item-index LINE-HEIGHT)
+                                     (/ main-box-height 2))))
+  (define selection-image (square 1 'solid (color 0 255 255 100)))
+  (precompile! selection-image)
+  (define selection-box-sprite (new-sprite selection-image
+                                           #:x-scale main-box-width
+                                           #:y-scale LINE-HEIGHT
+                                           #:y-offset selection-box-offset))
+  (append offset-sprite-list
+          (list selection-box-sprite)
+          (bordered-box-sprite (+ main-box-width 10)
+                               (+ main-box-height 10))))
 
 (define (draw-avatar-box e)
   (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
@@ -205,23 +292,6 @@
                                           #:sound rsound))
     (add-component (update-entity e counter? (counter (add1 npc-dialog-index)))
                    (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 10)))))
-
-
-(define (next-dialog-option dialog-list box-height)
-  (lambda (g e)
-    (define new-index (modulo (add1 (get-counter e)) (length dialog-list)))
-    (define offset (posn 0 (get-selection-offset (length dialog-list) box-height new-index)))
-    (update-entity (update-entity e lock-to? (lock-to "player dialog" #:offset offset))
-                   counter?
-                   (counter new-index))))
-
-(define (previous-dialog-option dialog-list box-height)
-  (lambda (g e)
-    (define new-index (modulo (sub1 (get-counter e)) (length dialog-list)))
-    (define offset (posn 0 (get-selection-offset (length dialog-list) box-height new-index)))
-    (update-entity (update-entity e lock-to? (lock-to "player dialog" #:offset offset))
-                   counter?
-                   (counter new-index))))
 
 (define (reached-frame? g e)
   (define as (get-component e animated-sprite?))
@@ -297,61 +367,34 @@
 (define (fast-dialog-lg name avatar game-width)
   (define NAME-MAX-WIDTH (- (/ game-width 10) 2))
   (define padded-name (~a name
-                          #:min-width 10
+                          #:min-width (if (even? (string-length name)) 10 11)
                           #:max-width NAME-MAX-WIDTH
                           #:limit-marker "..."
                           #:align 'center))
-  (define name-box-width (* (string-length padded-name) (/ game-width NAME-MAX-WIDTH)))
+  (define name-box-width (* (+ 2 (string-length padded-name)) 10))
   (define name-box-height 30)
   (define outer-border-image (square 1 'solid 'black))
   (define border-image (square 1 'solid 'white))
   (define box-image (square 1 'solid 'dimgray))
-  (define outer-border-sprite (new-sprite outer-border-image
-                                #:animate #f
-                                #:x-scale game-width
-                                #:y-scale 80))
-  (define main-border-sprite (new-sprite border-image
-                                         #:animate #f
-                                         #:x-scale (- game-width 2)
-                                         #:y-scale 78))
-  (define main-box-sprite (new-sprite box-image
-                                      #:animate #f
-                                      #:x-scale (- game-width 6)
-                                      #:y-scale 74))
-  (define name-outer-border-sprite (new-sprite outer-border-image
-                                               #:animate #f
-                                               #:x-scale name-box-width
-                                               #:y-scale name-box-height
-                                               #:x-offset (- (/ name-box-width 2) (/ game-width 2))
-                                               #:y-offset (- (+ 40 (/ name-box-height 2)))))
-  (define name-border-sprite (new-sprite border-image
-                                         #:animate  #f
-                                         #:x-scale  (- name-box-width 2)
-                                         #:y-scale  (- name-box-height 2)
-                                         #:x-offset (- (/ name-box-width 2) (/ game-width 2))
-                                         #:y-offset (- (+ 40 (/ name-box-height 2)))))
-  (define name-box-sprite (new-sprite box-image
-                                      #:animate  #f
-                                      #:x-scale  (- name-box-width 6)
-                                      #:y-scale  (- name-box-height 6)
-                                      #:x-offset (- (/ name-box-width 2) (/ game-width 2))
-                                      #:y-offset (- (+ 40 (/ name-box-height 2)))))
+
+  (define main-bordered-box (bordered-box-sprite game-width 80))
+
+  (define name-bordered-box (map (compose (curry set-x-offset (- (/ name-box-width 2) (/ game-width 2)))
+                                          (curry set-y-offset (- (+ 40 (/ name-box-height 2)))))
+                                 (bordered-box-sprite name-box-width name-box-height)))
+  
   (define name-text-sprite (new-sprite padded-name
                                        #:color 'yellow
                                        #:x-offset (- (/ name-box-width 2) (/ game-width 2))
-                                       #:y-offset (- (+ 40 2 (/ name-box-height 2)))))
+                                       #:y-offset (- (+ 40 (/ name-box-height 2)))))
   (define avatar-sprite (new-sprite avatar
                                     #:animate #f
                                     #:x-offset (- (* game-width 0.1) ;(+ 16 (/ (image-width avatar) 2))
                                                   (/ game-width 2))))
-  (list name-text-sprite
-        name-box-sprite
-        name-border-sprite
-        name-outer-border-sprite
-        avatar-sprite
-        main-box-sprite
-        main-border-sprite
-        outer-border-sprite))
+  (flatten (list name-text-sprite
+                 name-bordered-box
+                 avatar-sprite
+                 main-bordered-box)))
      
 (define (dialog-lg avatar name message-entity game-width #:delay [delay-time 0])
   (sprite->entity (fast-dialog-lg name avatar game-width) ;bg-sprite
@@ -370,63 +413,72 @@
                   ))
 
 
-(define (dialog-list dialog-list pos #:sound [rsound #f])
-  (define selection 0)
-  (define font-size 18)
-  (define dialog-list-sprite (draw-dialog-list dialog-list font-size selection))
-  (sprite->entity dialog-list-sprite
+(define (dialog-list dialog-list pos
+                     #:selection    [selection 0]
+                     #:select-sound [select-sound #f])
+  (define LINE-HEIGHT 24)
+  (define main-box-height (* LINE-HEIGHT (length dialog-list)))
+  (define dialog-list-sprites (fast-dialog-list dialog-list selection))
+
+  (define (next-option)
+    (lambda (g e)
+      (define new-index (modulo (add1 (get-counter e)) (length dialog-list)))
+      (define selection-box-sprite
+        (get-component e (curry component-eq? (get-storage-data "selection-box-sprite" e))))
+      
+      (define new-offset (+ (/ LINE-HEIGHT 2)
+                            (- (* new-index LINE-HEIGHT)
+                               (/ main-box-height 2))))
+      
+      (define new-selection-box-sprite
+        (set-y-offset new-offset selection-box-sprite))
+      (~> e
+          (update-entity _ (curry component-eq? selection-box-sprite) new-selection-box-sprite)
+          (update-entity _ counter? (counter new-index)))))
+
+  (define (previous-option)
+    (lambda (g e)
+      (define new-index (modulo (sub1 (get-counter e)) (length dialog-list)))
+      (define selection-box-sprite
+        (get-component e (curry component-eq? (get-storage-data "selection-box-sprite" e))))
+      
+      (define new-offset (+ (/ LINE-HEIGHT 2)
+                            (- (* new-index LINE-HEIGHT)
+                               (/ main-box-height 2))))
+      
+      (define new-selection-box-sprite
+        (set-y-offset new-offset selection-box-sprite))
+      (~> e
+          (update-entity _ (curry component-eq? selection-box-sprite) new-selection-box-sprite)
+          (update-entity _ counter? (counter new-index)))))
+  
+  (sprite->entity dialog-list-sprites
                   #:name       "player dialog"
                   #:position   pos
                   #:components (static)
                                (hidden)
                                (layer "ui")
+                               (counter selection)
+                               (storage "selection-box-sprite" (list-ref dialog-list-sprites (length dialog-list)))
                                (on-start (do-many (go-to-pos 'center)
                                                   show
-                                                  (spawn (dialog-selection dialog-list
-                                                                           (image-width dialog-list-sprite)
+                                                  #|(spawn (dialog-selection dialog-list
+                                                                           selection-width
                                                                            font-size
                                                                            selection
                                                                            rsound)
-                                                         #:relative? #f)))
+                                                         #:relative? #f)|#
+                                                  ))
                                (on-key 'enter die)
+                               (on-key 'up   (if select-sound
+                                                 (do-many (previous-option)
+                                                          (play-sound-from "player" select-sound))
+                                                 (previous-option)))
+                               (on-key 'down (if select-sound
+                                                 (do-many (next-option)
+                                                          (play-sound-from "player" select-sound))
+                                                 (next-option)))
                                ))
-
-(define (get-selection-offset max-options box-height selection)
-  (* (- selection (/ (sub1 max-options) 2)) box-height))
-
-(define (dialog-selection dialog-list max-width font-size selection rsound)
-  (define select-box
-    (overlay (rectangle (- max-width 14)
-                        (+ 4 (image-height (text "Blank" font-size "transparent")))
-                        "outline"
-                        (pen "white" 2 "solid" "butt" "bevel"))
-             (rectangle (- max-width 10)
-                        (+ 8 (image-height (text "Blank" font-size "transparent")))
-                        "outline"
-                        (pen "black" 4 "solid" "butt" "bevel"))))
-  (define box-height (image-height select-box))
-  (define offset (posn 0 (get-selection-offset (length dialog-list) box-height selection)))
-  (sprite->entity select-box
-                  #:name       "player dialog selection"
-                  #:position   (posn 0 0) ;(posn (/ WIDTH 2) (+ (/ HEIGHT 2) (posn-y offset)))
-                  #:components (static)
-                               (hidden)
-                               (layer "ui")
-                               (counter selection)
-                               (on-start show)
-                               (lock-to "player dialog" #:offset offset)
-                               ;(on-key 'space die)
-                               (on-key 'enter die)
-                               (on-key 'up   (if rsound
-                                                 (do-many (previous-dialog-option dialog-list box-height)
-                                                          (play-sound-from "player" rsound))
-                                                 (previous-dialog-option dialog-list box-height)))
-                               (on-key 'down (if rsound
-                                                 (do-many (next-dialog-option dialog-list box-height)
-                                                          (play-sound-from "player" rsound))
-                                                 (next-dialog-option dialog-list box-height)))))
-
-
 
 ; === DIALOG BLIPS ===
 (define (start-blips name rsound)
@@ -444,7 +496,7 @@
 
 (define (get-dialog-selection)
   (lambda (g e)
-    (define selection (get-counter (get-entity "player dialog selection" g)))
+    (define selection (get-counter (get-entity "player dialog" g)))
     ;(displayln (~a "Player Selection: " selection))
     (update-entity e counter? (counter selection))))
 
@@ -522,7 +574,7 @@
 
 (define (player-dialog-open? g e)
   (and (get-entity "player dialog" g)
-       (get-entity "player dialog selection" g)))
+       ))
 
 (define (get-dialog-length dialog)
   (length dialog))

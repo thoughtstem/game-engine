@@ -168,10 +168,11 @@
                                  (hidden)
                                  (if (<= build-time 0)
                                      #f
-                                     (make-progress-bar 0 #:max build-time))
+                                     (list (make-progress-bar 0 #:max build-time)
+                                           (do-every 10 (change-progress-by 1 #:max build-time))
+                                           ))
                                  (counter 0)
                                  (on-start show)
-                                 (do-every 10 (change-progress-by 1 #:max build-time))
                                  (on-rule (λ (g e) (> (get-counter e) build-time)) die)))
 
   (define (spawn-if-ready to-spawn)
@@ -187,7 +188,9 @@
                          (nearest-to-player? #:filter (has-component? on-key?))
                          (not/r (other-entity-locked-to? "player")))
            ;(do-many (spawn to-clone))
-           (spawn progress-counter)
+           (if (= build-time 0)
+               (spawn to-clone)
+               (spawn progress-counter))
            )
    (observe-change build-ready? (spawn-if-ready to-clone))))
 
@@ -270,8 +273,8 @@
            #:rule (and/r rule
                          (λ (g e)(get-entity "crafting list" g))
                          (λ (g e)
-                           (define sel (if (get-entity "crafting selection" g)
-                                           (get-counter (get-entity "crafting selection" g))
+                           (define sel (if (get-entity "crafting list" g)
+                                           (get-counter (get-entity "crafting list" g))
                                            #f))
                            (eq? sel selection))
                          (λ (g e) (not (get-entity progress-entity-name g)))
@@ -279,9 +282,11 @@
                          (nearest-to-player? #:filter (and/c (has-component? on-key?)
                                                              not-tops?
                                                              not-ui?))
+                         ; the line below prevents holding two crafted items in hand.
                          (not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? on-key?)
                                                                                   not-tops?
-                                                                                  not-ui?))))
+                                                                                  not-ui?)))
+                         )
            (if (= build-time 0)
                (spawn to-clone)
                (spawn progress-counter))

@@ -3,6 +3,7 @@
 (provide change-img-hue)
 (provide tint-img)
 (provide mask)
+(provide mask-pixel)
 (provide name->color)
 (provide rgb->hue)
 (provide make-color-hue)
