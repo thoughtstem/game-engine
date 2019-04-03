@@ -25,18 +25,22 @@
   component=?
   component-done
   
-  handler?
   
   set-ids!
   
   done?
-  noop?)
+  noop?
+  handler?
+  lift-to-handler
+  
+  init)
 
 (require "./util.rkt")
 
 ;Our basic struct types
 (struct entity (id components)  #:transparent)
 (struct game (entities) #:transparent)
+
 
 (define/contract (component? c)
   (-> any/c boolean?)
@@ -47,9 +51,7 @@
   (or/c game? entity? component? 'noop 'done
         (listof (or/c game? entity? component? 'noop 'done))))
 
-(define handler?
-  (-> game? entity? component? operation?))
-
+(define handler? (-> game? entity? component? operation?))
 
 
 ;Component can be a bit more light weight
@@ -76,12 +78,16 @@
 
 (define/contract (component-done c)
   (-> component? component?)
-  (vector-set! c 3 #f))
+  (vector-set! c 3 #f)
+  c)
 
 
 (define/contract (component-handler c)
-  (-> component? handler?)
-  (vector-ref (vector-ref c 3) 0))
+  (-> component? (or/c #f handler?))
+  (define handlers (vector-ref c 3))
+  (if handlers
+    (vector-ref handlers 0)
+    #f))
 
 (define/contract (component=? c1 c2)
   (-> component? component? boolean?)
@@ -93,12 +99,11 @@
   (eq? (entity-id e1)
        (entity-id e2)))
 
-(define/contract 
-  (new-component #:update        (handler (lambda (c) c)))
+(define/contract (new-component #:update (update #f))
   (->* () 
        (#:update handler?) 
        component?)
-  (component #f (vector handler)))
+  (component #f (vector update)))
 
 
 
@@ -158,3 +163,24 @@
 (define (init-ids g)
   (-> game? game?)
   (game (map set-ids! (game-entities g))))
+
+
+           
+(define/contract (lift-to-handler c->c)
+  (-> (or/c #f
+            (-> entity? component? entity?)
+            (-> component? component?)
+            handler?) 
+      (or/c #f handler?))
+
+  (cond
+    [(not c->c) #f]
+    [(= 1 (procedure-arity c->c))
+     (lambda (g e c)
+       (c->c c))]
+    [(= 2 (procedure-arity c->c))
+     (lambda (g e c)
+       (c->c e c))]
+    [else c->c]))
+
+

@@ -1,33 +1,61 @@
 #lang racket
 
+(provide apply-handler apply-op compose-handlers for-ticks)
+
 (require "./crud.rkt"
          "./base.rkt")
 
-(provide component-handler->game-handler
-         entity-handler->game-handler
-         reverse-params
-         do-many
-         
-         sequence
-         for-ticks
-         times
-         once-each)
+;HANDLERS
 
-(define (component-handler->game-handler ch)
-  (lambda (g e c)
-    (define new-e (update-component e c ch))
-   
-    (update-entity g e new-e)))
-(define (entity-handler->game-handler eh)
-  (lambda (g e c)
-    (update-entity g e (curryr eh c))))
+(define/contract (apply-handler h g e c)
+  (-> handler? game? entity? component? operation?)
 
-(define (any-handler->game-handler h)
-  (match (procedure-arity h)
-    [1 (component-handler->game-handler h)]
-    [2 (entity-handler->game-handler h)]
-    [3 h]
-    [else (raise "That was not a handler")]))
+  (define op (h g e c))
+  (apply-op op g e c))
+
+(define/contract (compose-handlers . hs)
+   (->* () () #:rest (listof handler?) operation?)
+
+   (lambda (g e c) 
+     (foldl (lambda (f g)
+              (apply-handler f 
+                              g 
+                              ;Get updated versions of e and c...
+                              (get-entity g e) 
+                              (get-entity g c)))
+            g
+            hs)))
+
+(define (apply-op o g e c)
+  (cond
+    [(game? o) o]
+    [(entity? o) (update-entity g e o)]
+    [(component? o) (update-entity g e 
+                                   (update-component e c o))]
+    [(noop? o) g]
+    [(done? o) (update-entity g e 
+                                (update-component e c (component-done c)))]
+    [(list? o) (foldl (lambda (next-op g)
+                        (apply-op next-op g)) 
+                      g o)]
+    [else (raise (~a "Unsupported handler return value: " o))]))
+
+
+
+(define (for-ticks n h)
+  (define to-go 0)
+
+  (lambda (g e c)
+    (set! to-go (add1 to-go)) 
+
+    ;TODO: Should we be looking at h and bailing early if it finishes early?  Or is the point of for-ticks that it spends that long on it no matter what...
+    (if (> to-go n)
+      'done
+      ((lift-to-handler h) g e c))))
+
+
+#;
+(
 
 (define (do-many . ghs)
   (lambda (g e c)
@@ -74,27 +102,7 @@
              [else ret]))))))
 
 
-(define (lift-to-handler h)
-  (match (procedure-arity h) 
-    [1 (lambda (g e c) 
-         (h c))]
-    
-    ) )
 
-
-(define (for-ticks n h)
-
-    (define to-go 0)
-
-    (lambda (g e c)
-      (set! to-go (add1 to-go)) 
-
-      ;TODO: Should we be looking at h and bailing early if it finishes early?  Or is the point of for-ticks that it spends that long on it no matter what...
-
-      (if (> to-go n)
-        'done
-        (h g e c)))
-  )
 
 (define (times n h)
 
@@ -118,10 +126,4 @@
         [else ret]))  
   )
 
-
-
-
-
-
-
-
+ )

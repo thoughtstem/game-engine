@@ -19,8 +19,7 @@
                    
                    ] 
         #`(begin
-             (define (name? x)
-               (and (vector? x)
+             (define (name? x) (and (vector? x)
                     (eq? 'name (vector-ref x 1))))
 
              (define/contract (name id handlers field ...)
@@ -46,10 +45,12 @@
                                 #:update (update #f) 
                                 field ...)
               (->* anys 
-                   [#:update (or/c handler? #f)]
+                   [#:update (or/c (-> entity? name? entity?) 
+                                   (-> name? name?) 
+                                   handler? #f)]
                    name?)
                (name #f  
-                     (vector update) 
+                     (vector (lift-to-handler update)) 
                      field ...))))]))
 
 (define-syntax (generate-getter stx)
@@ -128,7 +129,7 @@
                copy-c))
 
            (define (update-entity-component-field f)
-             (lambda (e c)
+             (lambda (g e c)
                (update-component e c (update-component-field f))))
 
            ) )]))
@@ -147,13 +148,16 @@
          ;e.g. health-amount
          (getter (format-id #'name "~a-~a" #'name #'field)) ]
        #`(begin
+           ;Returns a handler that replaces the component c with c2
            (define (update-entity-component c2)
-             (lambda (e c)
+             (lambda (g e c)
                (update-component e c c2)))
 
            (define (update-entity-first-component c2)
-             (lambda (e (c #f))
+             (lambda (g e c)
                (update-component e name? c2)))
            ) )]))
 
-           
+
+
+
