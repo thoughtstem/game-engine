@@ -14,17 +14,20 @@
   (apply-op op g e c))
 
 (define/contract (compose-handlers . hs)
-   (->* () () #:rest (listof handler?) operation?)
+   (->* () () #:rest (listof handler-convertable?) handler?)
 
    (lambda (g e c) 
      (foldl (lambda (f g)
+              (define new-e (get-entity g e)) 
+              (define new-c (get-component e c)) 
+
               (apply-handler f 
                               g 
                               ;Get updated versions of e and c...
-                              (get-entity g e) 
-                              (get-entity g c)))
+                              new-e 
+                              new-c))
             g
-            hs)))
+            (map lift-to-handler hs))))
 
 (define (apply-op o g e c)
   (cond

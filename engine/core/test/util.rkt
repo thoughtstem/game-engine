@@ -13,7 +13,6 @@
          update-health-amount
          update-entity-health-amount
          update-entity-health
-         update-entity-first-health
          ensure-uniqueness!
          
          entity:gain-health

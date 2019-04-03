@@ -19,7 +19,8 @@
                    
                    ] 
         #`(begin
-             (define (name? x) (and (vector? x)
+             (define (name? x) 
+               (and (vector? x)
                     (eq? 'name (vector-ref x 1))))
 
              (define/contract (name id handlers field ...)
@@ -148,14 +149,14 @@
          ;e.g. health-amount
          (getter (format-id #'name "~a-~a" #'name #'field)) ]
        #`(begin
-           ;Returns a handler that replaces the component c with c2
-           (define (update-entity-component c2)
-             (lambda (g e c)
-               (update-component e c c2)))
+           (define/contract (update-entity-component c2)
+             (-> (or/c component?
+                       (-> component? component?)) 
+                 procedure?)
 
-           (define (update-entity-first-component c2)
-             (lambda (g e c)
-               (update-component e name? c2)))
+             ;STill not sure if these are the best types...
+             (lambda (e c)
+               (update-component e c c2)))
            ) )]))
 
 

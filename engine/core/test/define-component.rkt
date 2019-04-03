@@ -37,12 +37,8 @@
            (define e (entity (new-health 5 #:update (update-entity-health (new-health 6))))) ;This is different from most of the other tests.  After one tick, this entity will get a health component that stops updating, because it will get replaced with the version that has no handlers
            (check-game (game e e e)) )
 
-(test-case "Testing auto-generated entity handler builder function "
 
-           (define e (entity (new-health 5 #:update (update-entity-first-health (update-health-amount add1)))))
-           (check-game (game e e e)) )
-
-(begin ;test-case "Testing adding a component "
+(test-case "Testing adding a component "
 
 
            (define no-health (entity))

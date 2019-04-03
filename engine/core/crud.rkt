@@ -32,6 +32,7 @@
       entity?)
 
   (define cs (entity-components e))
+
   (define i  (if (component? old-c)
                  (index-of cs old-c component=?)
                  (index-where cs old-c)))
@@ -72,8 +73,8 @@
 (define (get-component e query?)
   (define real-query?
     (if (component? query?)
-      (curry component=? query?)
-      query?))
+         (curry component=? query?)
+         query?))
 
   (findf real-query? (entity-components e)))
 
@@ -89,8 +90,9 @@
   i)
 
 
-(define (get-entity g pred?-or-e)
-  (-> game? (or/c entity? (-> entity? boolean?)) entity?)
+(define/contract (get-entity g pred?-or-e)
+  (-> game? (or/c entity? 
+                  (-> entity? any/c)) entity?)
 
   (define es (game-entities g))
   (define i  (get-entity-index g pred?-or-e))
@@ -104,7 +106,10 @@
 
 
 (define (update-entity g old-e new-e)
-  (-> game? (or/c entity? procedure?) (or/c entity? procedure?) game?)
+  (-> game? (or/c entity? (-> entity? boolean?)) 
+            (or/c entity? 
+                  (-> entity? entity?))
+            game?)
 
   (define es (game-entities g))
   (define i  (get-entity-index g old-e))

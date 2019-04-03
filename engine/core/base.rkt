@@ -31,6 +31,7 @@
   done?
   noop?
   handler?
+  handler-convertable?
   lift-to-handler
   
   init)
@@ -53,6 +54,11 @@
 
 (define handler? (-> game? entity? component? operation?))
 
+(define handler-convertable?
+  (or/c #f
+        (-> entity? component? entity?)
+        (-> component? component?)
+        handler?))
 
 ;Component can be a bit more light weight
 (define/contract (component id handlers)
@@ -167,10 +173,7 @@
 
            
 (define/contract (lift-to-handler c->c)
-  (-> (or/c #f
-            (-> entity? component? entity?)
-            (-> component? component?)
-            handler?) 
+  (-> handler-convertable? 
       (or/c #f handler?))
 
   (cond

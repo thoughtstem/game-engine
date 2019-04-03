@@ -10,7 +10,7 @@
            ;Simple way to make a virus
            ;If e has a component with this game handler on it, then it will begin executing and spawn yet another clone, and so on
            (define (me) 
-             (entity (new-component #:game-handler (spawn me))))
+             (entity (new-component #:update (spawn me))))
 
            (define s (spawn-manager))
 
@@ -39,7 +39,7 @@
 (test-case "Spawn queue populated correctly" 
 
            (define bullet (entity))
-           (define ship   (entity (new-component #:game-handler (spawn bullet))))
+           (define ship   (entity (new-component #:update (spawn bullet))))
 
            (define s (spawn-manager))
 
@@ -71,7 +71,7 @@
 
            (define bullet (entity))
            (define ship   (entity (new-component 
-                                    #:game-handler 
+                                    #:update 
                                     (for-ticks 5
                                               (spawn bullet)))))
 
@@ -81,18 +81,20 @@
            (define g1 (init g0))
            (define gs (tick-list g1 10))
 
-           (map pretty-print-game gs)
+           ;(map pretty-print-game gs)
+
+           (define qs (map spawn-queue-empty? gs))
 
            (check-true
              (spawn-queue-empty? (first gs))
              "The spawn queue starts empty.")
 
-           (for ([g (take gs 6)])
+           (for ([g (take (rest gs) 5)])
              (check-false
                (spawn-queue-empty? g)  
                "The spawn queue is not empty when the ship starts spawning."))
 
-           (for ([g (drop gs 6)])
+           (for ([g (drop (rest gs) 5)])
              (check-true
                (spawn-queue-empty? g)  
                "The spawn queue is empty again"))
