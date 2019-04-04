@@ -7,10 +7,12 @@
 
 (require 2htdp/image)
 
-(define (bordered-box-sprite w h)
-  (define outer-border-img (square 1 'solid 'black))
-  (define inner-border-img (square 1 'solid 'white))
-  (define box-img (square 1 'solid 'dimgray))
+(define (bordered-box-sprite w h #:outer-border-color [outer-border-color 'black]
+                                 #:border-color       [border-color 'white]
+                                 #:color              [box-color 'dimgray])
+  (define outer-border-img (square 1 'solid outer-border-color))
+  (define inner-border-img (square 1 'solid border-color))
+  (define box-img (square 1 'solid box-color))
 
   (precompile! outer-border-img
                inner-border-img
