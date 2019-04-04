@@ -96,6 +96,7 @@
              temp)))]))
 
 
+
 (define-syntax (generate-field-handlers stx)
   (syntax-case stx ()
     [(_ name field (fields ...))
@@ -157,6 +158,9 @@
              ;STill not sure if these are the best types...
              (lambda (e c)
                (update-component e c c2)))
+
+
+
            ) )]))
 
 

@@ -7,30 +7,26 @@
 
 @defmodule[game-engine/engine/core/main]
 
-TODO: Make the handlers return leaner game operations (CRUD OPs).  '(update (e 1)
-                            (remove (c 0)))
-   Make the op language and application functions
-   Redo our existing crud functions to use ops
-
-   Can we make the ops hidden to the user?  Can they learn an API that seems purely functional (crud functions take and return games, entities, and components).  But then, under the hood, can we not call these functions but rather call our op functions instead?
-   (Let's not get sidetracked by that, though.  It's not that bad to expose the ops to the user.)
-
-ACTUALLY, I don't think we need crud ops so much as we need lazy evaluation -- but only on games, entities, and compoents and their crud operations.  Maybe the just need a field for queued up changes.  Then they all happen at some point in the future -- on the tick.
-
-
-
-TODO: Drop the various handler keywords and just use @racket[#:handler].
-
-TODO: Doc the rest of the cool handlers.
-
 Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
 
 Manipulating games programatically is quite easy.
 
 @codeblock{
-  (define e (entity (new-health 5 #:entity-handler entity:gain-health)))
-  (define g (initialize-game (game e e e)))
-  (define g2 (tick g))
+  (define-health health (amount))
+  (define e (entity (new-health 5 #:update (update-health-amount add1))))
+  (define g (game e e e))
+  (define g1 (tick g))
+  (define g2 (tick g1))
+
+  ;Note there's no renderer at this level.
+}
+
+That was relatively simple.  It's not even worth rendering -- though perhaps it could be a nice building block for a simulation.
+
+However, when you import other stuff... 
+
+@codeblock{
+;TODO: More interesting example.
 }
 
 Roadmap: In any even, the attempt is to make a purely functional core with certain runtime guarantees.  Will that be slow?  Probably.  So we'll try to provide ways of switching off the purity, at the expence of losing the guarantees.  We'll make the compromises as they come up, and try to make them optional.
@@ -65,7 +61,7 @@ I think the potential for exploding a whole ecosystem of composable game parts w
           (define decrement-health (update-health-amount sub1))
 
           ;Since the type of our update function is health? -> health?, we can use #:handler in our constructor
-          (define hero-health (health 100 #:handler decrement-health))
+          (define hero-health (health 100 #:update decrement-health))
 
           ;Now it can be attached to an entity, and so on...
           (define hero (entity hero-health))
@@ -82,12 +78,12 @@ I think the potential for exploding a whole ecosystem of composable game parts w
           (define decrement-health (update-entity-health-amount sub1))
 
           ;Since the type of our update function is entity? health? -> entity?, we can use #:entity-handler
-          (define hero-health (health 100 #:entity-handler decrement-health))
+          (define hero-health (health 100 #:update decrement-health)
         } 
 
-  @racket[define-component] uses the fields you give it to generate some nice convenience functions.
+  As you can see, @racket[define-component] uses the fields you give it to generate some nice convenience functions.
 
-  Much like using racket @racket[struct], you get getters and setters (which are immutable by default).  Getters look like @racket[COMPONENT-FIELD].  Setters look like @racket[set-COMPONENT-FIELD].   And you get a predicate @racket[component?]. 
+  Much like using racket @racket[struct], you get getters and setters (which are immutable by default).  Getters look like @racket[COMPONENT-FIELD].  Setters look like @racket[set-COMPONENT-FIELD].   And you get a predicate @racket[COMPONENT?]. 
 
   Here we'll use those to define a component and new functions on that component type.
   
@@ -108,32 +104,49 @@ I think the potential for exploding a whole ecosystem of composable game parts w
           c))
   }
 
-  In addition to getters and setters, you also get, for each field in your component, a builder for a @racket[component-handler?] function that looks like:
+  In addition to getters and setters, you also get, for each field in your component, a builder for a @racket[handler?] function that looks like:
 
   @racket[update-COMPONENT-FIELD] -- e.g. @racket[update-health-amount]. 
-  This function is not a component handler, but it builds component handlers when given a function that takes and returns a values of your field's type.  Since health amount is a number, you can create component handlers like @racket[(update-health-amount sub1)], which expresses that the health will decrease whenever the handler runs.
+  This function is not a handler, but it builds handlers when given a function that takes and returns a values of your field's type.  Since health amount is a number, you can create handlers like @racket[(update-health-amount sub1)], which expresses that the health will decrease whenever the handler runs.
 
-  Moving up the handler heirarchy, you also get an entity handler that works the same way:
+  Moving up the handler heirarchy, you also get a handler that works the same way:
 
   @racket[update-entity-COMPONENT-FIELD] -- e.g. @racket[update-entity-health-amount]. 
 
-  Likewise, you must give this function a function that would adjust one of your fields, and it gives you an entity hander function (suitable for use with @racket[#:entity-handler]).
+  The main difference is that one handler will return a @racket[operation?] that is a component-changing operation, whereas the other is one that returns an entity-changing operation.   
 
   If you can do the same thing with an entity handler and a component handler, which should you pick?  The rule of thumb is always: Stay as low in the heirarchy as possible.  If you can use a component handler, do that.  It'll be faster.  If you must make other adjustmenst to the entity, use an entity handler.
 
-  The above two handler builders are for operating on a particular field of a component.  But it'll be quite common that you'll want to operate at the level of an entire component. 
-
-  The example counter component above has some @racket[(-> counter? counter?)] functions already defined.  These could be passed into @racket[#:handler] directly, or they could be lifted to entity handlers with the @racket[update-entity-COMPONENT] function.
+  The above two handler builders are for operating on a particular field of a component.  But it'll be quite common that you'll want to operate on an entity that the component is attached to -- i.e. to affect other components on that entity.  (Yes, components can change each other.)
 
   @codeblock{
-    (entity (counter #:entity-handler (update-entity-counter safe-inc)))
+    (define-component counter (amount))
+    (define-component other-counter (amount))
+
+    (entity 
+      (counter       0 #:update (update-counter-amount add1))
+      (other-counter 0 #:update (update-entity-counter-amount (curry + 5))))
   }
   
-  That's the same as the more efficient:
+  Both update handlers are changing the same counter -- one with a component operation (which affects the normal counter because it's attached to it).  The other does so with an entity operation, which it must do -- because a component operation would update itself.
+
+  Do a less abstract example...
 
   @codeblock{
-    (entity (counter #:handler safe-inc))
+    (define-component health (amount))
+    (define-component dead ())
+
+    (entity 
+      (health 100 #:update (compose-handlers
+                             (update-counter-amount sub1)
+                             ;TODO: Figure out on-rule. Then figure out entity-counter-amount?'s type entity-COMPONENT-FIELD?.  Then figure out add-component*
+                             (on-rule (entity-counter-amount? (curry = 0)) 
+                                      (add-component* (dead))))))
   }
+  ;TODO: Turn this into a test!
+
+  ;Or health and mana?
+
 
   TODO: Document functions like update-entity-first-component -- e.g. less targeted 
 } 

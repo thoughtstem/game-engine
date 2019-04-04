@@ -4,6 +4,7 @@
          update-component
          get-component
          add-component
+         add-component* ;TODO: More star versions?   Different naming convention
          remove-component
          
          ;Entity CRUD
@@ -19,6 +20,13 @@
 
 
 ;COMPONENT CRUD
+
+(define/contract (add-component* to-add)
+   (-> component? (-> entity? component? entity?))
+
+   (lambda (e c) ;Ignore the one the handler is attached to...  Just add a component to the entity.  
+     (add-component e to-add)))
+     
 
 (define/contract (add-component e c)
    (-> entity? component? entity?)
