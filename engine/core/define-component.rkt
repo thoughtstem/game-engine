@@ -159,6 +159,13 @@
              (lambda (e c)
                (update-component e c c2)))
 
+           #;
+           (define/contract (entity-COMPONENT-FIELD? pred?)
+              (-> (-> any/c boolean?) rule?)
+                            
+              (labmda (g e c)
+                (pred?
+                  (entity-COMPONENT-FIELD e))))
 
 
            ) )]))

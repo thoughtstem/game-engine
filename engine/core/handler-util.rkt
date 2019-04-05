@@ -1,11 +1,23 @@
 #lang racket
 
-(provide apply-handler apply-op compose-handlers for-ticks)
+(provide apply-handler apply-op compose-handlers for-ticks on-rule)
 
 (require "./crud.rkt"
          "./base.rkt")
 
+;TODO: move to base
+(define rule? (-> game? entity? component? boolean?))
+
 ;HANDLERS
+
+(define/contract (on-rule r h)
+  (-> rule? handler? handler?)
+
+  (lambda (g e c)
+    (if (r g e c)
+        (h g e c)
+        #f)))
+
 
 (define/contract (apply-handler h g e c)
   (-> handler? game? entity? component? operation?)

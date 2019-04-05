@@ -139,7 +139,7 @@ I think the potential for exploding a whole ecosystem of composable game parts w
     (entity 
       (health 100 #:update (compose-handlers
                              (update-counter-amount sub1)
-                             ;TODO: Figure out on-rule. Then figure out entity-counter-amount?'s type entity-COMPONENT-FIELD?.  Then figure out add-component*
+                             ;TODO: Fix up entityt-counter-amount? impl in define-component.rkt 
                              (on-rule (entity-counter-amount? (curry = 0)) 
                                       (add-component* (dead))))))
   }
