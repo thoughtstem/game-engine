@@ -10,7 +10,7 @@
                "mode-lambda"
                "drracket"
                "htdp-lib"
-               "https://github.com/jeapostrophe/lux.git#f6edd2e"
+               "https://github.com/jeapostrophe/lux.git" ;was frozen at #f6edd2e  
                "jack-posn"
           ;     "rsound"
                "https://github.com/thoughtstem/racket-chipmunk.git"
