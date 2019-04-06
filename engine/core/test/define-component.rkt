@@ -10,31 +10,31 @@
   (check-all-entities-health (tick g) 6))
 
 (let () ;test-case "Basic test for entity handlers"
-           (define e (entity (new-health 5 #:update entity:gain-health)))
+           (define e (entity (health 5 #:update entity:gain-health)))
            (check-game (game e e e)))
 
 
 (test-case "Basic test for component handlers" 
-           (define e (entity (new-health 5 #:update gain-health)))
+           (define e (entity (health 5 #:update gain-health)))
            (check-game (game e e e)))
 
 (test-case "Testing auto-generated component handler builder function "
-           (define e (entity (new-health 5 #:update (update-health-amount add1))))
+           (define e (entity (health 5 #:update (update-health-amount add1))))
            (check-game (game e e e)))
 
 (test-case "Testing auto-generated entity handler builder function "
 
-           (define e (entity (new-health 5 #:update (update-entity-health-amount add1))))
+           (define e (entity (health 5 #:update (update-entity-health-amount add1))))
            (check-game (game e e e)) )
 
 (test-case "Testing auto-generated entity handler builder function"
 
-           (define e (entity (new-health 5 #:update (update-entity-health (update-health-amount add1)))))
+           (define e (entity (health 5 #:update (update-entity-health (update-health-amount add1)))))
            (check-game (game e e e)))
 
 (test-case "Testing auto-generated entity handler builder function "
 
-           (define e (entity (new-health 5 #:update (update-entity-health (new-health 6))))) ;This is different from most of the other tests.  After one tick, this entity will get a health component that stops updating, because it will get replaced with the version that has no handlers
+           (define e (entity (health 5 #:update (update-entity-health (health 6))))) ;This is different from most of the other tests.  After one tick, this entity will get a health component that stops updating, because it will get replaced with the version that has no handlers
            (check-game (game e e e)) )
 
 
@@ -44,7 +44,7 @@
            (define no-health (entity))
 
            (define e (add-component no-health
-                                    (new-health 5 #:update (update-entity-health-amount add1))))
+                                    (health 5 #:update (update-entity-health-amount add1))))
 
            (check-game (game e e e)))
 
@@ -53,7 +53,7 @@
            (define no-health (entity))
 
            (define e (add-component no-health
-                                    (new-health 5 #:update (update-entity-health-amount add1))))
+                                    (health 5 #:update (update-entity-health-amount add1))))
 
            (define no-health-again (remove-component e health?))
 
@@ -63,7 +63,7 @@
 
            (define no-health (entity))
 
-           (define h (new-health 5 #:update (update-entity-health-amount add1)))
+           (define h (health 5 #:update (update-entity-health-amount add1)))
 
            (define e (add-component no-health h))
 

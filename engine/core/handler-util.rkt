@@ -1,6 +1,6 @@
 #lang racket
 
-(provide apply-handler apply-op compose-handlers for-ticks on-rule)
+(provide log apply-handler apply-op compose-handlers for-ticks on-rule remove-self)
 
 (require "./crud.rkt"
          "./base.rkt")
@@ -10,13 +10,25 @@
 
 ;HANDLERS
 
+
+(define/contract (remove-self)
+  (-> handler?)
+  (lambda (g e c)
+    (remove-component e c)))
+
+(define/contract (log msg)
+  (-> string? handler?)
+  (lambda (g e c)
+    (displayln msg) 
+    'noop))
+
 (define/contract (on-rule r h)
   (-> rule? handler? handler?)
 
   (lambda (g e c)
     (if (r g e c)
         (h g e c)
-        #f)))
+        'noop)))
 
 
 (define/contract (apply-handler h g e c)

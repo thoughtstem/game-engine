@@ -1,5 +1,7 @@
 #lang racket
 
+;Read this before you hurt yourself: https://docs.racket-lang.org/guide/pattern-macros.html
+
 (provide define-component)
 
 (require "./base.rkt"
@@ -10,165 +12,115 @@
 
 (define-syntax (define-component stx)
   (syntax-case stx ()
-    [(_ name (field ...))
-     (with-syntax [(new-name (format-id #'name "new-~a" #'name))
-                   (name-copy (format-id #'name "~a-copy" #'name)) 
-                   (name? (format-id #'name "~a?" #'name))
+    [(_ COMPONENT (FIELD ...))
+     (with-syntax [(new-COMPONENT (format-id #'COMPONENT "new-~a" #'COMPONENT))
+                   (COMPONENT? (format-id #'COMPONENT "~a?" #'COMPONENT))
                    (anys  (map (thunk* #'any/c) 
-                               (syntax->datum #'(field ...)))) 
-                   
-                   ] 
-        #`(begin
-             (define (name? x) 
-               (and (vector? x)
-                    (eq? 'name (vector-ref x 1))))
-
-             (define/contract (name id handlers field ...)
-               (-> (or/c number? #f) vector? #,@#'anys name?)
-               (vector 'component 'name id handlers 
-                       field ...))
-
-
-             (generate-getter name field (field ...))
-             ...
-
-             (generate-setter name field (field ...))
-             ...
-
-
-             (generate-field-handlers name field (field ...))
-             ...
-
-             (generate-non-field-handlers name)
-
-
-             (define/contract (new-name 
-                                #:update (update #f) 
-                                field ...)
-              (->* anys 
-                   [#:update (or/c (-> entity? name? entity?) 
-                                   (-> name? name?) 
-                                   handler? #f)]
-                   name?)
-               (name #f  
-                     (vector (lift-to-handler update)) 
-                     field ...))))]))
-
-(define-syntax (generate-getter stx)
-  (syntax-case stx ()
-    [(_ name field (fields ...))
-     (with-syntax 
-       [(name-field (format-id #'name "~a-~a" #'name #'field) )
-        (entity-name-field (format-id #'name "entity-~a-~a" #'name #'field) ) 
-        (name? (format-id #'name "~a?" #'name) ) 
-        (i (+ 4 (index-of 
-                  (syntax->datum #'(fields ...))
-                  (syntax->datum #'field))))]
+                               (syntax->datum #'(FIELD ...))))] 
        #`(begin
-           (define/contract (name-field x)
-             (-> component? any/c)
+           (define (COMPONENT? x) 
+             (and (vector? x)
+                  (eq? 'COMPONENT (vector-ref x 1))))
+
+           (define/contract (new-COMPONENT id handlers FIELD ...)
+                            (-> (or/c number? #f) vector? #,@#'anys COMPONENT?)
+                            (vector 'component 'COMPONENT id handlers 
+                                    FIELD ...))
+
+
+           (generate-other-stuff COMPONENT FIELD (FIELD ...))
+           ...
+
+
+           (define/contract (COMPONENT 
+                              #:update (update #f) 
+                              FIELD ...)
+                            (->* anys 
+                                 [#:update (or/c (-> entity? COMPONENT? entity?) 
+                                                 (-> COMPONENT? COMPONENT?) 
+                                                 handler? #f)]
+                                 COMPONENT?)
+                            (new-COMPONENT #f  
+                                           (vector (lift-to-handler update)) 
+                                           FIELD ...))))]))
+
+
+(define-syntax (generate-other-stuff stx)
+  (syntax-case stx ()
+    [(_ COMPONENT FIELD (FIELDS ...))
+     (with-syntax 
+       [(COMPONENT-FIELD (format-id #'COMPONENT "~a-~a" #'COMPONENT #'FIELD) )
+        (COMPONENT-FIELD? (format-id #'COMPONENT "~a-~a?" #'COMPONENT #'FIELD) ) 
+        (entity-COMPONENT-FIELD (format-id #'COMPONENT "entity-~a-~a" #'COMPONENT #'FIELD) ) 
+        (set-COMPONENT-FIELD (format-id #'COMPONENT "set-~a-~a" #'COMPONENT #'FIELD) ) 
+        (entity-COMPONENT-FIELD? (format-id #'COMPONENT "entity-~a-~a?" #'COMPONENT #'FIELD) ) 
+        (update-COMPONENT-FIELD (format-id #'COMPONENT "update-~a-~a" #'COMPONENT #'FIELD) ) 
+        (update-entity-COMPONENT-FIELD (format-id #'COMPONENT "update-entity-~a-~a" #'COMPONENT #'FIELD) ) 
+        (update-entity-COMPONENT (format-id #'COMPONENT "update-entity-~a" #'COMPONENT ))
+        (COMPONENT? (format-id #'COMPONENT "~a?" #'COMPONENT) ) 
+        (i (+ 4 (index-of 
+                  (syntax->datum #'(FIELDS ...))
+                  (syntax->datum #'FIELD))))]
+       #`(begin
+           (define/contract (COMPONENT-FIELD x)
+             (-> COMPONENT? any/c)
 
              (vector-ref x i))
 
-           (define/contract (entity-name-field e)
+           (define/contract (entity-COMPONENT-FIELD e)
              (-> entity? any/c)
 
-             (name-field (get-component e name?)))
-           
-           ))]))
+             (COMPONENT-FIELD (get-component e COMPONENT?)))
 
-(define-syntax (generate-setter stx)
-  (syntax-case stx ()
-    [(_ name field (fields ...))
-     (with-syntax 
-       [(set-name-field (format-id #'name "set-~a-~a" #'name #'field) )
-        (i (+ 4 (index-of 
-                  (syntax->datum #'(fields ...))
-                  (syntax->datum #'field))))]
-       #`(begin
-           (define/contract (set-name-field x v)
-             (-> component? any/c component?)
+           (define/contract (entity-COMPONENT-FIELD? q)
+             (-> (-> any/c boolean?) rule?)
+             
+             (lambda (g e me)
+               (define c (get-component e COMPONENT?))
+
+               (q (COMPONENT-FIELD c))))
+
+           (define/contract (COMPONENT-FIELD? q)
+             (-> (-> any/c boolean?) rule?)
+             
+             (lambda (g e c)
+               (q (COMPONENT-FIELD c))))
+           
+           (define/contract (set-COMPONENT-FIELD x v)
+             (-> COMPONENT? any/c COMPONENT?)
 
              (define temp (vector-copy x))
              
              (vector-set! temp i v)
 
-             temp)))]))
+             temp)
 
-
-
-(define-syntax (generate-field-handlers stx)
-  (syntax-case stx ()
-    [(_ name field (fields ...))
-     (with-syntax 
-       [ (name? (format-id #'name "~a?" #'name))
-
-         ;e.g. update-health-amount
-         (update-component-field (format-id #'name "update-~a-~a" #'name #'field))
-         ;e.g. update-entity-health-amount
-         (update-entity-component-field (format-id #'name "update-entity-~a-~a" #'name #'field))
-
-         ;e.g. update-entity-health
-         (update-entity-component (format-id #'name "update-entity-~a" #'name))
-
-         ;e.g. update-entity-first-health
-         (update-entity-first-component (format-id #'name "update-entity-first-~a" #'name))
-         ;e.g. health-amount
-         (getter (format-id #'name "~a-~a" #'name #'field))
-         (i (+ 4 (index-of 
-                   (syntax->datum #'(fields ...))
-                   (syntax->datum #'field))))]
-       #`(begin
-
-           (define (update-component-field f)
+           (define (update-COMPONENT-FIELD f)
              (lambda (c)
                (define copy-c (vector-copy c))
 
                (vector-set! copy-c
                             i 
-                            (f (getter copy-c)))
+                            (f (COMPONENT-FIELD copy-c)))
 
                copy-c))
 
-           (define (update-entity-component-field f)
+           (define (update-entity-COMPONENT-FIELD f)
              (lambda (g e c)
-               (update-component e c (update-component-field f))))
+               (update-component e c (update-COMPONENT-FIELD f))))
 
-           ) )]))
+           (define/contract (update-entity-COMPONENT c2)
+                            (-> (or/c component?
+                                      (-> component? component?)) 
+                                procedure?)
 
-
-(define-syntax (generate-non-field-handlers stx)
-  (syntax-case stx ()
-    [(_ name )
-     (with-syntax 
-       [ (name? (format-id #'name "~a?" #'name))  
-         ;e.g. update-entity-health
-         (update-entity-component (format-id #'name "update-entity-~a" #'name))
-
-         ;e.g. update-entity-first-health
-         (update-entity-first-component (format-id #'name "update-entity-first-~a" #'name))
-         ;e.g. health-amount
-         (getter (format-id #'name "~a-~a" #'name #'field)) ]
-       #`(begin
-           (define/contract (update-entity-component c2)
-             (-> (or/c component?
-                       (-> component? component?)) 
-                 procedure?)
-
-             ;STill not sure if these are the best types...
-             (lambda (e c)
-               (update-component e c c2)))
-
-           #;
-           (define/contract (entity-COMPONENT-FIELD? pred?)
-              (-> (-> any/c boolean?) rule?)
-                            
-              (labmda (g e c)
-                (pred?
-                  (entity-COMPONENT-FIELD e))))
+                            ;STill not sure if these are the best types...
+                            (lambda (e c)
+                              (update-component e c c2)))
 
 
-           ) )]))
+           ))]))
+
 
 
 

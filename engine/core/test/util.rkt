@@ -8,7 +8,9 @@
 
 (provide health-amount 
          health?
-         new-health
+         health
+
+         entity-health-amount?
          entity-health-amount
          update-health-amount
          update-entity-health-amount

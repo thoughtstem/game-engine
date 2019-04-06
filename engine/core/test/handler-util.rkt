@@ -6,10 +6,10 @@
 
 (test-case "for-ticks"
            (define e (entity 
-                       (new-health 5 
-                                   #:update 
-                                   (for-ticks 5 gain-health))))
-         
+                       (health 5 
+                               #:update 
+                               (for-ticks 5 gain-health))))
+
            (define g0 (game e))
            (define e0 (first (game-entities g0)))
 

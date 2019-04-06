@@ -130,22 +130,26 @@ I think the potential for exploding a whole ecosystem of composable game parts w
   
   Both update handlers are changing the same counter -- one with a component operation (which affects the normal counter because it's attached to it).  The other does so with an entity operation, which it must do -- because a component operation would update itself.
 
-  Do a less abstract example...
+  Here's a less abstract example:
 
   @codeblock{
-    (define-component health (amount))
-    (define-component dead ())
 
-    (entity 
-      (health 100 #:update (compose-handlers
-                             (update-counter-amount sub1)
-                             ;TODO: Fix up entityt-counter-amount? impl in define-component.rkt 
-                             (on-rule (entity-counter-amount? (curry = 0)) 
-                                      (add-component* (dead))))))
+          (define-component dead ())
+                  (define is-zero? (curry = 0))
+
+                  (define e
+                   (entity 
+                    (health 3 #:update (compose-handlers
+                                        (update-health-amount sub1)
+                                        (on-rule 
+                                         (entity-health-amount? is-zero?) 
+                                         (compose-handlers
+                                          (add-component (dead))
+                                          (remove-self)))))))
   }
-  ;TODO: Turn this into a test!
 
-  ;Or health and mana?
+  We attach a health component that counts down over time, and will remove itself when it gets to zero -- but not before adding a component named dead (presumably for some other entity or component to do further handling with).
+
 
 
   TODO: Document functions like update-entity-first-component -- e.g. less targeted 
