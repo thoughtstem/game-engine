@@ -1,12 +1,12 @@
 #lang racket
 
-(provide change-img-hue
-         change-img-sat
-         change-img-bright
+(provide change-img-hue     ; 0 to 360
+         change-img-sat     ; 0 to 100
+         change-img-bright  ; 0 to 100
 
-         set-img-hue
-         set-img-sat
-         set-img-bright
+         set-img-hue        ; 0 to 360
+         set-img-sat        ; 0 to 100
+         set-img-bright     ; 0 to 100
          
          tint-img
          mask
