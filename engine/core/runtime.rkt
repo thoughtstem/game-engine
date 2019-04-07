@@ -2,6 +2,7 @@
 
 (provide init 
          tick
+         ticks
          tick-list
 
          all-entities
@@ -20,13 +21,22 @@
 
   (for ([e (game-entities g)])
     (for ([c (entity-components e)])
-
       (define h (component-handler c))
 
       (when h
-        (set! temp-g (apply-handler h temp-g e c)))))
+        (define op (h g e c))
+        (set! temp-g (apply-op op temp-g e c))
+
+        )))
   
   temp-g)
+
+(define/contract (ticks n g)
+   (-> number? game? game?)
+   (if (= 0 n) 
+     g 
+     (ticks (sub1 n) 
+            (tick g))))
 
 (define/contract (tick-list g n)
    (-> game? positive? (listof game?))

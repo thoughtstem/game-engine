@@ -32,12 +32,12 @@
 (define/contract (entity:gain-health e h)
  (-> entity? health? entity?)
 
- (update-component e health? ;Could have done h instead of health?, but why not test predicate-based update? 
+ (update-component* e health? ;Could have done h instead of health?, but why not test predicate-based update? 
                      gain-health))
 
 (define (check-all-entities-health g amount)
   (define (health=? amount e)
-    (= amount (health-amount (get-component e health?))))
+    (= amount (health-amount (get-component* e health?))))
 
   (check-pred (all-entities (curry health=? amount)) 
               g

@@ -16,7 +16,10 @@
      (with-syntax [(new-COMPONENT (format-id #'COMPONENT "new-~a" #'COMPONENT))
                    (COMPONENT? (format-id #'COMPONENT "~a?" #'COMPONENT))
                    (anys  (map (thunk* #'any/c) 
-                               (syntax->datum #'(FIELD ...))))] 
+                               (syntax->datum #'(FIELD ...))))
+                   (update-entity-COMPONENT (format-id #'COMPONENT "update-entity-~a" #'COMPONENT )) 
+                   (entity-COMPONENT (format-id #'COMPONENT "entity-~a" #'COMPONENT)) 
+                   ] 
        #`(begin
            (define (COMPONENT? x) 
              (and (vector? x)
@@ -31,6 +34,19 @@
            (generate-other-stuff COMPONENT FIELD (FIELD ...))
            ...
 
+           (define/contract (update-entity-COMPONENT c2)
+                            (-> (or/c component?
+                                      component-handler?) 
+                                entity-handler?)
+
+                            (lambda (g e c)
+                              ;What a mess.  Make a better handler detector
+                              (update-component* e COMPONENT? c2)
+                              ))
+
+           (define/contract (entity-COMPONENT e)
+             (-> entity? COMPONENT?)
+             (get-component* e COMPONENT?))
 
            (define/contract (COMPONENT 
                               #:update (update #f) 
@@ -56,7 +72,9 @@
         (entity-COMPONENT-FIELD? (format-id #'COMPONENT "entity-~a-~a?" #'COMPONENT #'FIELD) ) 
         (update-COMPONENT-FIELD (format-id #'COMPONENT "update-~a-~a" #'COMPONENT #'FIELD) ) 
         (update-entity-COMPONENT-FIELD (format-id #'COMPONENT "update-entity-~a-~a" #'COMPONENT #'FIELD) ) 
-        (update-entity-COMPONENT (format-id #'COMPONENT "update-entity-~a" #'COMPONENT ))
+
+        
+        
         (COMPONENT? (format-id #'COMPONENT "~a?" #'COMPONENT) ) 
         (i (+ 4 (index-of 
                   (syntax->datum #'(FIELDS ...))
@@ -70,13 +88,14 @@
            (define/contract (entity-COMPONENT-FIELD e)
              (-> entity? any/c)
 
-             (COMPONENT-FIELD (get-component e COMPONENT?)))
+             (COMPONENT-FIELD (get-component* e COMPONENT?)))
+
 
            (define/contract (entity-COMPONENT-FIELD? q)
              (-> (-> any/c boolean?) rule?)
              
              (lambda (g e me)
-               (define c (get-component e COMPONENT?))
+               (define c (get-component* e COMPONENT?))
 
                (q (COMPONENT-FIELD c))))
 
@@ -107,16 +126,7 @@
 
            (define (update-entity-COMPONENT-FIELD f)
              (lambda (g e c)
-               (update-component e c (update-COMPONENT-FIELD f))))
-
-           (define/contract (update-entity-COMPONENT c2)
-                            (-> (or/c component?
-                                      (-> component? component?)) 
-                                procedure?)
-
-                            ;STill not sure if these are the best types...
-                            (lambda (e c)
-                              (update-component e c c2)))
+               (update-component* e c (update-COMPONENT-FIELD f))))
 
 
            ))]))

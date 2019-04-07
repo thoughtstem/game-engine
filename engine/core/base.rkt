@@ -31,6 +31,9 @@
   done?
   noop?
   handler?
+  component-handler?
+  entity-handler?
+  game-handler?
   rule?
   handler-convertable?
   lift-to-handler
@@ -54,6 +57,10 @@
         (listof (or/c game? entity? component? 'noop 'done))))
 
 (define handler? (-> game? entity? component? operation?))
+(define component-handler? (-> game? entity? component? component?))
+(define entity-handler? (-> game? entity? component? entity?))
+(define game-handler? (-> game? entity? component? entity?))
+
 (define rule? (-> game? entity? component? boolean?))
 
 (define handler-convertable?

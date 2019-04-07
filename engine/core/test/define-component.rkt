@@ -43,8 +43,8 @@
 
            (define no-health (entity))
 
-           (define e (add-component no-health
-                                    (health 5 #:update (update-entity-health-amount add1))))
+           (define e (add-component* no-health
+                                     (health 5 #:update (update-entity-health-amount add1))))
 
            (check-game (game e e e)))
 
@@ -52,10 +52,10 @@
 
            (define no-health (entity))
 
-           (define e (add-component no-health
+           (define e (add-component* no-health
                                     (health 5 #:update (update-entity-health-amount add1))))
 
-           (define no-health-again (remove-component e health?))
+           (define no-health-again (remove-component* e health?))
 
            (check-equal? 0 (length (entity-components no-health-again))) )
 
@@ -65,9 +65,9 @@
 
            (define h (health 5 #:update (update-entity-health-amount add1)))
 
-           (define e (add-component no-health h))
+           (define e (add-component* no-health h))
 
-           (define no-health-again (remove-component e h))
+           (define no-health-again (remove-component* e h))
 
            (check-equal? 0 (length (entity-components no-health-again))) )  
 

@@ -152,23 +152,8 @@ I think the potential for exploding a whole ecosystem of composable game parts w
 
 
 
-  TODO: Document functions like update-entity-first-component -- e.g. less targeted 
 } 
 
-
-We've been talking about the handler heirarchy.  Here is a more formal listing of the three handler types:
-
-@defthing[game-handler? (-> game? entity? component? game?)]{
-  The most powerful and slowest.  This essentially has read access to the entire game state and returns a new game state.  You can attach these through a component's @racket[#:game-handler] keyword.
-}
-
-@defthing[entity-handler? (-> entity? component? entity?)]{
-  Signature for the kind of function you would attach to your components with @racket[#:entity-handler], and which returns the next desired state for that @racket[entity].
-}
-
-@defthing[component-handler? (-> component? component?)]{
-  Signature for the kind of function you would attach to your components with @racket[#:entity], and which returns the next desired state for that @racket[component].
-}
 
 
 You can control games programmatically with @racket[init] and @racket[tick].  The idea is that you do a single call to @racket[init] followed by as many calls to @racket[tick] as you want.
@@ -187,6 +172,12 @@ You can control games programmatically with @racket[init] and @racket[tick].  Th
   The simple runtime model is that the engine loops over every entity and every component in order, giving each component a chance to run its handlers.  Each component may have a component handler, an entity handler, and/or a game-hander attached.  These handlers run in the aforementioned order -- meaning that the game-handler takes precedience because it runs last.
 
   TODO: As we inevitably encounter the need to make ticks faster, we'll adjust the above simple model with various optimizations.  If those optimizations could cause any of the game's immutability guarantees to break, they will be optional.  My hope is that developers can begin with the simple immutable model as they are prototyping and unit testing their games.  Then they can increase the speed when necessary (basically by adding more mutability).
+}
+
+@defproc[(ticks [n number?]
+                [game game?])
+         game?]{
+  Calls @racket[tick] @racket[n] times.
 }
 
 @defproc[(tick-list [game game?]

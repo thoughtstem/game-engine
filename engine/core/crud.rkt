@@ -1,43 +1,48 @@
 #lang racket
 
-(provide ;Component CRUD
-         update-component
-         get-component
-         add-component
-         add-component* ;TODO: More star versions?   Different naming convention
-         remove-component
+(provide 
+         ;Handlers? Handler util?
+         add-component 
+  
+  ;Component CRUD
+         add-component*
+         get-component*
+         update-component*
+         remove-component*
          
          ;Entity CRUD
-         get-entity
-         update-entity
-         add-entity
-         remove-entity
+         add-entity*
+         get-entity*
+         update-entity*
+         remove-entity*
 
          ;Query language
-         has-component)
+         has-component*)
 
 (require "./base.rkt")
 
 
 ;COMPONENT CRUD
 
-(define/contract (add-component* to-add)
+(define/contract (add-component to-add)
    (-> component? handler?)
 
    (lambda (g e c) 
      ;Ignore the one the handler is attached to...  Just add a component to the entity.  
-     (add-component e to-add)))
+     (add-component* e to-add)))
+
+
      
 
-(define/contract (add-component e c)
+(define/contract (add-component* e c)
    (-> entity? component? entity?)
    (struct-copy entity e
                 [components (cons c (entity-components e) )])) 
 
-(define/contract (update-component e old-c new-c)
+(define/contract (update-component* e old-c new-c)
   (-> entity? 
       (or/c component? (-> component? boolean?)) 
-      (or/c component? (-> component? component?)) 
+      (or/c component? (-> component? component?) handler?) 
       entity?)
 
   (define cs (entity-components e))
@@ -62,7 +67,7 @@
                [components (list-set cs i real-new-c)]))
 
 
-(define/contract (remove-component e c)
+(define/contract (remove-component* e c)
    (-> entity? 
        (or/c component?
              (-> component? boolean?)) 
@@ -79,7 +84,7 @@
                 [components (filter-not (curry component=? to-remove) 
                                         (entity-components e))])) 
 
-(define (get-component e query?)
+(define (get-component* e query?)
   (define real-query?
     (if (component? query?)
          (curry component=? query?)
@@ -99,22 +104,23 @@
   i)
 
 
-(define/contract (get-entity g pred?-or-e)
+(define/contract (get-entity* g pred?-or-e)
   (-> game? (or/c entity? 
-                  (-> entity? any/c)) entity?)
+                  (-> entity? any/c)) 
+      (or/c entity? #f))
 
   (define es (game-entities g))
   (define i  (get-entity-index g pred?-or-e))
   (if i (list-ref es i) #f))
 
-(define (add-entity g e)
+(define (add-entity* g e)
   (-> game? entity? game?)
 
   (game (cons (set-ids! e) ;Ensure added entities and their components start with unique ids
               (game-entities g))))
 
 
-(define (update-entity g old-e new-e)
+(define (update-entity* g old-e new-e)
   (-> game? (or/c entity? (-> entity? boolean?)) 
             (or/c entity? 
                   (-> entity? entity?))
@@ -131,7 +137,7 @@
                [entities (list-set es i (action (list-ref es i)))]) )
 
 
-(define (remove-entity g old-e)
+(define (remove-entity* g old-e)
   (-> game? (or/c entity? 
                   (-> entity? boolean?)) 
       game?)
@@ -148,7 +154,6 @@
 
 ;Useful query predicates that can be used in update-entity and get-entity
 
-(define (has-component c?)
-  (lambda (e)
-    (findf c? (entity-components e))))
 
+(define (has-component* e c?)
+  (findf c? (entity-components e)))

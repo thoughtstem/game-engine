@@ -1,12 +1,103 @@
 #lang racket
 
-(provide log apply-handler apply-op compose-handlers for-ticks on-rule remove-self)
+(provide log apply-handler apply-op compose-handlers for-ticks on-rule remove-self 
+         g->g-to-handler 
+         g->e-to-handler 
+         g->c-to-handler 
+         e->e-to-handler 
+         e->c-to-handler 
+         c->c-to-handler 
+         handler-to-g->g
+         handler-to-g->e 
+         handler-to-g->c
+         handler-to-e->e 
+         handler-to-e->c 
+         handler-to-c->c
+         
+         is-handler?)
 
 (require "./crud.rkt"
          "./base.rkt")
 
+(define (is-handler? h) 
+  (and (procedure? h)
+       (= 3 (procedure-arity h))))
+
 ;TODO: move to base
 (define rule? (-> game? entity? component? boolean?))
+
+;Lifting common function types to handlers
+; Some kind of weird algebra...
+
+  (define/contract (g->g-to-handler g->g)
+     (-> (-> game? game?) game-handler?)              
+     (lambda (g e c)
+       (g->g g)) )
+
+  (define/contract (g->e-to-handler g->e)
+     (-> (-> game? entity?) entity-handler?)              
+     (lambda (g e c)
+       (g->e e)))
+
+  (define/contract (g->c-to-handler g->c)
+     (-> (-> game? component?) component-handler?)              
+     (lambda (g e c)
+       (g->c c)))
+
+  (define/contract (e->e-to-handler e->e)
+     (-> (-> entity? entity?) entity-handler?)              
+     (lambda (g e c)
+       (e->e e)))
+
+  (define/contract (e->c-to-handler e->c)
+     (-> (-> entity? component?) component-handler?)              
+     (lambda (g e c)
+       (e->c e)))
+
+  (define/contract (c->c-to-handler c->c)
+     (-> (-> component? component?) component-handler?)              
+     (lambda (g e c)
+       (c->c c)))
+
+
+(define/contract (handler-to-g->g h)
+     (-> game-handler? (-> game? game?))              
+                 
+     (lambda (g)
+       (h g #f #f))) 
+
+(define/contract (handler-to-g->e h)
+     (-> entity-handler? (-> game? entity?))              
+                 
+     (lambda (g)
+       (h g #f #f))) 
+
+(define/contract (handler-to-g->c h)
+     (-> component-handler? (-> game? component?))              
+                 
+     (lambda (g)
+       (h g #f #f))) 
+
+
+
+(define/contract (handler-to-e->e h)
+     (-> entity-handler? (-> entity? entity?))              
+                 
+     (lambda (e)
+       (h #f e #f))) 
+
+(define/contract (handler-to-e->c h)
+     (-> component-handler? (-> entity? component?))              
+                 
+     (lambda (e)
+       (h #f e #f))) 
+
+(define/contract (handler-to-c->c h)
+     (-> component-handler? (-> component? component?))              
+                 
+     (lambda (c)
+       (h #f #f c))) 
+
 
 ;HANDLERS
 
@@ -14,7 +105,7 @@
 (define/contract (remove-self)
   (-> handler?)
   (lambda (g e c)
-    (remove-component e c)))
+    (remove-component* e c)))
 
 (define/contract (log msg)
   (-> string? handler?)
@@ -37,13 +128,14 @@
   (define op (h g e c))
   (apply-op op g e c))
 
+
 (define/contract (compose-handlers . hs)
    (->* () () #:rest (listof handler-convertable?) handler?)
 
    (lambda (g e c) 
      (foldl (lambda (f g)
-              (define new-e (get-entity g e)) 
-              (define new-c (get-component e c)) 
+              (define new-e (get-entity* g e)) 
+              (define new-c (get-component* e c)) 
 
               (apply-handler f 
                               g 
@@ -56,12 +148,12 @@
 (define (apply-op o g e c)
   (cond
     [(game? o) o]
-    [(entity? o) (update-entity g e o)]
-    [(component? o) (update-entity g e 
-                                   (update-component e c o))]
+    [(entity? o) (update-entity* g e o)]
+    [(component? o) (update-entity* g e 
+                                    (update-component* e c o))]
     [(noop? o) g]
-    [(done? o) (update-entity g e 
-                                (update-component e c (component-done c)))]
+    [(done? o) (update-entity* g e 
+                                 (update-component* e c (component-done c)))]
     [(list? o) (foldl (lambda (next-op g)
                         (apply-op next-op g)) 
                       g o)]
