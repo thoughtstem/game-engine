@@ -17,27 +17,23 @@
          update-entity-health
          ensure-uniqueness!
          
-         entity:gain-health
-         gain-health
+         update:health
+         update:health^
+         update:health/amount
+         update:health/amount^
+         rule:health/amount
+         rule:health/amount^
+         read:health/amount
+         read:health/amount^
+
          check-all-entities-health)
 
 (define-component health (amount))
 
-(define/contract (gain-health h)
-                 (-> health? health?)
-
-                 (set-health-amount h
-                                    (add1 (health-amount h))))
-
-(define/contract (entity:gain-health e h)
- (-> entity? health? entity?)
-
- (update-component* e health? ;Could have done h instead of health?, but why not test predicate-based update? 
-                     gain-health))
 
 (define (check-all-entities-health g amount)
   (define (health=? amount e)
-    (= amount (health-amount (get-component* e health?))))
+    (= amount (health-amount (get-component e health?))))
 
   (check-pred (all-entities (curry health=? amount)) 
               g

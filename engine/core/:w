@@ -165,26 +165,6 @@
                (lambda (g e c)
                  (read:COMPONENT/FIELD c)))
 
-           (define/contract (rule:COMPONENT/FIELD e-or-c pred?)
-               (-> (or/c entity? COMPONENT?)
-                   (-> any/c any/c)
-                   boolean?)
-
-                 (define to-check 
-                   (if (entity? e-or-c)
-                     (get-component e-or-c COMPONENT?)
-                     e-or-c))
-
-                 (pred? (read:COMPONENT/FIELD to-check)))
-
-           (define/contract (rule:COMPONENT/FIELD^ pred?)
-               (-> (-> any/c any/c)
-                   rule?)
-               
-               (lambda (g e c)
-                 ;Use the entity so rules can be ported from component to component within an entity and continue to work the same (as long as there is only one of COMPONENT type on the entity).
-                 (rule:COMPONENT/FIELD e pred?)))
-
 
            (define/contract (update-entity-COMPONENT-FIELD e f)
             (-> entity? any/c entity?)

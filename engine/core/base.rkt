@@ -79,7 +79,9 @@
   (vector-ref c 2))
 
 (define/contract (set-component-id c i)
-  (-> component? number? component?)
+  (-> component? 
+      (or/c  number? #f) ;Would you want it to be false?  Yes -- before the game has started, sometimes you call CRUD functions (update-component) that propagate along the #f to the newly constructed component.   
+      component?)
 
   (define new-c (vector-copy c))
   
