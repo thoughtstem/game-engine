@@ -7,6 +7,7 @@
          (rename-out [make-precompiler precompiler])
          precompiler?
          register-fonts!
+         (struct-out demo)
        ;  set-font!
          )
 

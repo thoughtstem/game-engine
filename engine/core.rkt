@@ -133,6 +133,7 @@
          handler
          f-handler
          simple-handler
+         kill-all-chipmunks
 
          tick-entity
          tick-entities
@@ -149,7 +150,8 @@
          component-id
          component-or-system?
          new-sprite
-         ensure-sprite)
+         ensure-sprite
+         )
 
 (require posn)
 (require 2htdp/image)
@@ -1153,6 +1155,17 @@
   (and self-killed?
        (set-game-self-killed-entities! g doomed))
   g)
+
+(define (kill-all-chipmunks g)
+  (displayln "=== DESTROYING ALL CHIPMUNKS ===")
+  (define doomed-chipmunks (filter identity
+                                   (map entity->chipmunk (game-entities g))))
+
+  (for ([d doomed-chipmunks])
+    (or (phys:destroyed-chipmunk? d)
+        (phys:destroy-chipmunk d)))
+  g)
+
 
 
 (define (game-replace-entity g e)

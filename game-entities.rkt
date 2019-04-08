@@ -68,6 +68,7 @@
 (define (game++->game:postprocess lux-game)
   (displayln "=== CLEANING UP SOUND THREADS ===")
   (stop-sound-streams) ;need to add a try-catch to handle improper shutdowns.
+  (kill-all-chipmunks (demo-state lux-game))
   (final-state lux-game))
 
 
