@@ -136,12 +136,18 @@
                copy-c))
 
 
-           (define (update:COMPONENT/FIELD c f)
+           (define/contract (update:COMPONENT/FIELD c f)
+               (-> COMPONENT? 
+                   any/c
+                   COMPONENT?)
+
                (define copy-c (vector-copy c))
 
                (vector-set! copy-c
                             i 
-                            (f (COMPONENT-FIELD copy-c)))
+                            (if (procedure? f) 
+                                (f (COMPONENT-FIELD copy-c))
+                              f))
 
                copy-c)
 

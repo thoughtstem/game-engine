@@ -133,32 +133,7 @@
    (->* () () #:rest (listof handler?) handler?)
 
    (lambda (g e c) 
-     (define gec 
-       (list g e c))
-
-     ;Use the handler to get
-     (for ([h hs]) 
-       (define o (h g e c))
-       (define diffs (diff o g e c)) 
-       (set! gec (apply-diffs temp-g diffs)))
-     
-     (first gec)))
-
-(define/contract (diff o g e c)
-    (-> operation? game? entity? component? delayed-operation?)             
-                 
-    )
-
-(define/contract (apply-diffs gec diffs)
-    (-> gec? (listof delayed-operation?) gec?)             
-    ;What does a list of delayed operations need to be in order for it to get crunched down into a single operation that gets applied once, but implies multiple changes to the same object.
-    ;Simply one that we iterate over in the context of an accumulator?  NO!  Iteration over the results of a handler will not work.  The diffs therefore cannot be functions.
-
-    ;a language that can be interpreted for its effects on a game.  Whose expressions can be "crunched" in a single pass into a single expression that unions all of the changes into one change that has the same effect, when interpreted as the longer interpretation of each expression in sequence would have taken.
-
-    ;TODO: Figure out what this language looks like.  Then figure out how/when handlers being executed produces this program.
-
-    )
+     (map (lambda (h) (h g e c)) hs)))
 
 
 (define (apply-op o g e c)

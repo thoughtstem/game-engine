@@ -142,8 +142,7 @@
              (all-dead (third gs))))
 
 (test-case "Bigger Conway's game of life"
-           (define g0 (~> (conway-game 5)
-                          (conway-game-set _ 1 1 #t)
+           (define g0 (~> (conway-game 5) (conway-game-set _ 1 1 #t)
                           (conway-game-set _ 2 1 #t)
                           (conway-game-set _ 3 1 #t)
                           (conway-game-set _ 1 2 #t)

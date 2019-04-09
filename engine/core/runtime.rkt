@@ -25,8 +25,8 @@
 
       (when h
         (define op (h g e c))
-        (set! temp-g (apply-op op temp-g e c))
 
+        (set! temp-g (apply-op temp-g op))
         )))
   
   temp-g)

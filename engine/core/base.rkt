@@ -18,6 +18,7 @@
 
   new-component
   component
+  component->list
   component?
   component-id
   set-component-id
@@ -52,6 +53,7 @@
   (and (vector? c) 
        (eq? 'component (vector-ref c 0))))
 
+
 (define operation? 
   (or/c game? entity? component? 'noop 'done
         (listof (or/c game? entity? component? 'noop 'done))))
@@ -77,6 +79,15 @@
 (define/contract (component-id c)
   (-> component? (or/c number? #f))
   (vector-ref c 2))
+
+(define/contract (component-num-fields c)
+   (-> component? number?)              
+   (- (vector-length c) 4))
+
+(define/contract (component->list c)
+   (-> component? (listof any/c))
+
+   (drop (vector->list c) 4))
 
 (define/contract (set-component-id c i)
   (-> component? 

@@ -383,3 +383,48 @@ That's kind of cool.  We started with the auto generated handler @racket[update-
 
 
 
+
+
+Operations.  Why do we need them?
+
+(game A B C)
+
+Suppose A and B have a handler that adds a new component to C.  A and B both get to see g0.  They produce A-g1 and B-g1, wherein each C now has c.  But the real g1 should really have two new components in C.  It would be rude for one entity's requests to blot out all upstream requests.  
+
+Suppose A gets to see g0 and produce A-g1, which B now gets to see, producing B-g1... C-g1, and then that becomes the real g1.
+
+Now it's hard to do conway's game of life...  Each entity gets to see the state as it changes.  Breaks the illusion of atomic ticks.  Makes things harder to reason about.  
+
+So you have to use the first model, but with diffs...  Diff A-g1 with g0 to get A-diff.  Diff B-g1 with g0 to get B-diff.  Then apply those diffs to g0 in order to get g1.  It's the only way I can think of to get A-g1 and B-g1 to compose nicely with each other, each doing the minimum that it wanted.  Making the least assumptions
+
+[Wait, why was this working at all before?]
+
+Because we were only returning components.  And those are polite changes.  So we could change the return type for handlers: no more games or entities.
+
+But that means, no spawing.  So one step up is expanding the type again to include entity-ops and game-ops -- things we'll interpret as targeted changes to the game state.  
+
+Seems to solve the problem, but what is lost?  The user must know the diffs they want to make.  They can't describe the change as a simple function from entity to entity or game to game.  I think it's just the same information in a different way though.  So you have these diffs... just apply them to a game you have and get a game.  You always have a function from game -> game if you have a function from game -> diffs.  And if someone wrote a game -> game function that's hard to express as a game -> diff, that seems like they're trying to do something too murky.
+
+Okay, so let's remove entity and game level ops.  No need for diffing any pairs of things (yet).  Just need to be able to apply diffs to a game and produce them from handlers.  And we don't need the component diffs, right?
+
+
+So now we have a model where components can never update each other.  They can only change themselves.   Or they can add components or add entities (both via ops).  They can also remove components or entities.
+
+But they also have read-only access to everything in the previous tick.
+
+What are the limitations here?
+
+(entity
+  (speed   4)
+  (on-fire #f))
+
+
+Reduce speed when on fire.  
+  Attach an #:update to speed.
+
+
+So there is no spawner or spawn manager.  You just fire off an add-entity op for the one you want to spawn...
+
+
+So components can only change themselves.  They look at other entities/components to decide when to change.  This last part can be optimized with a event subscription system (e.g. components get notified about changes when they happen...)
+

@@ -17,6 +17,7 @@
 
          (all-from-out "./define-component.rkt") 
          (all-from-out "./crud.rkt") 
+         (all-from-out "./diffs.rkt") 
 
          (all-from-out "./handler-util.rkt") 
 
@@ -28,5 +29,6 @@
          "./handler-util.rkt"
          "./base.rkt"
          "./crud.rkt"
+         "./diffs.rkt"
          "./runtime.rkt"
          "./printer.rkt")
