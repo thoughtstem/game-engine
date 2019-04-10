@@ -62,7 +62,7 @@
                                                  handler? #f)]
                                  COMPONENT?)
                             (new-COMPONENT #f  
-                                           (vector (lift-to-handler update)) 
+                                           (vector update) 
                                            FIELD ...))))]))
 
 

@@ -428,3 +428,14 @@ So there is no spawner or spawn manager.  You just fire off an add-entity op for
 
 So components can only change themselves.  They look at other entities/components to decide when to change.  This last part can be optimized with a event subscription system (e.g. components get notified about changes when they happen...)
 
+
+
+Why do these crud messages + interpreter work better than just returning lambdas from the handlers?
+
+g -> g
+Can transform in arbitrary ways...
+But crud operations vastly restrict things.  It makes it considerably easier to do the right thing -- even if you could express arbitrary thigns with these crud ops.
+
+
+Get all the tests working and clean up this doc!
+

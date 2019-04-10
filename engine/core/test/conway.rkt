@@ -30,9 +30,9 @@
                  (lambda (g e)
                    (define my-x (entity-conway-x e))
                    (define my-y (entity-conway-y e))
-                   (get-entity* g
-                                (entity-xy=? (+ my-x dx)
-                                             (+ my-y dy)))))
+                   (get-entity g
+                               (entity-xy=? (+ my-x dx)
+                                            (+ my-y dy)))))
 
 (define north      (neighbor  0 -1))
 (define south      (neighbor  0  1))
@@ -57,7 +57,6 @@
 
 (define (conway-update g e c)
   (define n (length (live-neighbors g e)))
-
 
   (define ret (cond 
                 [(and (conway-alive? c)
@@ -85,13 +84,14 @@
   (apply game es))
 
 (define (conway-game-set g x y alive?)
-  (update-entity* g
-                  (entity-xy=? x y)
+  ;Could also break this into a two-step process by
+  ; using the update-e op.   That op can be returned by a handler 
+  (update-entity g
+                 (entity-xy=? x y)
 
-                  ;TODO: Gotta figure out what convenience functions (if any) return handlers, and which return more normal functions...
-                  (lambda (e)
-                    (update-component* e conway?
-                                       (curryr set-conway-alive? alive?)))))
+                 (lambda (e)
+                   (update-component e conway?
+                                      (curryr set-conway-alive? alive?)))))
 
 
 
@@ -107,9 +107,12 @@
     (map (compose cell->symbol
                   entity-conway-alive?) row))) 
 
+(define (print-symbols ls)
+  (map displayln ls))
+
 (define (get-entity-conway-alive? e)
   (conway-alive?
-    (get-component* e conway?)))
+    (get-component e conway?)))
 
 (define (all-alive g)
   (define es (game-entities g)) 
@@ -119,6 +122,8 @@
   (define es (game-entities g)) 
   
   (not (ormap get-entity-conway-alive? es)) )
+
+
 
 
 (test-case "Conway's game of life"
@@ -154,6 +159,11 @@
 
            (define gs (tick-list g0 3))
 
+
+           (print-symbols (conway-game->symbols (first gs)))
+           (print-symbols (conway-game->symbols (second gs)))
+           (print-symbols (conway-game->symbols (third gs)))
+
            (check-equal?
              (conway-game->symbols (first gs))
              '((_ _ _ _ _)
@@ -161,6 +171,7 @@
                (_ * * * _)
                (_ * * * _)
                (_ _ _ _ _)))
+
 
            (check-equal?
              (conway-game->symbols (second gs))

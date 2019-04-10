@@ -1,20 +1,10 @@
 #lang racket
 
 (provide log apply-handler apply-op compose-handlers for-ticks on-rule remove-self 
-         g->g-to-handler 
-         g->e-to-handler 
-         g->c-to-handler 
-         e->e-to-handler 
-         e->c-to-handler 
-         c->c-to-handler 
-         handler-to-g->g
-         handler-to-g->e 
-         handler-to-g->c
-         handler-to-e->e 
-         handler-to-e->c 
-         handler-to-c->c
          
-         is-handler?)
+         is-handler?
+         apply-op-entity
+         apply-op-game)
 
 (require "./crud.rkt"
          "./base.rkt")
@@ -23,89 +13,13 @@
   (and (procedure? h)
        (= 3 (procedure-arity h))))
 
-;TODO: move to base
-(define rule? (-> game? entity? component? boolean?))
-
-;Lifting common function types to handlers
-; Some kind of weird algebra...
-
-  (define/contract (g->g-to-handler g->g)
-     (-> (-> game? game?) game-handler?)              
-     (lambda (g e c)
-       (g->g g)) )
-
-  (define/contract (g->e-to-handler g->e)
-     (-> (-> game? entity?) entity-handler?)              
-     (lambda (g e c)
-       (g->e e)))
-
-  (define/contract (g->c-to-handler g->c)
-     (-> (-> game? component?) component-handler?)              
-     (lambda (g e c)
-       (g->c c)))
-
-  (define/contract (e->e-to-handler e->e)
-     (-> (-> entity? entity?) entity-handler?)              
-     (lambda (g e c)
-       (e->e e)))
-
-  (define/contract (e->c-to-handler e->c)
-     (-> (-> entity? component?) component-handler?)              
-     (lambda (g e c)
-       (e->c e)))
-
-  (define/contract (c->c-to-handler c->c)
-     (-> (-> component? component?) component-handler?)              
-     (lambda (g e c)
-       (c->c c)))
-
-
-(define/contract (handler-to-g->g h)
-     (-> game-handler? (-> game? game?))              
-                 
-     (lambda (g)
-       (h g #f #f))) 
-
-(define/contract (handler-to-g->e h)
-     (-> entity-handler? (-> game? entity?))              
-                 
-     (lambda (g)
-       (h g #f #f))) 
-
-(define/contract (handler-to-g->c h)
-     (-> component-handler? (-> game? component?))              
-                 
-     (lambda (g)
-       (h g #f #f))) 
-
-
-
-(define/contract (handler-to-e->e h)
-     (-> entity-handler? (-> entity? entity?))              
-                 
-     (lambda (e)
-       (h #f e #f))) 
-
-(define/contract (handler-to-e->c h)
-     (-> component-handler? (-> entity? component?))              
-                 
-     (lambda (e)
-       (h #f e #f))) 
-
-(define/contract (handler-to-c->c h)
-     (-> component-handler? (-> component? component?))              
-                 
-     (lambda (c)
-       (h #f #f c))) 
-
-
 ;HANDLERS
 
 
 (define/contract (remove-self)
   (-> handler?)
   (lambda (g e c)
-    (remove-component e c)))
+    (remove-c c)))
 
 (define/contract (log msg)
   (-> string? handler?)
@@ -136,29 +50,45 @@
      (map (lambda (h) (h g e c)) hs)))
 
 
+(define/contract (apply-op-entity e op)
+   (-> entity? c-crud? entity?)
+  
+   (match op
+     [(add-c    c) (add-component e c)]
+     [(remove-c c) (remove-component e c)]
+     ;[(update-c c new-c) (update-component e c new-c)]
+     ))
+
+(define/contract (apply-op-game g op)
+   (-> game? e-crud? game?)
+  
+   (match op
+     [(add-e    e) (add-entity g e)]
+     [(remove-e e) (remove-entity g e)]
+     ;[(update-e e new-e) (update-entity e new-e)]
+     ))
+
+
 (define (apply-op o g e c)
   (cond
-    [(game? o) o]
-    [(entity? o) (update-entity g e o)]
-    [(component? o) (update-entity g e 
-                                    (update-component e c o))]
+    [(component? o) (begin 
+                      (displayln "COMPONENT UPDATE")
+                      (displayln c) 
+                      (displayln o) 
+                      (update-entity g
+                                     e
+                                     (update-component e c o)))]
+    [(c-crud? o) (update-entity g
+                                e
+                                (apply-op-entity e c o))]
+    [(e-crud? o) (apply-op-game g o)]
     [(noop? o) g]
     [(done? o) (update-entity g e 
                                  (update-component e c (component-done c)))]
    ;As it stands, a list of ops has the property that some upstream changes will be completely masked by downstream ones -- even if they could theoretically have both happened...  Feels like we need a merge operation.  
-    [(list? o) (apply-op-list o g e c)]
+    [(list? o) (foldl (lambda (o)
+                        (apply-op o g e c)) g o)]
     [else (raise (~a "Unsupported handler return value: " o))]))
-
-(define (apply-op-list os g e c)
-  (if (empty? os)
-      g
-      (let* ([new-g (apply-op (first os) g e c)]
-             [new-e (get-entity new-g e)]
-             [new-c (get-component new-e c)])
-        (apply-op-list (rest os)
-                       new-g   
-                       new-e
-                       new-c))))
 
 
 

@@ -1,5 +1,9 @@
 #lang racket
 
+(provide add-c remove-c #;update-c 
+         add-e remove-e #;update-e 
+         update-f e-crud? c-crud?)
+
 (provide 
   game
   new-game
@@ -32,12 +36,7 @@
   done?
   noop?
   handler?
-  component-handler?
-  entity-handler?
-  game-handler?
   rule?
-  handler-convertable?
-  lift-to-handler
   
   init)
 
@@ -47,6 +46,22 @@
 (struct entity (id components)  #:transparent)
 (struct game (entities) #:transparent)
 
+(struct add-e    (e))
+;(struct update-e (e new-e))
+(struct remove-e (e))
+
+(struct add-c    (c))
+;(struct update-c (c new-c))
+(struct remove-c (c))
+
+(struct update-f (c-id f-id func))
+
+(define c-crud? (or/c add-c? #;update-c? 
+                      remove-c?))
+(define e-crud? (or/c add-e? #;update-e? 
+                      remove-e?))
+(define f-crud? update-f?)
+
 
 (define/contract (component? c)
   (-> any/c boolean?)
@@ -55,21 +70,10 @@
 
 
 (define operation? 
-  (or/c game? entity? component? 'noop 'done
-        (listof (or/c game? entity? component? 'noop 'done))))
+  (or/c e-crud? c-crud? component? 'noop 'done))
 
 (define handler? (-> game? entity? component? operation?))
-(define component-handler? (-> game? entity? component? component?))
-(define entity-handler? (-> game? entity? component? entity?))
-(define game-handler? (-> game? entity? component? entity?))
-
 (define rule? (-> game? entity? component? boolean?))
-
-(define handler-convertable?
-  (or/c #f
-        (-> entity? component? entity?)
-        (-> component? component?)
-        handler?))
 
 ;Component can be a bit more light weight
 (define/contract (component id handlers)
@@ -193,19 +197,7 @@
   (game (map set-ids! (game-entities g))))
 
 
-           
-(define/contract (lift-to-handler c->c)
-  (-> handler-convertable? 
-      (or/c #f handler?))
 
-  (cond
-    [(not c->c) #f]
-    [(= 1 (procedure-arity c->c))
-     (lambda (g e c)
-       (c->c c))]
-    [(= 2 (procedure-arity c->c))
-     (lambda (g e c)
-       (c->c e c))]
-    [else c->c]))
+
 
 

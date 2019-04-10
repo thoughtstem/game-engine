@@ -10,7 +10,7 @@
 
 
 (test-case "Id uniqueness after initialization" 
-           (define e (entity (health 5 #:update entity:gain-health)))
+           (define e (entity (health 5)))
            (define g0 (init (game e e e)))
            (define g1 (init g0))
            (define g2 (tick g1))

@@ -26,9 +26,8 @@
       (when h
         (define op (h g e c))
 
-        (set! temp-g (apply-op temp-g op))
-        )))
-  
+        (set! temp-g (apply-op op temp-g e c)))))
+
   temp-g)
 
 (define/contract (ticks n g)

@@ -8,7 +8,7 @@
            (define e (entity 
                        (health 5 
                                #:update 
-                               (for-ticks 5 gain-health))))
+                               (for-ticks 5 (update:health/amount^ add1)))))
 
            (define g0 (game e))
            (define e0 (first (game-entities g0)))

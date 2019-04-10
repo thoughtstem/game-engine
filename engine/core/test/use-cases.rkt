@@ -17,7 +17,7 @@
                            (on-rule 
                              (entity-health-amount? is-zero?) 
                              (compose-handlers
-                               (add-component (dead))
+                               (add-component^ (dead))
                                (remove-self)))))))
 
   (define g0 (game e))
@@ -26,11 +26,11 @@
   (define e4 (first (game-entities g4)))
 
   (check-not-false
-    (has-component* e4 dead?)
+    (has-component e4 dead?)
     "Entity should have the dead component")
 
   (check-false
-    (has-component* e4 health?)
+    (has-component e4 health?)
     "Entity should not have the health component"))
 
 
@@ -53,28 +53,29 @@
       (define pos-x (position-x pos)) 
       (define pos-y (position-y pos)) 
 
-      (position (+ pos-x dir-x)
-                (+ pos-y dir-y))) 
+      (set-position-y 
+        (set-position-x pos (+ pos-x dir-x))
+        (+ pos-y dir-y))) 
 
-  (define/contract (entity-update-position-from-direction)
-      (-> entity-handler?)
+  (define (update-from-direction)
       (lambda (g e c)
         (define dir (entity-direction e))
         (define pos (entity-position e))
         (define new-pos (update-position-from-direction dir pos))
-        (update-component* e position? new-pos)))
+        new-pos))
 
   (define e
     (entity 
-      (position  0 0)
-      (direction 0 1)
-      (movement #:update (entity-update-position-from-direction))))
+      (position  0 0 #:update (update-from-direction))
+      (direction 0 1)))
 
   (define g0 (game e))
+  (define gs (tick-list g0 4))
+  (map pretty-print-game gs)
 
   (define g4 (ticks 4 g0))
   (define e4 (first (game-entities g4)))
-  (define p4 (get-component* e4 position?))
+  (define p4 (get-component e4 position?))
 
   (check-equal?
     (position-y p4) 
