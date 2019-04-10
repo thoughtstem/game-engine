@@ -20,13 +20,25 @@
     (struct-copy game g))
 
   (for ([e (game-entities g)])
+    ;Should make a temp-g here
     (for ([c (entity-components e)])
       (define h (component-handler c))
 
       (when h
+
+        ;Should pass in temp-e here
+        ;Handlers get to see the last tick's version of g,
+        ;  But the mid-tick's version of e.
+        ;What about c??  
+        ;  If we grab from temp-e, then it's the mid-tick version (Feels right, I think...)
+        ;  If we use c, then it's the last tick's version.
+        ;  When does it matter?
         (define op (h g e c))
 
-        (set! temp-g (apply-op op temp-g e c)))))
+        ;If op is an entity operation, update temp-e too
+        (set! temp-g (apply-op op temp-g e c))
+        
+        )))
 
   temp-g)
 
