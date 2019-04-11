@@ -9,6 +9,9 @@
          register-fonts!
          (struct-out demo)
        ;  set-font!
+         recompile!
+         force-recompile!
+         cleanup-renderer!
          )
 
 (require racket/match
@@ -406,6 +409,16 @@
               #f
               #f)))
 
+(define (cleanup-renderer!)
+  (displayln "=== CLEANING UP SPRITES ===")
+  (set! temp-storage '())
+  (set! compiled-images '())
+  (set! csd #f)
+  #t)
+
+(define (force-recompile!)
+  (set! should-recompile? #t)
+  (recompile!))
 
 (define (recompile!)
   
