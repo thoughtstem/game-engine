@@ -3,6 +3,8 @@
 (provide init 
          tick
          ticks
+
+;Among other things, makes sure that the game's entity and component ids are all unique.  This is necessary for entity=? and component=?'s properties to hold.  That is, that the update CRUD operation maintains entity and component equality.  Running this on initialize-game ensures that the property holds at the beginning.  As long as the property holds after a call to (tick ...) then we have proven by induction that it always holds.
          tick-list
 
          all-entities
@@ -11,36 +13,49 @@
 (require "./base.rkt"
          "./crud.rkt"
          "./util.rkt"
-         "./handler-util.rkt")
+         "./handler-util.rkt"
+         "./spawner.rkt")
 
 (define/contract (tick g)
   (-> game? game?)
 
-  (define temp-g
+  (define next-g
     (struct-copy game g))
 
+  (define to-remove '())
+  (define to-spawn  '())
   (for ([e (game-entities g)])
-    ;Should make a temp-g here
     (for ([c (entity-components e)])
       (define h (component-handler c))
 
-      (when h
+      (define next-e (get-entity next-g e))  
+      (define next-c (get-component next-e c))  
 
-        ;Should pass in temp-e here
-        ;Handlers get to see the last tick's version of g,
-        ;  But the mid-tick's version of e.
-        ;What about c??  
-        ;  If we grab from temp-e, then it's the mid-tick version (Feels right, I think...)
-        ;  If we use c, then it's the last tick's version.
-        ;  When does it matter?
-        (define op (h g e c))
+      (when h 
+        ;A handler gets to see the last game state and the current entity/component state
+        (define op (h g next-e next-c))
 
-        ;If op is an entity operation, update temp-e too
-        (set! temp-g (apply-op op temp-g e c))
-        
-        )))
+        ;Apply the op to the game
+        (set! next-g (apply-op op next-g next-e next-c))
 
-  temp-g)
+        (when (and (entity? op)
+                   (get-component op dead?))
+          (set! to-remove (cons e to-remove)))
+
+        (when (and (entity? op)
+                   (get-component op spawner?))
+          (set! to-spawn (append (map spawner-to-spawn 
+                                      (get-components op spawner?))
+                                to-spawn))))))
+
+  ;Could just foldl, but we've already done a for loop, so I'll just keep the style consistent
+  (for ([r to-remove])
+    (set! next-g (remove-entity next-g r)))
+
+  (for ([s to-spawn])
+    (set! next-g (add-entity next-g s)))
+
+  next-g)
 
 (define/contract (ticks n g)
    (-> number? game? game?)

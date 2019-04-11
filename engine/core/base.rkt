@@ -33,8 +33,6 @@
   
   set-ids!
   
-  done?
-  noop?
   handler?
   rule?
   
@@ -56,9 +54,11 @@
 
 (struct update-f (c-id f-id func))
 
+;Might not be necessary if operation? includes entity?
 (define c-crud? (or/c add-c? #;update-c? 
                       remove-c?))
-(define e-crud? (or/c add-e? #;update-e? 
+
+(define e-crud? (or/c add-e? 
                       remove-e?))
 (define f-crud? update-f?)
 
@@ -68,9 +68,7 @@
   (and (vector? c) 
        (eq? 'component (vector-ref c 0))))
 
-
-(define operation? 
-  (or/c e-crud? c-crud? component? 'noop 'done))
+(define operation? (or/c entity? component?))
 
 (define handler? (-> game? entity? component? operation?))
 (define rule? (-> game? entity? component? boolean?))
@@ -182,22 +180,10 @@
 (define next-entity-id (id-generator 0))
 
 
-(define (done? s)
-  (eq? s 'done))
-
-(define (noop? s)
-  (eq? s 'noop))
-
-
 (define (init g)
   (init-ids g))
 
 (define (init-ids g)
   (-> game? game?)
   (game (map set-ids! (game-entities g))))
-
-
-
-
-
 

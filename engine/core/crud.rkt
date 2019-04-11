@@ -8,6 +8,7 @@
   
          add-component
          get-component
+         get-components
          update-component
          remove-component
          
@@ -113,6 +114,15 @@
          query?))
 
   (findf real-query? (entity-components e)))
+
+(define (get-components e query?)
+  (define real-query?
+    (if (component? query?)
+         (curry component=? query?)
+         query?))
+
+  (filter real-query? (entity-components e)))
+
 
 (define/contract (get-component^ query?)
    (-> (-> component? any/c) handler?)

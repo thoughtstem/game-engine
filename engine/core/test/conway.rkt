@@ -159,10 +159,11 @@
 
            (define gs (tick-list g0 3))
 
-
-           (print-symbols (conway-game->symbols (first gs)))
-           (print-symbols (conway-game->symbols (second gs)))
-           (print-symbols (conway-game->symbols (third gs)))
+           #;
+           (begin
+             (print-symbols (conway-game->symbols (first gs)))
+             (print-symbols (conway-game->symbols (second gs)))
+             (print-symbols (conway-game->symbols (third gs))))
 
            (check-equal?
              (conway-game->symbols (first gs))

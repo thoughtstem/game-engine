@@ -16,6 +16,7 @@
                      [new-entity entity]) 
 
          (all-from-out "./define-component.rkt") 
+         (all-from-out "./spawner.rkt") 
          (all-from-out "./crud.rkt") 
          (all-from-out "./diffs.rkt") 
 
@@ -29,6 +30,7 @@
          "./handler-util.rkt"
          "./base.rkt"
          "./crud.rkt"
+         "./spawner.rkt"
          "./diffs.rkt"
          "./runtime.rkt"
          "./printer.rkt")

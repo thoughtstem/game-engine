@@ -35,16 +35,25 @@
 
            (check-game (game e e e)))
 
-(test-case "Testing adding a component "
-           (define-component dead ())
-
+(test-case "Testing adding a dead component and entity removal"
            (define e (entity 
                        (health 5 #:update (compose-handlers 
                                             (update:health/amount^ add1)
                                             (on-rule (rule:health/amount^ (curry = 6))
                                                      (add-component^ (dead)))))))
 
-           (check-game (game e e e))
+           (define g (game e e e))  
+           (define g2 (tick g)) 
+           (define g3 (tick g2)) 
+           (define g4 (tick g3)) 
+
+           ;WOuld be nice to have a (debug-tick ...)
+
+           (pretty-print-game g)
+           (pretty-print-game g2)
+           (pretty-print-game g3)
+
+           (check-game g)
            
            (check-not-false
              (get-entity (tick (game e e e))
@@ -71,10 +80,6 @@
            (define g0 (game e e e))
            (define g1  (tick g0))
            (define g2  (tick g1))
-
-           (pretty-print-game g0)
-           (pretty-print-game g1)
-           (pretty-print-game g2)
 
            
            (check-false
