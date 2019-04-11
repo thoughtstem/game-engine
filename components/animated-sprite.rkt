@@ -122,6 +122,12 @@
 
          get-rotation
          get-color
+
+         sprite-width    ; matches syntax of image-width
+         sprite-height   ; matches syntax of image-height
+
+         (rename-out (sprite-width get-sprite-width))  ;also providing these for getter consistency
+         (rename-out (sprite-height get-sprite-height))
          
          set-x-offset
          set-y-offset
@@ -134,6 +140,8 @@
          ;set-sprite-scale
          ;set-sprite-color
          ;set-sprite-angle
+
+         
 
          string-animated-sprite?
          image-animated-sprite?
@@ -505,6 +513,16 @@
 (define/contract (animation-finished? s)
   (-> animated-sprite? boolean?)
   (= (sub1 (animated-sprite-total-frames s)) (animated-sprite-current-frame s)))
+
+(define/contract (sprite-width s)
+  (-> animated-sprite? number?)
+  (* (get-x-scale s) (image-width (pick-frame s
+                                            (animated-sprite-current-frame s)))))
+
+(define/contract (sprite-height s)
+  (-> animated-sprite? number?)
+  (* (get-y-scale s) (image-height (pick-frame s
+                                             (animated-sprite-current-frame s)))))
 
 (define/contract (render s)
   (-> animated-sprite? image?)

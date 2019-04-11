@@ -236,12 +236,12 @@
 (define/contract (set-sprite-scale s as)
   (-> number? (or/c animated-sprite? image?) animated-sprite?)
   
-  (define current-x (if (animated-sprite? as)
+  #|(define current-x (if (animated-sprite? as)
                         (get-x-scale as)
                         1))
   (define current-y (if (animated-sprite? as)
                         (get-y-scale as)
-                        1))
+                        1))|#
   (if (animated-sprite? as)
       (scale-xy s as)
       (new-sprite as #:scale s)))
