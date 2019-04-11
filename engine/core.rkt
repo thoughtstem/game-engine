@@ -133,6 +133,7 @@
          handler
          f-handler
          simple-handler
+         kill-all-chipmunks
 
          tick-entity
          tick-entities
@@ -148,7 +149,9 @@
          component-eq?
          component-id
          component-or-system?
-         new-sprite)
+         new-sprite
+         ensure-sprite
+         )
 
 (require posn)
 (require 2htdp/image)
@@ -342,6 +345,7 @@
 (define component-handlers (hash))
 
 (define (new-component struct? update)
+  ;(displayln (~a "COMPONENT HANDLERS: " component-handlers))
   (set! component-handlers
         (hash-set component-handlers struct? update)))
 
@@ -434,12 +438,19 @@
 
 ;Animated sprites are components, but we'll handle them specially
 ; at least until we can untangle them bettter...
+; since the handler is called for EACH component, this handler
+; should only touch and tick a specific animated-sprite c
 (define (update-animated-sprite g e c)
-  (define all-as (get-components e animated-sprite?))
-  (define (animate-sprite sprite result)
-    (update-entity result (is-component? sprite) next-frame))
-  (foldl animate-sprite e all-as)
+  ;(define all-as (get-components e animated-sprite?))
+  ;(define (animate-sprite sprite result)
+  ;  (update-entity result (curry component-eq? sprite) next-frame))
+  ;(foldl animate-sprite e all-as)
   ;(update-entity e animated-sprite? next-frame)
+  ;(define ticked-sprites (map next-frame all-as))
+  ;(~> e
+  ;    (remove-components _ animated-sprite?)
+  ;    (add-components _ ticked-sprites))
+  (update-entity e (is-component? c) next-frame)
   )
 
 (new-component animated-sprite?
@@ -625,6 +636,12 @@
     (string=? n (get-name e)))
   (findf (curry has-name name) (game-entities g)))
 
+
+(define (ensure-sprite sprite-or-image)
+    (if (animated-sprite? sprite-or-image)
+        sprite-or-image
+        (new-sprite sprite-or-image)))
+
 (define (sprite->entity sprite-or-image-or-list
                         #:position p
                         #:name     n
@@ -633,10 +650,6 @@
   (define all-cs (reverse (flatten (filter identity (cons
                                             (entity-name n)
                                             (cons c cs))))))
-  (define (ensure-sprite sprite-or-image)
-    (if (animated-sprite? sprite-or-image)
-        sprite-or-image
-        (new-sprite sprite-or-image)))
   (define sprite-or-image?
     (or/c animated-sprite? image?))
   (define sprite-or-sprites
@@ -965,7 +978,8 @@
    (lambda (c e2)
      (tick-component g e2 c))
    e
-   (entity-components e)))
+   (entity-components e) ; Are multiple animated-sprite components handled multiple times?
+   ))
 
 
 
@@ -1141,6 +1155,17 @@
   (and self-killed?
        (set-game-self-killed-entities! g doomed))
   g)
+
+(define (kill-all-chipmunks g)
+  (displayln "=== DESTROYING ALL CHIPMUNKS ===")
+  (define doomed-chipmunks (filter identity
+                                   (map entity->chipmunk (game-entities g))))
+
+  (for ([d doomed-chipmunks])
+    (or (phys:destroyed-chipmunk? d)
+        (phys:destroy-chipmunk d)))
+  g)
+
 
 
 (define (game-replace-entity g e)

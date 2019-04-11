@@ -1,18 +1,26 @@
 #lang racket
 
-(provide change-img-hue)
-(provide tint-img)
-(provide mask)
-(provide mask-pixel)
-(provide name->color)
-(provide rgb->hue)
-(provide make-color-hue)
-(provide scale-to-fit)
+(provide change-img-hue     ; 0 to 360
+         change-img-sat     ; 0 to 100
+         change-img-bright  ; 0 to 100
 
-(provide (struct-out color-hsb))
-(provide make-color-hsb)
+         set-img-hue        ; 0 to 360
+         set-img-sat        ; 0 to 100
+         set-img-bright     ; 0 to 100
+         
+         tint-img
+         mask
+         mask-pixel
+         name->color
+         rgb->hue
+         make-color-hue
+         scale-to-fit
+         iconify-img
 
-(provide hsb->color)
+         (struct-out color-hsb)
+         make-color-hsb
+
+         hsb->color)
 
 (require 2htdp/image)
 
@@ -192,19 +200,97 @@
     [(= case 5) (make-color B P Q a)]))
 
 (define (change-hue amount c)
-  (define hsb-c (color->color-hsb c))
-  (define new-hue (remainder (+ (color-hsb-hue hsb-c) amount) 360))
-  (define sat (color-hsb-sat hsb-c))
-  (define bright (color-hsb-bright hsb-c))
-  (define alpha (color-hsb-alpha hsb-c))
-  (if (= alpha 0)
+  ;(define hsb-c (color->color-hsb c))
+  ;(define new-hue (modulo (+ (color-hsb-hue hsb-c) amount) 360))
+  (if (= (color-alpha c) 0)
       c
-      (hsb->color (make-color-hsb new-hue sat bright alpha))))
+      (let ([hsb-c   (color->color-hsb c)])
+        (hsb->color (struct-copy color-hsb hsb-c
+                                 [hue (modulo (+ (color-hsb-hue hsb-c) amount) 360)])))))
+
+(define (change-sat amount c)
+  ;(define hsb-c (color->color-hsb c))
+  ;(define new-sat (max 0 (min 100 (+ (color-hsb-sat hsb-c) amount))))
+  (if (= (color-alpha c) 0)
+      c
+      (let ([hsb-c   (color->color-hsb c)])
+        (hsb->color (struct-copy color-hsb hsb-c
+                                 [sat (max 0 (min 100 (+ (color-hsb-sat hsb-c) amount)))])))))
+
+(define (change-bright amount c)
+  ;(define hsb-c (color->color-hsb c))
+  ;(define new-bright (max 0 (min 100  (+ (color-hsb-bright hsb-c) amount))))
+  (if (= (color-alpha c) 0)
+      c
+      (let ([hsb-c   (color->color-hsb c)])
+        (hsb->color (struct-copy color-hsb hsb-c
+                                 [bright (max 0 (min 100  (+ (color-hsb-bright hsb-c) amount)))])))))
+
+(define (set-hue amount c)
+  (if (= (color-alpha c) 0)
+      c
+      (let ([hsb-c   (color->color-hsb c)])
+        (hsb->color (struct-copy color-hsb hsb-c
+                                 [hue (modulo amount 360)])))))
+
+(define (set-sat amount c)
+  (if (= (color-alpha c) 0)
+      c
+      (let ([hsb-c   (color->color-hsb c)])
+        (hsb->color (struct-copy color-hsb hsb-c
+                                 [sat (max 0 (min 100 amount))])))))
+
+(define (set-bright amount c)
+  (if (= (color-alpha c) 0)
+      c
+      (let ([hsb-c   (color->color-hsb c)])
+        (hsb->color (struct-copy color-hsb hsb-c
+                                 [bright (max 0 (min 100 amount))])))))
 
 (define (change-img-hue amount image)
   (define image-list (image->color-list image))
   (color-list->bitmap (map (curry change-hue amount) image-list) (image-width image) (image-height image)))
 
+(define (change-img-sat amount image)
+  (define image-list (image->color-list image))
+  (color-list->bitmap (map (curry change-sat amount) image-list) (image-width image) (image-height image)))
+
+(define (change-img-bright amount image)
+  (define image-list (image->color-list image))
+  (color-list->bitmap (map (curry change-bright amount) image-list) (image-width image) (image-height image)))
+
+(define (set-img-hue amount image)
+  (define image-list (image->color-list image))
+  (color-list->bitmap (map (curry set-hue amount) image-list) (image-width image) (image-height image)))
+
+(define (set-img-sat amount image)
+  (define image-list (image->color-list image))
+  (color-list->bitmap (map (curry set-sat amount) image-list) (image-width image) (image-height image)))
+
+(define (set-img-bright amount image)
+  (define image-list (image->color-list image))
+  (color-list->bitmap (map (curry set-bright amount) image-list) (image-width image) (image-height image)))
+
 (define/contract (scale-to-fit i w)
   (-> image? number? image?)
   (scale (/ w (image-width i)) i))
+
+;useful function! provide out or put elsewhere
+;creates silhouettes of an image -- turning every pixel
+;that is not 100% transparent to one solid color
+(define (iconify-img img [t-color 'black])
+  
+  (define target-color (if (color? t-color)
+                           t-color
+                           (name->color t-color)))
+  
+  (define (maybe-color-pixel original-color)
+  (mask-pixel original-color target-color))
+  
+  (define original-list (image->color-list img))
+  (define final-list (map maybe-color-pixel original-list))
+  (color-list->bitmap final-list (image-width img) (image-height img)))
+
+;(define (grayscale-img img)
+;  (define image-list (image->color-list img))
+;  (color-list->bitmap (map (curry
