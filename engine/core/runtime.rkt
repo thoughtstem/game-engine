@@ -4,7 +4,6 @@
          tick
          ticks
 
-;Among other things, makes sure that the game's entity and component ids are all unique.  This is necessary for entity=? and component=?'s properties to hold.  That is, that the update CRUD operation maintains entity and component equality.  Running this on initialize-game ensures that the property holds at the beginning.  As long as the property holds after a call to (tick ...) then we have proven by induction that it always holds.
          tick-list
 
          all-entities
@@ -16,9 +15,12 @@
          "./handler-util.rkt"
          "./spawner.rkt")
 
+(define debug-mode (make-parameter #f))
+
 (define/contract (tick g)
   (-> game? game?)
 
+  ;But maybe not in the runtime... maybe as a wrapper...
   (displayln "TICK -- TODO: MAKE A DEBUG MODE")
 
   (define next-g
@@ -48,7 +50,11 @@
                    (get-component op spawner?))
           (set! to-spawn (append (map spawner-to-spawn 
                                       (get-components op spawner?))
-                                to-spawn))))))
+                                to-spawn))
+          (set! next-g (update-entity next-g op
+                                     (curryr remove-component spawner?)
+                                     )) 
+          ))))
 
   ;Could just foldl, but we've already done a for loop, so I'll just keep the style consistent
   (for ([r to-remove])

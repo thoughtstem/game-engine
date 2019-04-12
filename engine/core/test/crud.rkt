@@ -38,22 +38,26 @@
                              #:update 
                              (add-component^ (spawner bullet)))))         
 
-   (define g (game e))
-   (define g2 (tick g))
+   (define g0 (game e))
+   (define g1 (tick g0))
+   (define g2 (tick g1))
    (define g3 (tick g2))
 
    (check-equal?
-     (length (game-entities g))
+     (length (game-entities g0))
      1)
 
    (check-equal?
-     (length (game-entities g2))
+     (length (game-entities g1))
      2)
    
    (check-equal?
-     (length (game-entities g3))
+     (length (game-entities g2))
      3) 
 
+   (check-equal?
+     (length (game-entities g3))
+     4) 
    )
 
 
