@@ -21,7 +21,11 @@
 (test-case "Updating a component from a different component on the same entity"
            ;It's really just the same because update:health/amount^
            (define e (entity (health 5)
-                             (new-component #:update (update:health/amount^ add1))))
+                             (new-component #:update 
+                                            (lambda (g e c)
+                                              (update-component e 
+                                                                health? 
+                                                                (curryr update:health/amount add1))))))
 
 
            (check-game (game e e e)) )
@@ -35,30 +39,61 @@
 
            (check-game (game e e e)))
 
-(test-case "Testing adding a dead component and entity removal"
-           (define e (entity 
-                       (health 5 #:update (compose-handlers 
-                                            (update:health/amount^ add1)
-                                            (on-rule (rule:health/amount^ (curry = 6))
-                                                     (add-component^ (dead)))))))
+(let () ;test-case "Testing adding a dead component and entity removal"
 
-           (define g (game e e e))  
-           (define g2 (tick g)) 
+           (define poisoned
+             (update:health/amount^ sub1))
+
+           (define die-on-0-health
+             (on-rule (rule:health/amount^ (curry = 0))
+                      (add-component^ (dead))))
+
+           (define e1 
+             (entity 
+               (health 1 #:update 
+                       (compose-handlers poisoned
+                                         die-on-0-health))))
+
+
+           (define e2
+             (entity
+               (health 2 #:update 
+                       (compose-handlers poisoned
+                                         die-on-0-health))))
+
+           (define e3
+             (entity
+               (health 3 #:update 
+                       (compose-handlers poisoned
+                                         die-on-0-health))))  
+
+           (define g0 (game e1 e2 e3))  
+           (define g1 (tick g0)) 
+           (define g2 (tick g1)) 
            (define g3 (tick g2)) 
-           (define g4 (tick g3)) 
 
-           ;WOuld be nice to have a (debug-tick ...)
+           (check-equal?
+             (length (game-entities g0))
+             3
+             "No entities should be dead")
 
-           (pretty-print-game g)
-           (pretty-print-game g2)
-           (pretty-print-game g3)
+           (check-equal?
+             (length (game-entities g1))
+             2
+             "One entity should be dead")
 
-           (check-game g)
+           (check-equal?
+             (length (game-entities g2))
+             1
+             "Two entities should be dead")
+
+           (check-equal?
+             (length (game-entities g3))
+             0
+             "All entities should be dead")
            
-           (check-not-false
-             (get-entity (tick (game e e e))
-                         (has-component dead?))
-             "There should be at least one dead entity in the game.  (Should be three in fact.)"))
+
+           )
 
 
 (test-case "Testing removing a component from a handler"

@@ -19,6 +19,8 @@
 (define/contract (tick g)
   (-> game? game?)
 
+  (displayln "TICK -- TODO: MAKE A DEBUG MODE")
+
   (define next-g
     (struct-copy game g))
 
@@ -50,6 +52,7 @@
 
   ;Could just foldl, but we've already done a for loop, so I'll just keep the style consistent
   (for ([r to-remove])
+    (displayln "Removing.  TODO: THROW AN ERROR IF SOMETHING DIES TWICE.  OR A WARNING?")
     (set! next-g (remove-entity next-g r)))
 
   (for ([s to-spawn])
