@@ -655,7 +655,8 @@
   (define sprite-or-sprites
     (cond
       [(animated-sprite? sprite-or-image-or-list) sprite-or-image-or-list]
-      [((listof sprite-or-image?) sprite-or-image-or-list) (reverse (map ensure-sprite sprite-or-image-or-list))]
+      [((listof sprite-or-image?) (flatten sprite-or-image-or-list))
+       (reverse (map ensure-sprite (flatten sprite-or-image-or-list)))]
       [(image? sprite-or-image-or-list) (new-sprite sprite-or-image-or-list)]
       [else     (error "What was that?")]))
   (apply (curry add-components (basic-entity p sprite-or-sprites) )
