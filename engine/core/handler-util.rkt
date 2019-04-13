@@ -71,9 +71,8 @@
   (lambda (g e c)
     (set! to-go (add1 to-go)) 
 
-    ;TODO: Should we be looking at h and bailing early if it finishes early?  Or is the point of for-ticks that it spends that long on it no matter what...
     (if (> to-go n)
-      (component-done c)
+      c 
       (h g e c))))
 
 

@@ -45,6 +45,8 @@
            (define (update:COMPONENT e c)
              (update-component e COMPONENT? c))
 
+
+           ;Ummmm. what??
            (define (update:COMPONENT^ to-update)
              (lambda (g e c)
               (update-component e COMPONENT? to-update)))
