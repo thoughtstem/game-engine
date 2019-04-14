@@ -19,7 +19,8 @@
          remove-entity
 
          ;Query language
-         has-component)
+         has-component
+         get-field)
 
 (require "./base.rkt")
 
@@ -30,7 +31,8 @@
 (define/contract (add-component e c)
    (-> entity? component? entity?)
    (struct-copy entity e
-                [components (cons c (entity-components e) )])) 
+                [components (cons c 
+                                  (entity-components e) )])) 
 
 (define/contract (add-component^ to-add)
    (-> component? handler?)
@@ -60,9 +62,7 @@
                      new-c))
 
   (define real-new-c 
-    (set-component-id    ;Make sure users cannot accidentally update a component's id
-      (action real-old-c)
-      (component-id real-old-c)))
+    (action real-old-c))
 
   (struct-copy entity e
                [components (list-set cs i real-new-c)]))
@@ -161,7 +161,7 @@
 (define (add-entity g e)
   (-> game? entity? game?)
 
-  (game (cons (set-ids! e) ;Shouldn't be doing this here...  Runtime should enforce this...
+  (game (cons e 
               (game-entities g))))
 
 
@@ -172,13 +172,15 @@
 
 
 (define (update-entity g old-e new-e)
-  (-> game? (or/c entity? (-> entity? boolean?)) 
+  (-> game? (or/c number? entity? (-> entity? boolean?)) 
             (or/c entity? 
                   (-> entity? entity?))
             game?)
 
   (define es (game-entities g))
-  (define i  (get-entity-index g old-e))
+  (define i  (if (number? old-e) 
+               old-e
+               (get-entity-index g old-e)))
 
   (define action (if (entity? new-e)
                      (thunk* new-e)
@@ -218,6 +220,14 @@
 
 (define (has-component e c?)
   (findf c? (entity-components e)))
+
+
+(define (get-field g entity-q? component-q? field-f)
+  (field-f 
+    (get-component 
+      (entity-q? (game-entities g))
+      component-q?)))
+
 
 
 

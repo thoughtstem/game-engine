@@ -58,20 +58,22 @@
 (define (conway-update g e c)
   (define n (length (live-neighbors g e)))
 
-  (define ret (cond 
-                [(and (conway-alive? c)
-                      (< n 2))
-                 (die c)]
-                [(and (conway-alive? c)
-                      (or (= n 2) (= n 3)))
-                 (live c)]
-                [(and (conway-alive? c)
-                      (> n 3))
-                 (die c)]
-                [(and (not (conway-alive? c))
-                      (= n 3))
-                 (live c)]
-                [else c]))
+  (define ret 
+    (update-component e c
+                      (cond 
+                        [(and (conway-alive? c)
+                              (< n 2))
+                         (die c)]
+                        [(and (conway-alive? c)
+                              (or (= n 2) (= n 3)))
+                         (live c)]
+                        [(and (conway-alive? c)
+                              (> n 3))
+                         (die c)]
+                        [(and (not (conway-alive? c))
+                              (= n 3))
+                         (live c)]
+                        [else c])))
 
   ret)
 

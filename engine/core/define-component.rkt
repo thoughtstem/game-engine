@@ -63,9 +63,10 @@
                                                  (-> COMPONENT? COMPONENT?) 
                                                  handler? #f)]
                                  COMPONENT?)
-                            (new-COMPONENT #f  
-                                           (vector update) 
-                                           FIELD ...))))]))
+                            
+                              (new-COMPONENT (next-id)  
+                                             (vector update) 
+                                             FIELD ...))))]))
 
 
 (define-syntax (generate-other-stuff stx)
@@ -80,6 +81,7 @@
         (update-COMPONENT-FIELD (format-id #'COMPONENT "update-~a-~a" #'COMPONENT #'FIELD) ) 
         (update:COMPONENT/FIELD (format-id #'COMPONENT "update:~a/~a" #'COMPONENT #'FIELD) ) 
         (update:COMPONENT/FIELD^ (format-id #'COMPONENT "update:~a/~a^" #'COMPONENT #'FIELD) ) 
+        (update:my/COMPONENT/FIELD^ (format-id #'COMPONENT "update:my/~a/~a^" #'COMPONENT #'FIELD) ) 
         (read:COMPONENT/FIELD (format-id #'COMPONENT "read:~a/~a" #'COMPONENT #'FIELD) ) 
         (read:COMPONENT/FIELD^ (format-id #'COMPONENT "read:~a/~a^" #'COMPONENT #'FIELD) ) 
         (rule:COMPONENT/FIELD (format-id #'COMPONENT "rule:~a/~a" #'COMPONENT #'FIELD) ) 
@@ -157,7 +159,15 @@
                (-> procedure? handler?)
 
                (lambda (g e c)
-                 (update:COMPONENT/FIELD c f)))
+                 (update-component e COMPONENT?
+                                   (curryr update:COMPONENT/FIELD f))))
+
+           (define/contract (update:my/COMPONENT/FIELD^ f)
+               (-> procedure? handler?)
+
+               (lambda (g e c)
+                 (update-component e c 
+                                   (update:COMPONENT/FIELD c f))))
 
            (define/contract (read:COMPONENT/FIELD e-or-c)
                (-> (or/c entity? COMPONENT?)

@@ -3,6 +3,7 @@
 (provide init 
          tick
          ticks
+         tick-component
 
          tick-list
 
@@ -28,19 +29,22 @@
 
   (define to-remove '())
   (define to-spawn  '())
-  (for ([e (game-entities g)])
-    (for ([c (entity-components e)])
-      (define h (component-handler c))
+  (for ([e (game-entities g)]
+        [ei (in-naturals)])
+    (for ([c (entity-components e)]
+          [ci (in-naturals)])
 
-      (define next-e (get-entity next-g e))  
-      (define next-c (get-component next-e c))  
+      (define h (component-update c))
+
+      ;Entities don't change positions in the list in mid tick, so we can always get the newest version of e from next-g
+      (define next-e (list-ref (game-entities next-g) ei))
 
       (when h 
-        ;A handler gets to see the last game state and the current entity/component state
-        (define op (h g next-e next-c))
+        ;A handler gets to see the last game state and the current entity state, and the last component state (redundant, but for convenience...)
+        (define op (h g next-e c))
 
         ;Apply the op to the game
-        (set! next-g (apply-op op next-g next-e next-c))
+        (set! next-g (apply-op op next-g ei c))
 
         (when (and (entity? op)
                    (get-component op dead?))
@@ -82,6 +86,10 @@
              (tick-list (tick g) 
                         (sub1 n)))))
 
+(define (tick-component g e c)
+   (define h (component-update c))
+   (h g e c))
+
 (define/contract (has-id? e)
   (-> entity? boolean?)
   (number? (entity-id e)))
@@ -90,4 +98,16 @@
   (lambda (g)
     (andmap pred? (game-entities g))))
 
-;Among other things, makes sure that the game's entity and component ids are all unique.  This is necessary for entity=? and component=?'s properties to hold.  That is, that the update CRUD operation maintains entity and component equality.  Running this on initialize-game ensures that the property holds at the beginning.  As long as the property holds after a call to (tick ...) then we have proven by induction that it always holds.
+(define (apply-op o g ei c)
+  (cond
+    [(component? o) (begin 
+                      (update-entity g
+                                     ei
+                                     (update-component 
+                                       (list-ref (game-entities g) ei) 
+                                       c o)))]
+    [(entity? o) (begin 
+                   (update-entity g ei o))]
+    [else (raise (~a "Unsupported handler return value: " o))]) )
+
+

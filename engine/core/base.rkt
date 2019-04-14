@@ -25,18 +25,14 @@
   component->list
   component?
   component-id
-  set-component-id
-  component-handler
+  component-update
   component=?
   component-done
-  
-  
-  set-ids!
   
   handler?
   rule?
   
-  init)
+  next-id)
 
 (require "./util.rkt")
 
@@ -68,7 +64,7 @@
   (and (vector? c) 
        (eq? 'component (vector-ref c 0))))
 
-(define operation? (or/c entity? component?))
+(define operation? entity?)
 
 (define handler? (-> game? entity? component? operation?))
 (define rule? (-> game? entity? component? boolean?))
@@ -112,7 +108,7 @@
   c)
 
 
-(define/contract (component-handler c)
+(define/contract (component-update c)
   (-> component? (or/c #f handler?))
   (define handlers (vector-ref c 3))
   (if handlers
@@ -133,7 +129,7 @@
   (->* () 
        (#:update handler?) 
        component?)
-  (component #f (vector update)))
+  (component (next-id) (vector update)))
 
 
 
@@ -151,39 +147,15 @@
 ;Our basic constructors
 (define/contract (new-game . es)
   (->* () #:rest (listof entity?) game?)
-  (init (game es))) 
+  (game es))
+
 (define/contract (new-entity . cs)
   (->* () #:rest (listof component?) entity?)
-  (entity #f cs))
+  (entity (next-id) cs))
 
-(define/contract (set-ids! e)
-  (-> entity? entity?)
-
-  (set-entity-components-ids!
-    (set-entity-id! e)))
-
-(define/contract (set-entity-id! e)
-  (-> entity? entity?)
-  (struct-copy entity e
-               [id (next-entity-id)]))
-
-(define (set-entity-components-ids! e)
-  (define new-e (struct-copy entity e))
-
-  (define cs (map (lambda (c)
-                    (set-component-id c (next-entity-id)))
-                  (entity-components new-e)))
-
-  (struct-copy entity new-e
-               [components cs]))
-
-(define next-entity-id (id-generator 0))
+(define next-id (id-generator 0))
 
 
-(define (init g)
-  (init-ids g))
 
-(define (init-ids g)
-  (-> game? game?)
-  (game (map set-ids! (game-entities g))))
+
 

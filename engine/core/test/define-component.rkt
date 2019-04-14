@@ -2,8 +2,7 @@
 
 (require rackunit "../main.rkt" "./util.rkt")
 
-(define (check-game g0)
-  (define g (init g0))
+(define (check-game g)
   (check-all-entities-health g 5)
   (check-all-entities-health (tick g) 6))
 
@@ -17,7 +16,8 @@
                                                   (curryr update:health/amount add1)))))
            (check-game (game e e e)))
 
-
+;Hmmm... Do we want an auto generated convenience function for this?
+;  Can we get update:health/amount^ to be attachable to other components?
 (test-case "Updating a component from a different component on the same entity"
            ;It's really just the same because update:health/amount^
            (define e (entity (health 5)
@@ -98,40 +98,26 @@
 
 (test-case "Testing removing a component from a handler"
 
-           (define-component dead ())
+           (define-component test ())
 
            (define e (entity 
-                       (dead)
+                       (test)
                        (health 5 #:update (compose-handlers 
-                                            ;t1: entity: h=6
-                                            ;t2: entity: h=7
                                             (update:health/amount^ add1)
-                                            ;t1: 'noop
-                                            ;t2: entity: h=6, dead
                                             (on-rule 
                                               (rule:health/amount^ (curry = 6))
-                                              (remove-component^ dead?))))))
+                                              (remove-component^ test?))))))
 
            (define g0 (game e e e))
            (define g1  (tick g0))
            (define g2  (tick g1))
 
-           
            (check-false
              (get-entity g2
-                         (curryr has-component dead?))
-             "There should be no entities in the game with the (dead) component")
+                         (curryr has-component test?))
+             "There should be no entities in the game with the (test) component")
            
            (check-equal?
              (read:health/amount (first (game-entities g2)))
              7))
 
-
-
-
-   ;TODO: Think through how lists are handled.  Downstream ops have a lot of power, and I'm worried people will get confused about why certain changes aren't taking effect. 
-   ;TODO: Write tests where there are two handlers composed together to update two different fields on the same component
-   ;      Or where two different components on the same entity have a handler that both return entity operations
-   ;      Or where two different entities have components that return game operations.
-
-;Also getting confused about how operations are "stacked" at the runtime level (within a tick), vs within compose-handler.  Should these effectively have the same semantics? 

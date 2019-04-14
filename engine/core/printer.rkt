@@ -1,10 +1,15 @@
 #lang racket
 
 (provide pretty-print-game
+         pretty-print-games
          pretty-print-entity
          pretty-print-component)
 
 (require "./base.rkt")
+
+(define (pretty-print-games . gs)
+  (for ([g gs])
+    (pretty-print-game g)))
 
 (define (pretty-print-game g)
   (displayln (~a "GAME:" ))
@@ -17,10 +22,12 @@
     (pretty-print-component c)) )
 
 (define (pretty-print-component c)
-  (displayln (~a "    COMPONENT: " (vector-ref c 1)))
+  (displayln (~a "    COMPONENT: " (vector-ref c 1) ", " (vector-ref c 2)))
   
   (define vs (vector->list c))
 
-  (for ([v vs])
-    (displayln (~a "      " v))))
+  (for ([v (drop vs 4)])
+    (displayln (~a "      " v)))
+  
+  (displayln (~a "      " (vector-ref c 3))))
 

@@ -7,8 +7,11 @@
 
 @defmodule[game-engine/engine/core/main]
 
+TODO: Fun example: generating trance music...
+
 TODO: Doc all the functions from define-component that we're going with.  Remove the ones we aren't.
 TODO: Decide whether we're docing and testing the higher-order handlers at the end of this doc. 
+  - Actually, implementing these as components makes more sense, I think.  (times ...) can just store the original child component state and return to it later...
 
 Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
 
@@ -110,6 +113,9 @@ I think the potential for exploding a whole ecosystem of composable game parts w
   }
 
   Essentially, it's a delayed version of @racket[update:COMPONENT/FIELD] -- one that will be applied to whatever component's @racket[#:update] it is attached.
+
+
+  TODO: Currently, these cannot be attached to other components on the same entity...  Should we allow that?  Or should it be a different function.  See test in test/define-component.rkt
 }
 
 @defproc[(update:COMPONENT/FIELD^ [f any/c]) handler?]{
@@ -375,6 +381,10 @@ This entity will lose one health per tick (and there's nothing stopping it from 
   (define (entity (health 100 
                           #:handler (for-ticks 1 reduce-health)))) 
 }
+
+
+
+;TODO: Should these higher order handler functionalities actually be implemented as components (extensions)?  
 
 
 @defproc[(for-ticks [n number?] [h handler?]) handler?]{

@@ -4,6 +4,7 @@
          "../main.rkt"
          "./util.rkt")
 
+#;
 (test-case "for-ticks"
            (define e (entity 
                        (health 5 
