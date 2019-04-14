@@ -22,6 +22,11 @@
 
   (define h (component-update fake-c))
 
+  (when (not h)
+    (displayln
+      "TODO: There wasn't a handler attached to the child component of for-ticks.  Do we need to catch this?"))
+
+
   (define fake-ret (h g fake-e fake-c))
   
   (update-component fake-ret fake-c c))

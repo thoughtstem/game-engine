@@ -9,9 +9,11 @@
 
 TODO: Fun example: generating trance music...
 
+;TODO: A "named" component -- impersonates the child, but can be queried more conveniently...  Replaces storage in v1
+
 TODO: Doc all the functions from define-component that we're going with.  Remove the ones we aren't.
-TODO: Decide whether we're docing and testing the higher-order handlers at the end of this doc. 
-  - Actually, implementing these as components makes more sense, I think.  (times ...) can just store the original child component state and return to it later...
+
+TODO: Document the meta-components.  Probably in their own scribble?  How do we organize the docs in a heirarchical project like this? 
 
 Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
 

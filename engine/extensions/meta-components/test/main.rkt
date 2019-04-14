@@ -7,6 +7,7 @@
          "../times.rkt"
          )
 
+
 (test-case "for-ticks component"
            ;Test
            (define-component health (amount))
@@ -42,6 +43,19 @@
              3
              "An entity that starts with 5 health and the poisoned-for-two-ticks condition should STILL have 3 health after the third tick")
            )
+
+(test-case "for-ticks + spawn"
+           (define fireball (entity))
+           (define e (entity (for-ticks 2 
+                                        (spawn fireball))))
+
+
+           (define gs (tick-list (game e) 4))
+
+           (check-equal?
+             (map (lambda (g) (length (game-entities g))) 
+                  gs) 
+             '(1 2 3 3)))
 
 (test-case "for-ticks component x2"
            ;Test
@@ -204,8 +218,6 @@
 
 
 
-
-;TODO: A "named" component -- impersonates the child, but can be queried more conveniently...
 
 
 
