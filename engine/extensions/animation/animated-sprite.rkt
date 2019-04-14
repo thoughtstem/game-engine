@@ -1,6 +1,37 @@
 #lang racket
 
+(provide 
+  #;
+  (rename-out [make-sprite sprite])
+  sprite
+  sprite?
+  sprite-id
+  
+  (rename-out [make-position position])
+  x
+  y
+  update:position/x^
+  update:position/y^
+  )
+
 (require "../../core/main.rkt")
+
+
+
+;TODO: Positioning is more general than animations, move somewhere
+(define-component position (x y))
+
+(define (x e)
+  (position-x 
+    (get-component e position?)))
+
+(define (y e)
+  (position-y 
+    (get-component e position?)))
+
+(define (make-position x y)
+  (position x y))
+
 
 
 ;A component that wraps a single sprite id
@@ -18,6 +49,7 @@
 (define (seen? i)
   (member i seen-sprite-ids))
 
+#;
 (define/contract (make-sprite i)
   (-> image? sprite?)
 

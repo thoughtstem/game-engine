@@ -84,11 +84,7 @@
     ;Create our sprites
     (define sprite-id (ml:sprite-idx csd 'sprite-1))
 
-    (define dynamic-sprites (list
-			      (ml:sprite #:layer 0
-					 (real->double-flonum W/2)
-					 (real->double-flonum H/2)
-					 sprite-id)))
+    (define dynamic-sprites (game->ml-sprite-list g))
 
     (define static-sprites (list))
 
@@ -99,6 +95,21 @@
 
   render-game)
 
+(define (game->ml-sprite-list g)
+  (define es (game-entities g)) 
+
+  ;Assume one sprite for now.  Fix later.
+  (define (entity->sprite e)
+    (define sid
+      (ml:sprite-idx csd 
+                     (sprite-id (get-component e sprite?))))
+
+    (ml:sprite #:layer 0
+               (real->double-flonum (x e))
+               (real->double-flonum (y e))
+               sid))
+ 
+  (map entity->sprite es) )
 
 (require 2htdp/image)
 
@@ -107,16 +118,22 @@
   (ml:add-sprite!/value db id-sym i))
 
 (add-sprite! sd 'sprite-1 (circle 20 'solid 'red))
+(add-sprite! sd 'sprite-2 (circle 20 'solid 'green))
 
 ;If that adds to the db, figure out some hook to render it...
 ;  Hard code in the render loop at first...
 
-;TEST
-;Black screen yay!!
-(lux-start (game))
+(require "./animated-sprite.rkt")
 
-
-
-
-
+(lux-start (game
+             (entity
+               (position 200 200)
+               (sprite 'sprite-1)
+               (new-component #:update
+                 (update:position/x^ add1)))
+             (entity
+               (position 200 200)
+               (sprite 'sprite-2)
+               (new-component #:update
+                 (update:position/y^ add1)))))
 
