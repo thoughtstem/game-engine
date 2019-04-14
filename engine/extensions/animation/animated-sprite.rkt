@@ -1,9 +1,7 @@
 #lang racket
 
 (provide 
-  #;
   (rename-out [make-sprite sprite])
-  sprite
   sprite?
   sprite-id
   
@@ -12,9 +10,14 @@
   y
   update:position/x^
   update:position/y^
-  )
 
-(require "../../core/main.rkt")
+  get-queued-sprites
+  flush-queued-sprites!
+  
+  spawn-here)
+
+(require "../../core/main.rkt"
+         2htdp/image)
 
 
 
@@ -31,6 +34,19 @@
 
 (define (make-position x y)
   (position x y))
+
+;Now that x and y exist in our discourse, we can agument spawner with the ability to spawn at the location of the parent
+
+(define (move-to-parent p c)
+  (define parent-pos 
+    (get-component p position?))
+
+  (if (get-component c position?)
+    (update-component c position?  parent-pos)
+    (add-component c parent-pos)))
+
+(define (spawn-here to-spawn)
+  (spawn to-spawn move-to-parent))
 
 
 
@@ -49,21 +65,32 @@
 (define (seen? i)
   (member i seen-sprite-ids))
 
-#;
-(define/contract (make-sprite i)
-  (-> image? sprite?)
 
-  (define id (image->id i))  ;This is one operation that may be slow at runtime, and it'll happen for any sprite constructed at runtime.  We should probably throw some kind of warning if we detect a sprite getting created at runtime.
+(define/contract (image->id i)
+  (-> image? symbol?)
+  ;I'm sure this is super slow.
+  ;We should figure out how to warn the user if the are unknowingly calling this at runtime (e.g. by constructing new sprites at runtime).
+  ;But as long as you declare all your sprite components before the game starts, there will be no overhead.
+  ;NOTE: This overhead happens ANY time you do (sprite ...) -- regardless of whether you pass in an image that has already been compiled.  Just the act of checking WHETHER that image has been compiled previously triggers this function.
 
-  (set! insertion-queue (cons (list id i)
-                              insertion-queue))
+  (string->symbol
+    (~a "sprite-"
+        (equal-hash-code (~a (image->color-list i))))))
 
-  (when (not (seen? i))
-    (set! seen-sprite-ids (cons i seen-sprite-ids)))
+(define (make-sprite i (maybe-id #f))
+  (define id 
+    (if maybe-id maybe-id (image->id i))) 
+
+  (when (not (seen? id))
+    (set! insertion-queue (cons (list id i) insertion-queue))
+    (set! seen-sprite-ids (cons id seen-sprite-ids)))
 
   (sprite id))
 
+
 (define (get-queued-sprites) insertion-queue)
+(define (flush-queued-sprites!) 
+  (set! insertion-queue '()))
 
 ;Is this where we tie in the mode-lambda stuff??
 ;When do things get added to the sprite database?

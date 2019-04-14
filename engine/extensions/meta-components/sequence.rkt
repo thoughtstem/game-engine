@@ -39,9 +39,7 @@
                     (add-component fake-ret new-c)
                     new-c)  
 
-    (update-component fake-ret fake-c new-c))
-  
-  )
+    (update-component fake-ret fake-c new-c)))
 
 
 (define (update-sequence g e c)

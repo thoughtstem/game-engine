@@ -46,6 +46,13 @@
 (define csd #f)
 
 (define (init-db)
+  (define to-compile (get-queued-sprites))
+
+  (for ([i to-compile])
+    (add-sprite! sd (first i) (second i)))
+
+  (flush-queued-sprites!)
+
   (set! csd (ml:compile-sprite-db sd))
   csd)
 
@@ -67,8 +74,7 @@
   ;Use the entities, plus their sprites, to determine the initial sprite database
 
   (define csd (init-db))
-
-  (define layers (vector
+(define layers (vector
 		   (ml:layer (real->double-flonum W/2)
 			     (real->double-flonum H/2))))
 
@@ -117,23 +123,46 @@
 (define (add-sprite! db id-sym i)
   (ml:add-sprite!/value db id-sym i))
 
-(add-sprite! sd 'sprite-1 (circle 20 'solid 'red))
-(add-sprite! sd 'sprite-2 (circle 20 'solid 'green))
-
 ;If that adds to the db, figure out some hook to render it...
 ;  Hard code in the render loop at first...
 
-(require "./animated-sprite.rkt")
+(require "./animated-sprite.rkt"
+         ;Todo: Make one meta-components.rkt import...
+         "../meta-components/forever.rkt"
+         "../meta-components/after-ticks.rkt"
+         "../meta-components/for-ticks.rkt"
+         "../meta-components/times.rkt"
+         "../meta-components/sequence.rkt"
+         
+         )
+
+;Okay, this is working surprisingly well.  Very simple so far.
+; I think there's one more case though -- if someone constructs a new sprite at runtime and we need to trigger a recompile of the sprite database...  Let's brainstorm and see if we can avoid this...  Maybe we can just require people to construct up-front -- now that construction is more integrated with the rest of our language
+
+(define (bullet c) 
+  (entity 
+    (position 200 200)
+    (sprite (circle 5 'solid c))
+    (after-ticks 20 (die))))
 
 (lux-start (game
              (entity
                (position 200 200)
-               (sprite 'sprite-1)
+               (sprite (circle 20 'solid 'red))
                (new-component #:update
-                 (update:position/x^ add1)))
+                              (update:position/x^ add1))
+               (forever
+                      (sequence
+                        (for-ticks 5
+                                   (spawn-here (bullet 'green)))
+                        (for-ticks 5
+                                   (spawn-here (bullet 'blue))))))
+
              (entity
                (position 200 200)
-               (sprite 'sprite-2)
+               (sprite (circle 20 'solid 'orange))
                (new-component #:update
-                 (update:position/y^ add1)))))
+                              (update:position/y^ add1)))))
+
+
 
