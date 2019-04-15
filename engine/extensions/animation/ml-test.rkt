@@ -143,14 +143,15 @@
   (entity 
     (position 200 200)
     (sprite (circle 5 'solid c))
-    (after-ticks 20 (die))))
+    (after-ticks 100 (die))))
 
+#;
 (lux-start (game
              (entity
                (position 200 200)
                (sprite (circle 20 'solid 'red))
                (new-component #:update
-                              (update:position/x^ add1))
+                              (update:position/x^ (curry + 5)))
                (forever
                       (sequence
                         (for-ticks 5
@@ -163,6 +164,40 @@
                (sprite (circle 20 'solid 'orange))
                (new-component #:update
                               (update:position/y^ add1)))))
+
+
+
+(require "../../core/test/conway.rkt"
+         threading)
+
+
+(define g0 (~> (conway-game 3)
+          (conway-game-set _ 0 0 #t)
+          (conway-game-set _ 1 0 #t)
+          (conway-game-set _ 2 0 #t)
+          (conway-game-set _ 0 1 #t)
+          (conway-game-set _ 1 1 #t)
+          (conway-game-set _ 2 1 #t)
+          (conway-game-set _ 0 2 #t)
+          (conway-game-set _ 1 2 #t)
+          (conway-game-set _ 2 2 #t)))
+
+(define (augment g)
+  (define (aug-e e)
+    (define c (get-component e conway?))  
+    (add-component
+      (add-component e 
+                     (position
+                       (+ 100 (* 50 (conway-x c)))
+                       (+ 100 (* 50 (conway-y c)))))
+      (sprite (circle 5 'solid 'red))))
+
+  (apply game (map aug-e (game-entities g))))
+
+(lux-start
+  (augment g0))
+
+
 
 
 

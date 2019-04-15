@@ -8,21 +8,27 @@
          tick-list
 
          all-entities
-         has-id?)
+         has-id?
+         debug-mode
+         )
 
 (require "./base.rkt"
          "./crud.rkt"
          "./util.rkt"
          "./handler-util.rkt"
-         "./spawner.rkt")
+         "./spawner.rkt"
+         "./printer.rkt"
+         )
 
 (define debug-mode (make-parameter #f))
 
 (define/contract (tick g)
   (-> game? game?)
 
-  ;But maybe not in the runtime... maybe as a wrapper...
-  (displayln "TICK -- TODO: MAKE A DEBUG MODE")
+  ;TODO: Could move this to a wrapper to avoid cluttering the runtime -- abstract away like in AOP.
+  (when (debug-mode)
+    (displayln (~a "********TICK BEGIN*******"))
+    (pretty-print-game g))
 
   (define next-g
     (struct-copy game g))
@@ -62,10 +68,16 @@
 
   ;Could just foldl, but we've already done a for loop, so I'll just keep the style consistent
   (for ([r to-remove])
-    (displayln "Removing.  TODO: THROW AN ERROR IF SOMETHING DIES TWICE.  OR A WARNING?")
+    (when (debug-mode)
+      (displayln "***REMOVING ENTITY***")
+      (pretty-print-entity r))
     (set! next-g (remove-entity next-g r)))
 
   (for ([s to-spawn])
+    (when (debug-mode)
+      (displayln "***SPAWNING ENTITY***")
+      (pretty-print-entity s))
+
     (set! next-g (add-entity next-g s)))
 
   next-g)

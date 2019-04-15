@@ -6,6 +6,13 @@
 
 (require threading)
 
+(provide conway-game
+         conway-game-set
+         conway-x
+         conway-y
+         conway-alive?
+         conway?)
+
 
 (define-component conway (x y alive?))          
 
