@@ -11,7 +11,11 @@
          conway-x
          conway-y
          conway-alive?
-         conway?)
+         entity-conway-alive?
+         conway?
+         overlay
+         above
+         beside)
 
 
 (define-component conway (x y alive?))          
@@ -84,13 +88,137 @@
 
   ret)
 
-(define (conway-game size)
+
+;TODO: Refactor this test.  It's getting too long.
+
+;Move the conway stuff to another folder.  It's become a language in and of itself, worth testing and docing seprately.  Not part of core.
+
+(define (pad-height g n)
+  (define _n/2 (floor (/ n 2)))
+  (define n/2  (ceiling (/ n 2)))
+  
+  (define pad-row
+    (map (const '_) (range (width g))))
+
+  (define padding-top
+    (map (const pad-row) (range _n/2)))
+
+  (define padding-bottom
+    (map (const pad-row) (range n/2)))
+
+  (append padding-top
+          g
+          padding-bottom))
+
+(define (pad-width g n)
+  (define _n/2 (floor (/ n 2)))
+  (define n/2  (ceiling (/ n 2)))
+
+  (define padding-left
+    (map (const '_) (range _n/2))) 
+
+  (define padding-right
+    (map (const '_) (range n/2))) 
+
+  (define (pad-row r)
+    (append padding-left
+            r
+            padding-right))
+
+  (map pad-row g))
+
+(define (height g)
+  (length g))
+
+(define (width g)
+  (length (first g)))
+
+(define (expand-height-to g1 g2)
+  (define diff
+    (- (height g2) (height g1)))
+
+  (if (positive? diff) 
+    (pad-height g1 diff)
+    g1) )
+
+(define (expand-width-to g1 g2)
+  (define diff
+    (- (width g2) (width g1)))
+
+  (if (positive? diff) 
+    (pad-width g1 diff)
+    g1))
+
+(define (expand-to g1 g2)
+  (define g1-ew  (expand-width-to g1 g2)) 
+  (define g1-ewh (expand-height-to g1-ew g2)) 
+  g1-ewh)
+
+(define (overlay-symbol s1 s2)
+  (if (eq? s1 '_)
+    s2
+    s1))
+
+(define (overlay-row r1 r2)
+  (map overlay-symbol r1 r2))
+
+(define (overlay g1 g2)
+  (define s1 (conway-game->symbols g1)) 
+  (define s2 (conway-game->symbols g2)) 
+  
+  (define ps1 (expand-to s1 s2))
+  (define ps2 (expand-to s2 s1))
+
+  (grid->conway
+      (map overlay-row ps1 ps2)))
+
+(define (above g1 g2)
+  (define s1 (conway-game->symbols g1)) 
+  (define s2 (conway-game->symbols g2)) 
+  
+  (define ps1 (expand-width-to s1 s2))
+
+  (grid->conway
+      (append ps1 s2)))
+
+(define (beside g1 g2)
+  (define s1 (conway-game->symbols g1)) 
+  (define s2 (conway-game->symbols g2)) 
+  
+  (define ps1 (expand-height-to s1 s2))
+
+  (grid->conway
+      (map append ps1 s2)))
+
+
+(define (size->conway size)
   (define es 
     (for*/list ([y (range size)]
                 [x (range size)])
       (entity (conway x y #f #:update conway-update))))
 
   (apply game es))
+
+(define (grid->conway grid)
+  (define es 
+    (flatten
+      (for/list ([row grid]
+                 [y (in-naturals)])
+
+        (for/list ([col row]
+                   [x (in-naturals)])
+
+
+          (define alive? (eq? col '*))
+
+          (entity (conway x y alive? #:update conway-update))))))
+
+  (apply game es))
+
+(define (conway-game size-or-grid)
+  (if (number? size-or-grid)
+    (size->conway size-or-grid) 
+    (grid->conway size-or-grid)))
 
 (define (conway-game-set g x y alive?)
   ;Could also break this into a two-step process by
@@ -106,7 +234,7 @@
 
 (define (conway-game->symbols g)
   (define es (game-entities g))  
-  (define n (sqrt (length es)))
+  (define n (add1 (apply max (map entity-conway-y (game-entities g)))))
 
   (define (cell->symbol b)
     (if b '* '_))
@@ -156,7 +284,8 @@
              (all-dead (third gs))))
 
 (test-case "Bigger Conway's game of life"
-           (define g0 (~> (conway-game 5) (conway-game-set _ 1 1 #t)
+           (define g0 (~> (conway-game 5) 
+                          (conway-game-set _ 1 1 #t)
                           (conway-game-set _ 2 1 #t)
                           (conway-game-set _ 3 1 #t)
                           (conway-game-set _ 1 2 #t)

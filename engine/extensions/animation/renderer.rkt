@@ -1,5 +1,7 @@
 #lang racket
 
+(provide play)
+
 (require racket/match
          racket/fixnum
          racket/flonum
@@ -11,7 +13,8 @@
          (prefix-in ml: mode-lambda/text/runtime)
          posn)
 
-(require "../../core/main.rkt")
+(require "../../core/main.rkt"
+         "./animated-sprite.rkt")
 
 (struct demo ;TODO: CHANGE THIS NAME
   ( state render-tick)
@@ -56,7 +59,7 @@
   (set! csd (ml:compile-sprite-db sd))
   csd)
 
-(define (lux-start g)
+(define (play g)
   (define W 400)
   (define H 400)
 
@@ -84,6 +87,7 @@
 
 
   (define (render-game g)
+    (displayln "RENDER")
     ;Find uncompiled entities...
     ;Recompile the database if we added anything:
 
@@ -122,82 +126,4 @@
 ;Adds to an uncompiled sprite database...
 (define (add-sprite! db id-sym i)
   (ml:add-sprite!/value db id-sym i))
-
-;If that adds to the db, figure out some hook to render it...
-;  Hard code in the render loop at first...
-
-(require "./animated-sprite.rkt"
-         ;Todo: Make one meta-components.rkt import...
-         "../meta-components/forever.rkt"
-         "../meta-components/after-ticks.rkt"
-         "../meta-components/for-ticks.rkt"
-         "../meta-components/times.rkt"
-         "../meta-components/sequence.rkt"
-         
-         )
-
-;Okay, this is working surprisingly well.  Very simple so far.
-; I think there's one more case though -- if someone constructs a new sprite at runtime and we need to trigger a recompile of the sprite database...  Let's brainstorm and see if we can avoid this...  Maybe we can just require people to construct up-front -- now that construction is more integrated with the rest of our language
-
-(define (bullet c) 
-  (entity 
-    (position 200 200)
-    (sprite (circle 5 'solid c))
-    (after-ticks 100 (die))))
-
-#;
-(lux-start (game
-             (entity
-               (position 200 200)
-               (sprite (circle 20 'solid 'red))
-               (new-component #:update
-                              (update:position/x^ (curry + 5)))
-               (forever
-                      (sequence
-                        (for-ticks 5
-                                   (spawn-here (bullet 'green)))
-                        (for-ticks 5
-                                   (spawn-here (bullet 'blue))))))
-
-             (entity
-               (position 200 200)
-               (sprite (circle 20 'solid 'orange))
-               (new-component #:update
-                              (update:position/y^ add1)))))
-
-
-
-(require "../../core/test/conway.rkt"
-         threading)
-
-
-(define g0 (~> (conway-game 3)
-          (conway-game-set _ 0 0 #t)
-          (conway-game-set _ 1 0 #t)
-          (conway-game-set _ 2 0 #t)
-          (conway-game-set _ 0 1 #t)
-          (conway-game-set _ 1 1 #t)
-          (conway-game-set _ 2 1 #t)
-          (conway-game-set _ 0 2 #t)
-          (conway-game-set _ 1 2 #t)
-          (conway-game-set _ 2 2 #t)))
-
-(define (augment g)
-  (define (aug-e e)
-    (define c (get-component e conway?))  
-    (add-component
-      (add-component e 
-                     (position
-                       (+ 100 (* 50 (conway-x c)))
-                       (+ 100 (* 50 (conway-y c)))))
-      (sprite (circle 5 'solid 'red))))
-
-  (apply game (map aug-e (game-entities g))))
-
-(lux-start
-  (augment g0))
-
-
-
-
 

@@ -23,6 +23,8 @@
 
   (define fake-c (first (sequence-children c)))
   (define fake-e (update-component e c fake-c))
+
+  ;Rather than using the handler, can we just use tick-component to simulate a tick on the entity after attaching the fake component?  Then we get the component it, update our version of it, and reattach our selves in its place
   (define h (component-update fake-c)) 
 
   (define fake-ret (h g fake-e fake-c))
