@@ -4,7 +4,9 @@
          square
          overlay
          above
-         beside)
+         beside
+         width
+         height)
 
 
 (define (pad-height g n)

@@ -23,7 +23,13 @@
 (define-component conway-manager (data))
 
 (define (conway-manager-entity data)
-  (entity 
+  (entity
+
+   ;Ooookay.  This was a bug.  But it was really hard to find.
+   ;So I'm leaving it here for now.
+   ;1) Can we make it clear why an update is failing?  CRUD functions with better errors.
+   ;2) Can we catch errors in the runtime and tell people that a handler failed while an entity was being ticked.
+   ;3) Can we make a (handler (g e c) ...) form that wraps a lambda in an error handler that knows about the handler source location?
     (conway data #:update (update:conway-manager/data^ impl:conway-tick))))
 
 (define (game->conway-manager g)
@@ -70,8 +76,11 @@
   (not (ormap get-entity-conway-alive? es)) )
 
 (define (conway-game s)
-  (game
-    (conway-manager-entity s)))
+  (apply game
+    (conway-manager-entity s)
+    (for*/list ([x (range (impl:width s))]
+                [y (range (impl:height s))])
+      (conway-entity x y))))
 
 
 (define donut

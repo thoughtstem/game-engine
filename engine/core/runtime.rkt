@@ -45,7 +45,8 @@
       ;Entities don't change positions in the list in mid tick, so we can always get the newest version of e from next-g
       (define next-e (list-ref (game-entities next-g) ei))
 
-      (when h 
+      (when h
+        (displayln h)
         ;A handler gets to see the last game state and the current entity state, and the last component state (redundant, but for convenience...)
         (define op (h g next-e c))
 
