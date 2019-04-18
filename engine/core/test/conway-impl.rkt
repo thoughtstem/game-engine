@@ -104,8 +104,8 @@
 (define (alive? s x y)
   (eq? '*
        (safe-list-ref 
-         (safe-list-ref s x)
-         y)))
+         (safe-list-ref s y)
+         x)))
 
 (define (live-neighbors s x y)
   (define north      (alive? s x       (- y 1)))  
@@ -164,6 +164,38 @@
   (define row (map (const '_) (range n)))
 
   (map (const row) (range n)))
+
+
+
+
+(define pd
+  (overlay  
+    (square 5)
+    '((* * *)
+      (* _ *)
+      (* * *))))
+
+(define pd2
+  (beside pd pd))
+
+(define pd3
+  (beside pd2 pd))
+
+
+(pretty-print pd3)
+
+(pretty-print
+  (conway-tick pd3))
+
+(pretty-print
+  (conway-tick
+    (conway-tick pd3)))
+
+(pretty-print
+  (conway-tick
+    (conway-tick
+      (conway-tick pd3))))
+
 
 
 

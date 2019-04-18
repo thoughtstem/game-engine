@@ -60,7 +60,7 @@
 ;make a way to patch/expand?  What's a good language for making conway games??   (Composing other games together??)
 
 (define dead-sprite
-  (sprite (h:circle 5 'solid 'black)))
+  (sprite (h:circle 5 'solid 'red)))
 
 (define live-sprite
   (sprite (h:circle 5 'solid 'green)))
@@ -89,35 +89,42 @@
   (apply game (map aug-e (game-entities g))))
 
 
-;So the algorithm for looking up neighbors SUCKS.  Can game-engine provide a fast but clean way of searching or some way of storing references?
+;TODO: Conway is still sloooow:
+;  Let's make it as fast as possible (vectors), and that will reveal any slowness with the engine...
 
-;Conway doesn't scale well at all.
-;  (Though, it's worth noting that this is a LOT of entities for a typical game.  Before we invest too much into optimizations, let's consider if this is maybe just a poor way to do conway's game of life in game-engine, or that conway's game of life is a poor representation of what you'd want to do in a typical game.
-;
-;  Maybe you'd have one conway singleton component that ticks the underlying list data structure.  Then you'd have other entities watching that structure and spawning, dying...  Way fewer entities that way.  And the lookup problem is solved...
-;  )
+;TODO: 
+;  Figure out if the rendering is actually working.  Two conway's beside each other doesn't look right.
+;  Can we slow things down?  Or export a screenshot?  What feature would help us debug this...?
 
 (require "../../../core/test/conway-impl.rkt")
+
+(define donut
+  '((* * *)
+    (* _ *)
+    (* * *)))
+
+(define square-3 (square 3))
 
 (define padded-donut
   (overlay  
     (square 11)
-    '((* * *)
-      (* _ *)
-      (* * *))))
+    donut))
 
-(define g0 (conway-game padded-donut))
+(define quilt
+  (beside
+    (above donut square-3)
+    (above square-3 donut)))
 
-(define g1
-  (conway-game
-    (beside padded-donut padded-donut)))
+(define padded-donut3
+  (beside (beside padded-donut padded-donut) padded-donut))
 
-(define g2
-  (conway-game
-    (beside padded-donut padded-donut)))
+(define quilted-donut
+  (above quilt padded-donut3)
+  )
+
 
 ;TODO: Make a way to slow this down at the game level, not just at the rendering level....
-(play (augment g0))
+(play (augment (conway-game quilted-donut)))
 
 
 ;TODO: CONsider making all getters throw errors if they don't find stuf.  THere can be a special checker for if something exists.
