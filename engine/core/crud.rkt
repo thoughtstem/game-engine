@@ -19,10 +19,12 @@
          remove-entity
 
          ;Query language
+         get
          has-component
          get-field)
 
-(require "./base.rkt")
+(require "./base.rkt"
+         "./printer.rkt")
 
 
 ;COMPONENT CRUD
@@ -53,6 +55,16 @@
   (define i  (if (component? old-c)
                  (index-of cs old-c component=?)
                  (index-where cs old-c)))
+
+  (when (not i)
+    (define e-string
+      (with-output-to-string
+        (thunk
+          (pretty-print-entity e))))
+
+    (if (component? old-c)
+      (error (~a "update-component: could not find a component matching the id of " old-c "\n" e-string))
+      (error (~a "update-component: could not find a component matching the query " old-c "\n" e-string))))
 
   (define real-old-c (list-ref cs i))
 
@@ -227,6 +239,34 @@
     (get-component 
       (entity-q? (game-entities g))
       component-q?)))
+
+
+
+
+(define (get root . qs)
+  (define orig-root root)
+  (define orig-qs qs )
+  (define (get-recur root . qs) 
+    (cond 
+      [(not root) (error "Couldn't get: " orig-root orig-qs)  ]
+      [(empty? qs) root]
+      [(game? root) 
+       (apply get-recur
+              (get-entity root (first qs))
+              (rest qs))]
+      [(entity? root) 
+        (apply get-recur 
+                (get-component root (first qs))
+                (rest qs))]
+      [(component? root) 
+       ((first qs) root)]))
+
+  (define ret
+    (apply get-recur root qs))
+
+  ret)
+
+
 
 
 

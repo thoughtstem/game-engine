@@ -87,7 +87,6 @@
 
 
   (define (render-game g)
-    (displayln "RENDER")
     ;Find uncompiled entities...
     ;Recompile the database if we added anything:
 
@@ -110,14 +109,15 @@
 
   ;Assume one sprite for now.  Fix later.
   (define (entity->sprite e)
-    (define sid
-      (ml:sprite-idx csd 
-                     (sprite-id (get-component e sprite?))))
+    (if (not (get-component e sprite?))
+      #f 
+      (let [(sid (ml:sprite-idx csd 
+                                (sprite-id (get-component e sprite?))))]
 
-    (ml:sprite #:layer 0
-               (real->double-flonum (x e))
-               (real->double-flonum (y e))
-               sid))
+        (ml:sprite #:layer 0
+                   (real->double-flonum (x e))
+                   (real->double-flonum (y e))
+                   sid)) ))
  
   (map entity->sprite es) )
 

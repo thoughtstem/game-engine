@@ -3,6 +3,7 @@
 (provide pretty-print-game
          pretty-print-games
          pretty-print-entity
+         pretty-print-entity-string
          pretty-print-component)
 
 (require "./base.rkt")
@@ -30,4 +31,9 @@
     (displayln (~a "      " v)))
   
   (displayln (~a "      " (vector-ref c 3))))
+
+
+(define (pretty-print-entity-string e)
+  (with-output-to-string
+    (thunk (pretty-print-entity e))))
 

@@ -58,18 +58,6 @@
 
 
 ;make a way to patch/expand?  What's a good language for making conway games??   (Composing other games together??)
-#;
-(define g0 (~> (conway-game 5) 
-               (conway-game-set _ 1 1 #t)
-               (conway-game-set _ 2 1 #t)
-               (conway-game-set _ 3 1 #t)
-               (conway-game-set _ 1 2 #t)
-               (conway-game-set _ 2 2 #t)
-               (conway-game-set _ 3 2 #t)
-               (conway-game-set _ 1 3 #t)
-               (conway-game-set _ 2 3 #t)
-               (conway-game-set _ 3 3 #t)))
-
 
 (define dead-sprite
   (sprite (h:circle 5 'solid 'black)))
@@ -78,7 +66,7 @@
   (sprite (h:circle 5 'solid 'green)))
 
 (define (live/dead-sprite-swap g e c)
-  (if (entity-conway-alive? e) ;TODO: Consider whether the constant polling can be avoided... on-change?  Something better?
+  (if (entity-conway-alive? e) 
     (update-component e sprite? live-sprite)
     (update-component e sprite? dead-sprite)))
 
@@ -87,15 +75,16 @@
     (define c (get-component e conway?))  
 
     ;TODO: make add-components
-    (add-component
+    (if c
       (add-component
-        (add-component e 
-                       (position
-                         (+ 50 (* 10 (conway-x c)))
-                         (+ 100 (* 10 (conway-y c)))))
-        dead-sprite)
-      (new-component #:update live/dead-sprite-swap)) 
-    )
+        (add-component
+          (add-component e 
+                         (position
+                           (+ 50 (* 10 (conway-x c)))
+                           (+ 100 (* 10 (conway-y c)))))
+          dead-sprite)
+        (new-component #:update live/dead-sprite-swap))
+      e))
 
   (apply game (map aug-e (game-entities g))))
 
@@ -108,24 +97,29 @@
 ;  Maybe you'd have one conway singleton component that ticks the underlying list data structure.  Then you'd have other entities watching that structure and spawning, dying...  Way fewer entities that way.  And the lookup problem is solved...
 ;  )
 
-(define g0
-  (overlay
-    (conway-game '((* * *)
-                   (* _ *)
-                   (* * *)))
-    
-    (conway-game 11)))
+(require "../../../core/test/conway-impl.rkt")
+
+(define padded-donut
+  (overlay  
+    (square 11)
+    '((* * *)
+      (* _ *)
+      (* * *))))
+
+(define g0 (conway-game padded-donut))
 
 (define g1
-  (beside g0 g0))
+  (conway-game
+    (beside padded-donut padded-donut)))
 
 (define g2
-  (beside g1 g1))
+  (conway-game
+    (beside padded-donut padded-donut)))
 
 ;TODO: Make a way to slow this down at the game level, not just at the rendering level....
-(play (augment g2))
+(play (augment g0))
 
 
-
+;TODO: CONsider making all getters throw errors if they don't find stuf.  THere can be a special checker for if something exists.
 
 

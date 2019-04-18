@@ -46,9 +46,16 @@
       (define next-e (list-ref (game-entities next-g) ei))
 
       (when h
-        (displayln h)
         ;A handler gets to see the last game state and the current entity state, and the last component state (redundant, but for convenience...)
-        (define op (h g next-e c))
+
+        (define op
+          (with-handlers
+
+            ([exn:fail? (lambda (er)
+                          (define e-string (pretty-print-entity-string e))
+                          (error (~a "Error ticking entity\n" e-string "\n" (exn-message er))))])
+
+            (h g next-e c)))
 
         ;Apply the op to the game
         (set! next-g (apply-op op next-g ei c))
@@ -61,10 +68,10 @@
                    (get-component op spawner?))
           (set! to-spawn (append (map spawner-to-spawn 
                                       (get-components op spawner?))
-                                to-spawn))
+                                 to-spawn))
           (set! next-g (update-entity next-g op
-                                     (curryr remove-component spawner?)
-                                     )) 
+                                      (curryr remove-component spawner?)
+                                      )) 
           ))))
 
   ;Could just foldl, but we've already done a for loop, so I'll just keep the style consistent
@@ -84,28 +91,28 @@
   next-g)
 
 (define/contract (ticks n g)
-   (-> number? game? game?)
-   (if (= 0 n) 
-     g 
-     (ticks (sub1 n) 
-            (tick g))))
+                 (-> number? game? game?)
+                 (if (= 0 n) 
+                   g 
+                   (ticks (sub1 n) 
+                          (tick g))))
 
 (define/contract (tick-list g n)
-   (-> game? positive? (listof game?))
+                 (-> game? positive? (listof game?))
 
-   (if (= n 1)
-       (list g) 
-       (cons g
-             (tick-list (tick g) 
-                        (sub1 n)))))
+                 (if (= n 1)
+                   (list g) 
+                   (cons g
+                         (tick-list (tick g) 
+                                    (sub1 n)))))
 
 (define (tick-component g e c)
-   (define h (component-update c))
-   (h g e c))
+  (define h (component-update c))
+  (h g e c))
 
 (define/contract (has-id? e)
-  (-> entity? boolean?)
-  (number? (entity-id e)))
+                 (-> entity? boolean?)
+                 (number? (entity-id e)))
 
 (define (all-entities pred?)
   (lambda (g)
