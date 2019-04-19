@@ -125,4 +125,9 @@
 ;TODO: Conway is still sloooow:
 ;  Let's make it as fast as possible (vectors), and that will reveal any slowness with the engine...
 
+; Wellll.... it's still slow with vectors.  Meaning the bottleneck is probably the game loop.
+;  Use profiler to verify? 
+;  Look for ways to optimize.  Mutability during entity/component ticks??
+;  Toggle off the game's struct copy optionally?  Abandon that except for during tests? 
+
 

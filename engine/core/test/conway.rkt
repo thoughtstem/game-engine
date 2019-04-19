@@ -19,7 +19,7 @@
 
 (define (conway-manager-entity data)
   (entity
-    (conway-manager data #:update (update:conway-manager/data^ impl:conway-tick))))
+    (conway-manager (impl:conway-list->vector data) #:update (update:conway-manager/data^ impl:conway-tick))))
 
 (define (game->conway-manager g)
   (get-component (get-entity g (curryr has-component conway-manager?))
@@ -32,8 +32,8 @@
   (define d (conway-manager-data cm))
 
   (eq? '*
-       (list-ref (list-ref d y)
-                 x)))
+       (vector-ref (vector-ref d y)
+                   x)))
 
 (define-component conway (alive? x y))
 
@@ -82,49 +82,5 @@
                 (impl:square 5)))
 
 
-
-(test-case "Conway"
-           (define g0 (conway-game square))
-
-           (define gs (tick-list g0 4))
-
-           ;It's off by one... is that weird??
-
-           (check-true
-             (all-alive (second gs)))
-
-           (check-true
-             (all-dead (fourth gs))))
-
-(test-case "Bigger Conway's game of life"
-           (define g0 (conway-game padded-square))
-
-           (define gs (tick-list g0 3))
-
-           (check-equal?
-             (conway-game->symbols (first gs))
-             '((_ _ _ _ _)
-               (_ * * * _)
-               (_ * * * _)
-               (_ * * * _)
-               (_ _ _ _ _)))
-
-
-           (check-equal?
-             (conway-game->symbols (second gs))
-             '((_ _ * _ _)
-               (_ * _ * _)
-               (* _ _ _ *)
-               (_ * _ * _)
-               (_ _ * _ _)))
-
-
-           (check-equal?
-             (conway-game->symbols (third gs))
-             '((_ _ * _ _)
-               (_ * * * _)
-               (* * _ * *)
-               (_ * * * _)
-               (_ _ * _ _))))
 
 

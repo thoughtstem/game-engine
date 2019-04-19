@@ -6,7 +6,8 @@
 	 above
 	 beside
 	 width
-	 height)
+	 height
+	 conway-list->vector)
 
 
 (define (pad-height g n)
@@ -96,18 +97,18 @@
   (map append ps1 ps2))
 
 
-(define (safe-list-ref l i)
+(define (safe-vector-ref l i)
   (cond 
-    [(or (not (list? l))
+    [(or (not (vector? l))
 	 (< i 0) 
-	 (>= i (length l)) )
+	 (>= i (vector-length l)) )
      #f]
-    [else (list-ref l i)]))
+    [else (vector-ref l i)]))
 
 (define (alive? s x y)
   (eq? '*
-       (safe-list-ref 
-	 (safe-list-ref s y)
+       (safe-vector-ref 
+	 (safe-vector-ref s y)
 	 x)))
 
 (define (live-neighbors s x y)
@@ -131,37 +132,49 @@
 		  west
 		  north-west))))
 
-(define (die s x y (n #f))
+(define (die! s x y (n #f))
   (define v (if n n '_))
-  (list-set s y
-	    (list-set (list-ref s y) x v)))
+  (define row (vector-ref s y))
+  (vector-set! row x v))
 
-(define (live s x y (n #f))
+
+(define (live! s x y (n #f))
   (define v (if n n '*))
-  (list-set s y
-	    (list-set (list-ref s y) x v)))
+  (define row (vector-ref s y))
+  (vector-set! row x v))
+
+
+(define (conway-list->vector s)
+  (list->vector (map list->vector s)))
 
 (define (conway-tick s)
-  (define new-s s)
+  (define last-s #f)
+  (when (list? s)
+	(set! s      (conway-list->vector s)))
+  
+  (set! last-s (vector-copy (vector-map vector-copy s)))
+
+  
+
   (for ([r s]
 	[y (in-naturals)])
 
     (for ([c r]
 	  [x (in-naturals)])
-      (define n (live-neighbors s x y))
+      (define n (live-neighbors last-s x y))
       (define alive? (eq? c '*))
 
       (cond 
 	[(and alive?  (< n 2))
-	 (set! new-s (die new-s x y))]
+	 (die! s x y )]
 	[(and alive?  (or (= n 2) (= n 3)))
-	 (set! new-s (live new-s x y))]
+	 (live! s x y )]
 	[(and alive?  (> n 3))
-	 (set! new-s (die new-s x y))]
+	 (die! s x y )]
 	[(and (not alive?) (= n 3))
-	 (set! new-s (live new-s x y))])))
+	 (live! s x y)])))
 
-  new-s)
+  s)
 
 (define (square n)
   (define row (map (const '_) (range n)))
@@ -169,6 +182,8 @@
   (map (const row) (range n)))
 
 
+(define (conway-vector->list v)
+  (vector->list (vector-map vector->list v)))
 
 
 
@@ -189,6 +204,26 @@
 	   (define pd3
 	     (above pd2 pd))
 
+           (define pdv (conway-list->vector pd ))
+
+	   (check-true
+	     (alive? pdv 1 1))
+
+	   (check-true
+	     (alive? pdv 1 2))
+
+	   (check-true
+	     (alive? pdv 2 1))
+
+	   (check-false
+	     (alive? pdv -1 0))
+
+	   (check-false
+	     (alive? pdv 0 -1))
+
+	   (check-equal?
+	     (live-neighbors pdv 1 1)
+	     2)
 
 	   (check-equal? 
 	     pd3
@@ -204,7 +239,7 @@
 	       (_ _ _ _ _ _ _ _ _ _)))
 
 	   (check-equal? 
-	     (conway-tick pd3)
+	     (conway-vector->list (conway-tick pd3))
 	     '((_ _ * _ _ _ _ * _ _)
 	       (_ * _ * _ _ * _ * _)
 	       (* _ _ _ * * _ _ _ *)
@@ -218,8 +253,9 @@
 
 
 	   (check-equal?
-	     (conway-tick
-	       (conway-tick pd3))
+	     (conway-vector->list
+	       (conway-tick
+		 (conway-tick pd3)))
 	     '((_ _ * _ _ _ _ * _ _)
 	       (_ * * * * * * * * _)
 	       (* * _ * * * * _ * *)
@@ -233,9 +269,10 @@
 
 
 	   (check-equal?
-	     (conway-tick
+	     (conway-vector->list
 	       (conway-tick
-		 (conway-tick pd3)))
+		 (conway-tick
+		   (conway-tick pd3))))
 	     '((_ * * _ * * _ * * _)
 	       (* _ _ _ _ _ _ _ _ *)
 	       (* _ _ _ _ _ _ _ _ *)
