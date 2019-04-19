@@ -1,12 +1,12 @@
 #lang racket
 
 (provide conway-tick
-         square
-         overlay
-         above
-         beside
-         width
-         height)
+	 square
+	 overlay
+	 above
+	 beside
+	 width
+	 height)
 
 
 (define (pad-height g n)
@@ -23,8 +23,8 @@
     (map (const pad-row) (range n/2)))
 
   (append padding-top
-          g
-          padding-bottom))
+	  g
+	  padding-bottom))
 
 (define (pad-width g n)
   (define _n/2 (floor (/ n 2)))
@@ -38,8 +38,8 @@
 
   (define (pad-row r)
     (append padding-left
-            r
-            padding-right))
+	    r
+	    padding-right))
 
   (map pad-row g))
 
@@ -85,27 +85,30 @@
 
 (define (above s1 s2)
   (define ps1 (expand-width-to s1 s2))
+  (define ps2 (expand-width-to s2 s1))
 
-  (append ps1 s2))
+  (append ps1 ps2))
 
 (define (beside s1 s2)
   (define ps1 (expand-height-to s1 s2))
-  (map append ps1 s2))
+  (define ps2 (expand-height-to s2 s1))
+
+  (map append ps1 ps2))
 
 
 (define (safe-list-ref l i)
   (cond 
     [(or (not (list? l))
-         (< i 0) 
-         (>= i (length l)) )
+	 (< i 0) 
+	 (>= i (length l)) )
      #f]
     [else (list-ref l i)]))
 
 (define (alive? s x y)
   (eq? '*
        (safe-list-ref 
-         (safe-list-ref s y)
-         x)))
+	 (safe-list-ref s y)
+	 x)))
 
 (define (live-neighbors s x y)
   (define north      (alive? s x       (- y 1)))  
@@ -116,48 +119,48 @@
   (define south-west (alive? s (- x 1) (+ y 1)))  
   (define west       (alive? s (- x 1) y))
   (define north-west (alive? s (- x 1) (- y 1)))
-  
+
   (length
     (filter identity
-            (list north
-                  north-east
-                  east
-                  south-east
-                  south
-                  south-west
-                  west
-                  north-west))))
+	    (list north
+		  north-east
+		  east
+		  south-east
+		  south
+		  south-west
+		  west
+		  north-west))))
 
 (define (die s x y (n #f))
   (define v (if n n '_))
   (list-set s y
-            (list-set (list-ref s y) x v)))
+	    (list-set (list-ref s y) x v)))
 
 (define (live s x y (n #f))
   (define v (if n n '*))
   (list-set s y
-            (list-set (list-ref s y) x v)))
+	    (list-set (list-ref s y) x v)))
 
 (define (conway-tick s)
   (define new-s s)
   (for ([r s]
-        [y (in-naturals)])
+	[y (in-naturals)])
 
     (for ([c r]
-          [x (in-naturals)])
+	  [x (in-naturals)])
       (define n (live-neighbors s x y))
       (define alive? (eq? c '*))
 
       (cond 
-        [(and alive?  (< n 2))
-         (set! new-s (die new-s x y))]
-        [(and alive?  (or (= n 2) (= n 3)))
-         (set! new-s (live new-s x y))]
-        [(and alive?  (> n 3))
-         (set! new-s (die new-s x y))]
-        [(and (not alive?) (= n 3))
-         (set! new-s (live new-s x y))])))
-  
+	[(and alive?  (< n 2))
+	 (set! new-s (die new-s x y))]
+	[(and alive?  (or (= n 2) (= n 3)))
+	 (set! new-s (live new-s x y))]
+	[(and alive?  (> n 3))
+	 (set! new-s (die new-s x y))]
+	[(and (not alive?) (= n 3))
+	 (set! new-s (live new-s x y))])))
+
   new-s)
 
 (define (square n)
@@ -168,34 +171,80 @@
 
 
 
-(define pd
-  (overlay  
-    (square 5)
-    '((* * *)
-      (* _ *)
-      (* * *))))
 
-(define pd2
-  (beside pd pd))
+(require rackunit) 
 
-(define pd3
-  (beside pd2 pd))
+(test-case "conway impl"
 
+	   (define pd
+	     (overlay  
+	       (square 5)
+	       '((* * *)
+		 (* _ *)
+		 (* * *))))
 
-(pretty-print pd3)
+	   (define pd2
+	     (beside pd pd))
 
-(pretty-print
-  (conway-tick pd3))
-
-(pretty-print
-  (conway-tick
-    (conway-tick pd3)))
-
-(pretty-print
-  (conway-tick
-    (conway-tick
-      (conway-tick pd3))))
+	   (define pd3
+	     (above pd2 pd))
 
 
+	   (check-equal? 
+	     pd3
+	     '((_ _ _ _ _ _ _ _ _ _)
+	       (_ * * * _ _ * * * _)
+	       (_ * _ * _ _ * _ * _)
+	       (_ * * * _ _ * * * _)
+	       (_ _ _ _ _ _ _ _ _ _)
+	       (_ _ _ _ _ _ _ _ _ _)
+	       (_ _ _ * * * _ _ _ _)
+	       (_ _ _ * _ * _ _ _ _)
+	       (_ _ _ * * * _ _ _ _)
+	       (_ _ _ _ _ _ _ _ _ _)))
+
+	   (check-equal? 
+	     (conway-tick pd3)
+	     '((_ _ * _ _ _ _ * _ _)
+	       (_ * _ * _ _ * _ * _)
+	       (* _ _ _ * * _ _ _ *)
+	       (_ * _ * _ _ * _ * _)
+	       (_ _ * _ _ _ _ * _ _)
+	       (_ _ _ _ * _ _ _ _ _)
+	       (_ _ _ * _ * _ _ _ _)
+	       (_ _ * _ _ _ * _ _ _)
+	       (_ _ _ * _ * _ _ _ _)
+	       (_ _ _ _ * _ _ _ _ _)))
 
 
+	   (check-equal?
+	     (conway-tick
+	       (conway-tick pd3))
+	     '((_ _ * _ _ _ _ * _ _)
+	       (_ * * * * * * * * _)
+	       (* * _ * * * * _ * *)
+	       (_ * * * * * * * * _)
+	       (_ _ * * _ _ _ * _ _)
+	       (_ _ _ * * _ _ _ _ _)
+	       (_ _ _ * * * _ _ _ _)
+	       (_ _ * * _ * * _ _ _)
+	       (_ _ _ * * * _ _ _ _)
+	       (_ _ _ _ * _ _ _ _ _)))
+
+
+	   (check-equal?
+	     (conway-tick
+	       (conway-tick
+		 (conway-tick pd3)))
+	     '((_ * * _ * * _ * * _)
+	       (* _ _ _ _ _ _ _ _ *)
+	       (* _ _ _ _ _ _ _ _ *)
+	       (* _ _ _ _ _ _ _ _ *)
+	       (_ * _ _ _ _ _ * * _)
+	       (_ _ _ _ _ * _ _ _ _)
+	       (_ _ _ _ _ _ * _ _ _)
+	       (_ _ * _ _ _ * _ _ _)
+	       (_ _ * _ _ _ * _ _ _)
+	       (_ _ _ * * * _ _ _ _))) 
+
+	   )

@@ -89,13 +89,6 @@
   (apply game (map aug-e (game-entities g))))
 
 
-;TODO: Conway is still sloooow:
-;  Let's make it as fast as possible (vectors), and that will reveal any slowness with the engine...
-
-;TODO: 
-;  Figure out if the rendering is actually working.  Two conway's beside each other doesn't look right.
-;  Can we slow things down?  Or export a screenshot?  What feature would help us debug this...?
-
 (require "../../../core/test/conway-impl.rkt")
 
 (define donut
@@ -123,10 +116,13 @@
   )
 
 
-;TODO: Make a way to slow this down at the game level, not just at the rendering level....
 (play (augment (conway-game quilted-donut)))
 
 
-;TODO: CONsider making all getters throw errors if they don't find stuf.  THere can be a special checker for if something exists.
+
+
+
+;TODO: Conway is still sloooow:
+;  Let's make it as fast as possible (vectors), and that will reveal any slowness with the engine...
 
 
