@@ -12,6 +12,10 @@
          mask
          mask-pixel
          name->color
+         name->color-hsb
+         name->hue
+         name->sat
+         
          rgb->hue
          make-color-hue
          scale-to-fit
@@ -26,6 +30,17 @@
 
 (define (name->color string)
   (first (image->color-list (square 1 "solid" string))))
+
+(define (name->color-hsb string)
+  (color->color-hsb (name->color string)))
+
+(define (name->hue string)
+  (define c (name->color string))
+  (rgb->hue (color-red c) (color-green c) (color-blue c)))
+
+(define (name->sat string)
+  (define c (name->color string))
+  (color-hsb-sat (color->color-hsb c)))
 
 (define (mask-pixel color1 color2)
     (if (eq? (color-alpha color1) 0)
