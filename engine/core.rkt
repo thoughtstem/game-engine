@@ -3,7 +3,10 @@
 ;Stuff for start-game
 (provide physics-start
          uniqify-ids
-         initialize-game)
+         initialize-game
+         (rename-out (requested-width GAME-WIDTH)
+                     (requested-height GAME-HEIGHT)
+                     ))
 
 
 ;Stuff for rendering
@@ -658,6 +661,8 @@
       [((listof sprite-or-image?) (flatten sprite-or-image-or-list))
        (reverse (map ensure-sprite (flatten sprite-or-image-or-list)))]
       [(image? sprite-or-image-or-list) (new-sprite sprite-or-image-or-list)]
+      [(string? sprite-or-image-or-list) (new-sprite sprite-or-image-or-list)]
+      [((listof string?) sprite-or-image-or-list) (new-sprite sprite-or-image-or-list 10)] ; assume a list of string is meant to be an animation
       [else     (error "What was that?")]))
   (apply (curry add-components (basic-entity p sprite-or-sprites) )
          all-cs))
@@ -1237,12 +1242,17 @@
 
 ; END ACTIVE
 
-(define W 640)
-(define H 480)
+(define W 480)
+(define requested-width (make-parameter #f))
+
+(define H 360)
+(define requested-height (make-parameter #f))
 
 (define (initialize-game entities)
-  (set! W (w (last entities)))
-  (set! H (h (last entities)))
+  (set! W (or (requested-width)
+              (w (last entities))))
+  (set! H (or (requested-height)
+              (h (last entities))))
 
   (game (flatten entities)
         '()
