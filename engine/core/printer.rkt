@@ -18,7 +18,7 @@
      (pretty-print-entity e)))
 
 (define (pretty-print-entity e)
-  (displayln (~a "  Entity: " (entity-id e)))
+  (displayln (~a "  Entity: " (entity-id e) " " (if (entity-changed? e) "[CHANGED!]" "")))
   (for ([c (entity-components e)])
     (pretty-print-component c)) )
 

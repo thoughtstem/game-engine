@@ -22,19 +22,32 @@
 
 (define debug-mode (make-parameter #f))
 
-(define/contract (tick g)
+(define next-g #f)
+
+(define to-remove '())
+(define to-spawn  '())
+
+(define #;/contract 
+  (tick g)
+  #;
   (-> game? game?)
 
-  ;TODO: Could move this to a wrapper to avoid cluttering the runtime -- abstract away like in AOP.
-  (when (debug-mode)
-    (displayln (~a "********TICK BEGIN*******"))
-    (pretty-print-game g))
+  #;
+  (debug-hook:tick-begin g)
 
-  (define next-g
-    (struct-copy game g))
+  #;
+  (set! next-g (struct-copy game g))
 
-  (define to-remove '())
-  (define to-spawn  '())
+  (set! next-g g)
+
+  (tick-entities next-g) 
+  (handle-removals next-g)
+  (handle-spawns next-g)
+
+  next-g)
+
+
+(define (tick-entities g)
   (for ([e (game-entities g)]
         [ei (in-naturals)])
     (for ([c (entity-components e)]
@@ -42,12 +55,14 @@
 
       (define h (component-update c))
 
-      ;Entities don't change positions in the list in mid tick, so we can always get the newest version of e from next-g
       (define next-e (list-ref (game-entities next-g) ei))
 
-      (when h
-        ;A handler gets to see the last game state and the current entity state, and the last component state (redundant, but for convenience...)
+      (set-entity-changed?! next-e #f)
 
+
+      (when h
+
+        ;This gives a slowdown of about 8 FPS (per 1000 E)
         (define op
           (with-handlers
 
@@ -57,13 +72,19 @@
 
             (h g next-e c)))
 
-        ;Apply the op to the game
+        ;This gives a slowdown of about 4 FPS (per 1000 E)
+        ;  But if the above is mutable, you don't have to do this one at all...
+        #;
         (set! next-g (apply-op op next-g ei c))
 
+
+        ;When putting these back in, maybe should require that dead and spawner be at the top two slots of the component list -- faster querying that way...  Or some kind of "dirty bit"
+        #;
         (when (and (entity? op)
                    (get-component op dead?))
           (set! to-remove (cons e to-remove)))
 
+        #;
         (when (and (entity? op)
                    (get-component op spawner?))
           (set! to-spawn (append (map spawner-to-spawn 
@@ -72,23 +93,28 @@
           (set! next-g (update-entity next-g op
                                       (curryr remove-component spawner?)
                                       )) 
-          ))))
+          )
+        
+        (void)
+        ))))
 
-  ;Could just foldl, but we've already done a for loop, so I'll just keep the style consistent
+(define (handle-removals next-g)
   (for ([r to-remove])
     (when (debug-mode)
       (displayln "***REMOVING ENTITY***")
       (pretty-print-entity r))
-    (set! next-g (remove-entity next-g r)))
+    (set! next-g (remove-entity next-g r))))
 
+(define (handle-spawns next-g)
   (for ([s to-spawn])
     (when (debug-mode)
       (displayln "***SPAWNING ENTITY***")
       (pretty-print-entity s))
 
-    (set! next-g (add-entity next-g s)))
+    (set! next-g (add-entity next-g s))))
 
-  next-g)
+
+
 
 (define/contract (ticks n g)
                  (-> number? game? game?)
@@ -110,7 +136,9 @@
   (define h (component-update c))
   (h g e c))
 
-(define/contract (has-id? e)
+(define #;/contract 
+  (has-id? e)
+  #;
                  (-> entity? boolean?)
                  (number? (entity-id e)))
 
@@ -120,14 +148,12 @@
 
 (define (apply-op o g ei c)
   (cond
-    [(component? o) (begin 
-                      (update-entity g
-                                     ei
-                                     (update-component 
-                                       (list-ref (game-entities g) ei) 
-                                       c o)))]
     [(entity? o) (begin 
                    (update-entity g ei o))]
     [else (raise (~a "Unsupported handler return value: " o))]) )
 
 
+(define (debug-hook:tick-begin g)
+  (when (debug-mode)
+    (displayln (~a "********TICK BEGIN*******"))
+    (pretty-print-game g)))

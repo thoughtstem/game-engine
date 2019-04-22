@@ -11,7 +11,7 @@
          (prefix-in ml: mode-lambda/static)
          (prefix-in gl: mode-lambda/backend/gl)
          (prefix-in ml: mode-lambda/text/runtime)
-         posn)
+         lux/chaos/gui/key)
 
 (require "../../core/main.rkt"
          "./animated-sprite.rkt")
@@ -27,6 +27,16 @@
    (define (word-output w)
      (match-define (demo state render-tick) w)
      (render-tick state))
+
+   (define (word-event w e)
+     (cond
+       [(or (eq? e 'close)
+            (and (key-event? e)
+                 (eq? (send e get-key-code) 'escape)))
+        #f
+        ]
+       [else w]
+       ))
    
    (define (word-tick w)
      (match-define (demo state render-tick) w)
@@ -93,7 +103,8 @@
     ;Create our sprites
     (define sprite-id (ml:sprite-idx csd 'sprite-1))
 
-    (define dynamic-sprites (game->ml-sprite-list g))
+    (define dynamic-sprites 
+      (game->ml-sprite-list g))
 
     (define static-sprites (list))
 
@@ -104,22 +115,68 @@
 
   render-game)
 
+(define sprite-cache
+  (make-hasheq))
+
+(require (prefix-in h: 2htdp/image))
+(define dummy (sprite (h:circle 5 'solid 'blue)))
+
 (define (game->ml-sprite-list g)
-  (define es (game-entities g)) 
+  (define ret '())
+  (define hits 0)
 
-  ;Assume one sprite for now.  Fix later.
-  (define (entity->sprite e)
-    (if (not (get-component e sprite?))
-      #f 
-      (let [(sid (ml:sprite-idx csd 
-                                (sprite-id (get-component e sprite?))))]
+  (for ([e (game-entities g)])
+    ;How much slowdown from get-component vs from ml:sprite vs from just looping over everything...?
+    ;vs the x and y getters?
+    (define cs (entity-components e))
+    (define s 
+      ;TODO: this is not going to generalize as is....    
+      (if (> (length cs) 2)
+        (list-ref cs 2)
+        #f)
 
+      #;
+      (get-component e sprite?) 
+
+      )
+
+    ;When there's a sprite? component
+    (when s 
+      (define eid (entity-id e))
+      (define sid (ml:sprite-idx csd (sprite-id s)))
+
+
+      (define mls
+        #;
         (ml:sprite #:layer 0
                    (real->double-flonum (x e))
                    (real->double-flonum (y e))
-                   sid)) ))
- 
-  (map entity->sprite es) )
+                   sid)
+        (if (and (hash-has-key? sprite-cache eid)
+                 (not (entity-changed? e)))
+          (begin
+            #;
+            (set! hits (add1 hits))
+
+            (hash-ref sprite-cache eid))
+          (let ([new-mls (ml:sprite #:layer 0
+                                    (real->double-flonum (x e))
+                                    (real->double-flonum (y e))
+                                    sid)])
+
+
+            new-mls)))
+
+      (hash-set! sprite-cache eid mls)
+      (set! ret (cons mls ret))) 
+    )
+
+
+  ret
+  
+
+  )
+
 
 (require 2htdp/image)
 

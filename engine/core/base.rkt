@@ -9,6 +9,7 @@
   new-game
   game?
   game-entities
+  set-game-entities!
   copy-game
   operation?
 
@@ -16,6 +17,9 @@
   new-entity
   entity?
   entity-components
+  set-entity-components!
+  set-entity-changed?!
+  entity-changed?
   entity-id
   entity=?
   copy-entity
@@ -30,6 +34,7 @@
   component-done
   
   handler?
+  noop
   rule?
   
   next-id)
@@ -37,8 +42,8 @@
 (require "./util.rkt")
 
 ;Our basic struct types
-(struct entity (id components)  #:transparent)
-(struct game (entities) #:transparent)
+(struct entity (id components changed?) #:mutable  #:transparent)
+(struct game (entities) #:mutable #:transparent)
 
 (struct add-e    (e))
 ;(struct update-e (e new-e))
@@ -69,17 +74,22 @@
 (define handler? (-> game? entity? component? operation?))
 (define rule? (-> game? entity? component? boolean?))
 
-;Component can be a bit more light weight
-(define/contract (component id handlers)
-  (->  (or/c number? #f) vector? component?)
-  (vector 'component #f id handlers)) 
+(define noop (lambda (g e c) e))
 
-(define/contract (component-id c)
-  (-> component? (or/c number? #f))
+;Component can be a bit more light weight
+(define/contract (component id handler)
+  (->  (or/c number? #f) 
+       (or/c handler? #f) component?)
+  (vector 'component #f id handler)) 
+
+(define #;/contract 
+  (component-id c)
+  #;(-> component? (or/c number? #f))
   (vector-ref c 2))
 
-(define/contract (component-num-fields c)
-   (-> component? number?)              
+(define #;/contract 
+  (component-num-fields c)
+   ;(-> component? number?)              
    (- (vector-length c) 4))
 
 (define/contract (component->list c)
@@ -87,18 +97,26 @@
 
    (drop (vector->list c) 4))
 
-(define/contract (set-component-id c i)
+(define #;/contract 
+  (set-component-id c i)
+  #;
   (-> component? 
       (or/c  number? #f) ;Would you want it to be false?  Yes -- before the game has started, sometimes you call CRUD functions (update-component) that propagate along the #f to the newly constructed component.   
       component?)
 
+  #;
   (define new-c (vector-copy c))
   
-  (vector-set! new-c 2 i)
+  (vector-set! c 2 i)
   
-  new-c)
+  c
+  
+  )
 
-(define/contract (component-subtype c)
+(define #;/contract 
+  (component-subtype c)
+
+  #;
   (-> component? symbol?)
   (vector-ref c 1))
 
@@ -108,28 +126,38 @@
   c)
 
 
-(define/contract (component-update c)
-  (-> component? (or/c #f handler?))
-  (define handlers (vector-ref c 3))
-  (if handlers
-    (vector-ref handlers 0)
-    #f))
+;Contracts on this do affect FPS when there are lots of entities.
+;  Gets called A LOT -- once per component in the game..
+(define #;/contract 
+  (component-update c)
+  #;(-> component? (or/c #f handler?))
 
-(define/contract (component=? c1 c2)
-  (-> component? component? boolean?)
+  #;
+  (define handlers (vector-ref c 3))
+
+  (vector-ref c 3))
+
+(define #;/contract 
+  (component=? c1 c2)
+ #; (-> component? component? boolean?)
   (eq? (component-id c1)
        (component-id c2)))
 
-(define/contract (entity=? e1 e2)
+(define #;/contract 
+  (entity=? e1 e2)
+  #;
   (-> entity? entity? boolean?)
   (eq? (entity-id e1)
        (entity-id e2)))
 
 (define/contract (new-component #:update (update #f))
   (->* () 
-       (#:update handler?) 
+       (#:update (or/c handler? #f)) 
        component?)
-  (component (next-id) (vector update)))
+  (component (next-id) 
+             update
+             #;
+             (vector update)))
 
 
 
@@ -151,7 +179,7 @@
 
 (define/contract (new-entity . cs)
   (->* () #:rest (listof component?) entity?)
-  (entity (next-id) cs))
+  (entity (next-id) cs #f))
 
 (define next-id (id-generator 0))
 

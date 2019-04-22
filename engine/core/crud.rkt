@@ -30,13 +30,20 @@
 ;COMPONENT CRUD
 
 
-(define/contract (add-component e c)
+(define #;/contract 
+  (add-component e c)
+  #;
    (-> entity? component? entity?)
-   (struct-copy entity e
-                [components (cons c 
-                                  (entity-components e) )])) 
 
-(define/contract (add-component^ to-add)
+
+   (struct-copy entity e
+                [components (append 
+                                  (entity-components e)
+                                  (list c))])) 
+
+(define #;/contract 
+  (add-component^ to-add)
+  #;
    (-> component? handler?)
 
    (lambda (g e c) 
@@ -44,7 +51,13 @@
 
 
 
-(define/contract (update-component e old-c new-c)
+;Contracts here do have overhead
+;  about 5 FPS per 1000 entities...
+
+(define #;/contract 
+  (update-component e old-c new-c)
+
+  #;
   (-> entity? 
       (or/c component? (-> component? boolean?)) 
       (or/c component? (-> component? component?))
@@ -52,9 +65,10 @@
 
   (define cs (entity-components e))
 
-  (define i  (if (component? old-c)
-                 (index-of cs old-c component=?)
-                 (index-where cs old-c)))
+  (define i  (cond 
+               [(number? old-c) old-c]
+               [(component? old-c) (index-of cs old-c component=?)]
+               [(procedure? old-c) (index-where cs old-c)]))
 
   (when (not i)
     (define e-string
@@ -76,11 +90,23 @@
   (define real-new-c 
     (action real-old-c))
 
+  #;
   (struct-copy entity e
-               [components (list-set cs i real-new-c)]))
+               [components (list-set cs i real-new-c)])
+  
+  (when (not (equal? real-new-c real-old-c))
+
+    (set-entity-components! e (list-set cs i real-new-c))
+
+    ;How to detect if this is a real change?
+    (set-entity-changed?! e #t))
+
+  e)
 
 
-(define/contract (update-component^ to-update)
+(define #;/contract 
+  (update-component^ to-update)
+  #;
    (-> (or/c component?
              (-> component? component?)) 
        handler?)
@@ -91,7 +117,9 @@
 
 
 
-(define/contract (remove-component e c)
+(define #;/contract 
+  (remove-component e c)
+  #;
    (-> entity? 
        (or/c component?
              (-> component? boolean?)) 
@@ -109,7 +137,9 @@
                                         (entity-components e))])) 
 
 
-(define/contract (remove-component^ to-remove)
+(define #;/contract 
+  (remove-component^ to-remove)
+  #;
    (-> (or/c component?
              (-> component? boolean?))
        handler?)
@@ -118,14 +148,14 @@
      (remove-component e to-remove)))
 
 
-
 (define (get-component e query?)
   (define real-query?
     (if (component? query?)
          (curry component=? query?)
          query?))
 
-  (findf real-query? (entity-components e)))
+  (findf real-query? (entity-components e))
+  )
 
 (define (get-components e query?)
   (define real-query?
@@ -136,7 +166,9 @@
   (filter real-query? (entity-components e)))
 
 
-(define/contract (get-component^ query?)
+(define #;/contract 
+  (get-component^ query?)
+  #;
    (-> (-> component? any/c) handler?)
 
    (lambda (g e c) 
@@ -155,7 +187,10 @@
   i)
 
 
-(define/contract (get-entity g pred?-or-e)
+(define #;/contract 
+  (get-entity g pred?-or-e)
+
+  #;
   (-> game? (or/c entity? 
                   (-> entity? any/c)) 
       (or/c entity? #f))
@@ -183,7 +218,10 @@
 
 
 
-(define (update-entity g old-e new-e)
+(define #;/contract
+  (update-entity g old-e new-e)
+
+  #;
   (-> game? (or/c number? entity? (-> entity? boolean?)) 
             (or/c entity? 
                   (-> entity? entity?))
@@ -198,8 +236,14 @@
                      (thunk* new-e)
                      new-e))
 
+  #;
   (struct-copy game g
-               [entities (list-set es i (action (list-ref es i)))]) )
+               [entities (list-set es i (action (list-ref es i)))])
+
+  ;TODO: Make optional mutability
+  (set-game-entities! g (list-set es i (action (list-ref es i))))
+  g
+  )
 
 
 (define (update-entity^ old-e new-e)

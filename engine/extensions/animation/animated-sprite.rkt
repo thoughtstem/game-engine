@@ -25,12 +25,14 @@
 (define-component position (x y))
 
 (define (x e)
-  (position-x 
-    (get-component e position?)))
+  (define p
+    (list-ref (entity-components e) 1))
+  (position-x p))
 
 (define (y e)
-  (position-y 
-    (get-component e position?)))
+  (define p
+    (list-ref (entity-components e) 1))
+  (position-y p))
 
 (define (make-position x y)
   (position x y))
@@ -66,7 +68,10 @@
   (member i seen-sprite-ids))
 
 
-(define/contract (image->id i)
+(define #;/contract 
+  (image->id i)
+
+  #;
   (-> image? symbol?)
   ;I'm sure this is super slow.
   ;We should figure out how to warn the user if the are unknowingly calling this at runtime (e.g. by constructing new sprites at runtime).
