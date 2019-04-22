@@ -237,3 +237,11 @@
 
 
 
+
+;Okay, its at 30 now (on 500 entities -- it was never 1000)
+;  Now can we take stock of all optimizations, make them optional and make sure the tests 
+;  run correctly both when there are optimizations and not.
+
+
+
+
