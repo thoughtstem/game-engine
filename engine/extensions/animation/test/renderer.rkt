@@ -243,5 +243,8 @@
 ;  run correctly both when there are optimizations and not.
 
 
+;make a mutable-state toggle parameter.  Update crud accordingly.
+
+;  entity components and game entities should be vectors, not lists?  (Experiment: Would make updates faster, but adds and removals slower, maybe...)
 
 

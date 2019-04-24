@@ -37,9 +37,14 @@
   noop
   rule?
   
-  next-id)
+  next-id
+  mutable-state
+  debug-mode)
 
 (require "./util.rkt")
+
+(define mutable-state (make-parameter #f))
+(define debug-mode (make-parameter #f))
 
 ;Our basic struct types
 (struct entity (id components changed?) #:mutable  #:transparent)

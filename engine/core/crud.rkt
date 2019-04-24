@@ -36,10 +36,17 @@
    (-> entity? component? entity?)
 
 
-   (struct-copy entity e
-                [components (append 
-                                  (entity-components e)
-                                  (list c))])) 
+   (define new-cs
+     (append 
+       (entity-components e)
+       (list c)))
+
+   (if (mutable-state)
+     (begin
+       (set-entity-components! e new-cs)
+       e)
+     (struct-copy entity e
+                  [components new-cs]))) 
 
 (define #;/contract 
   (add-component^ to-add)
@@ -90,18 +97,16 @@
   (define real-new-c 
     (action real-old-c))
 
-  #;
-  (struct-copy entity e
-               [components (list-set cs i real-new-c)])
-  
-  (when (not (equal? real-new-c real-old-c))
+ (when (not (equal? real-new-c real-old-c))
+   (if (mutable-state)
+     (begin 
+       (set-entity-components! e (list-set cs i real-new-c))
 
-    (set-entity-components! e (list-set cs i real-new-c))
+       (set-entity-changed?! e #t)
 
-    ;How to detect if this is a real change?
-    (set-entity-changed?! e #t))
-
-  e)
+       e)
+     (struct-copy entity e
+                  [components (list-set cs i real-new-c)]))))
 
 
 (define #;/contract 
@@ -132,9 +137,16 @@
 
    (define to-remove (findf p (entity-components e)))
 
-   (struct-copy entity e
-                [components (filter-not (curry component=? to-remove) 
-                                        (entity-components e))])) 
+   (define new-c
+     (filter-not (curry component=? to-remove) 
+                 (entity-components e)))
+
+   (if (mutable-state)
+     (begin
+       (set-entity-components! e new-c) 
+       e) 
+     (struct-copy entity e
+                [components new-c]))) 
 
 
 (define #;/contract 
@@ -205,11 +217,17 @@
     (get-entity g pred?-or-e)))
 
 
-(define (add-entity g e)
-  (-> game? entity? game?)
+(define #;/contract 
+  (add-entity g e)
+  #;(-> game? entity? game?)
 
-  (game (cons e 
-              (game-entities g))))
+  (define new-es (cons e (game-entities g)))
+
+  (if (mutable-state)
+    (begin
+      (set-game-entities! g new-es)
+      g)
+    (game new-es)))
 
 
 (define (add-entity^ to-add)
@@ -236,14 +254,14 @@
                      (thunk* new-e)
                      new-e))
 
-  #;
-  (struct-copy game g
-               [entities (list-set es i (action (list-ref es i)))])
+  (define new-es
+    (list-set es i (action (list-ref es i))))
 
-  ;TODO: Make optional mutability
-  (set-game-entities! g (list-set es i (action (list-ref es i))))
-  g
-  )
+  (if (mutable-state)
+    (begin
+      (set-game-entities! g new-es)
+      g)
+      (struct-copy game g [entities new-es])))
 
 
 (define (update-entity^ old-e new-e)
@@ -252,7 +270,9 @@
 
 
 
-(define (remove-entity g old-e)
+(define #;/contract
+  (remove-entity g old-e)
+  #;
   (-> game? (or/c entity? 
                   (-> entity? boolean?)) 
       game?)
@@ -264,8 +284,14 @@
 
   (define to-remove (findf p es))
 
-  (struct-copy game g
-               [entities (remove to-remove es entity=?)]) )
+  (define new-es (remove to-remove es entity=?))
+
+  (if (mutable-state)
+    (begin
+      (set-game-entities! g new-es) 
+      g)
+    (struct-copy game g
+                [entities new-es])))
 
 (define (remove-entity^ old-e)
   (lambda (g e c)

@@ -2,25 +2,22 @@
 
 (provide init 
          tick
+         debug-tick
          ticks
          tick-component
 
          tick-list
 
          all-entities
-         has-id?
-         debug-mode
-         )
+         has-id?)
 
 (require "./base.rkt"
          "./crud.rkt"
          "./util.rkt"
          "./handler-util.rkt"
          "./spawner.rkt"
-         "./printer.rkt"
-         )
+         "./printer.rkt")
 
-(define debug-mode (make-parameter #f))
 
 (define next-g #f)
 
@@ -32,17 +29,14 @@
   #;
   (-> game? game?)
 
-  #;
-  (debug-hook:tick-begin g)
+  (if (mutable-state)
+    (set! next-g g)
+    (set! next-g (struct-copy game g)))
 
-  #;
-  (set! next-g (struct-copy game g))
+  (set! next-g (tick-entities next-g)) 
+  (set! next-g (handle-removals next-g))
+  (set! next-g (handle-spawns next-g))
 
-  (set! next-g g)
-
-  (tick-entities next-g) 
-  (handle-removals next-g)
-  (handle-spawns next-g)
 
   next-g)
 
@@ -61,8 +55,6 @@
 
 
       (when h
-
-        ;This gives a slowdown of about 8 FPS (per 1000 E)
         (define op
           (with-handlers
 
@@ -72,38 +64,37 @@
 
             (h g next-e c)))
 
-        ;This gives a slowdown of about 4 FPS (per 1000 E)
-        ;  But if the above is mutable, you don't have to do this one at all...
-        #;
-        (set! next-g (apply-op op next-g ei c))
+        (when (not (mutable-state))
+          (set! next-g (apply-op op next-g ei c)))
 
 
-        ;When putting these back in, maybe should require that dead and spawner be at the top two slots of the component list -- faster querying that way...  Or some kind of "dirty bit"
-        #;
+        ;TODO: should require that dead and spawner be at the top two slots of the component list -- faster querying that way...  And use the "dirty bit"
         (when (and (entity? op)
                    (get-component op dead?))
           (set! to-remove (cons e to-remove)))
 
-        #;
         (when (and (entity? op)
                    (get-component op spawner?))
           (set! to-spawn (append (map spawner-to-spawn 
                                       (get-components op spawner?))
                                  to-spawn))
+
           (set! next-g (update-entity next-g op
-                                      (curryr remove-component spawner?)
-                                      )) 
-          )
-        
-        (void)
-        ))))
+                                      (curryr remove-component spawner?))))
+
+        )))
+
+  next-g)
 
 (define (handle-removals next-g)
   (for ([r to-remove])
     (when (debug-mode)
       (displayln "***REMOVING ENTITY***")
       (pretty-print-entity r))
-    (set! next-g (remove-entity next-g r))))
+    (set! next-g (remove-entity next-g r)))
+
+  (set! to-remove '())
+  next-g)
 
 (define (handle-spawns next-g)
   (for ([s to-spawn])
@@ -111,7 +102,10 @@
       (displayln "***SPAWNING ENTITY***")
       (pretty-print-entity s))
 
-    (set! next-g (add-entity next-g s))))
+    (set! next-g (add-entity next-g s)))
+  
+  (set! to-spawn '())
+  next-g)
 
 
 
@@ -152,6 +146,9 @@
                    (update-entity g ei o))]
     [else (raise (~a "Unsupported handler return value: " o))]) )
 
+(define (debug-tick g)
+  (parameterize ([debug-mode #t]) 
+    (tick g)))
 
 (define (debug-hook:tick-begin g)
   (when (debug-mode)
