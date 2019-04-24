@@ -44,6 +44,9 @@
 (define (tick-entities g)
   (for ([e (game-entities g)]
         [ei (in-naturals)])
+    (when (debug-mode)
+      (displayln "****Ticking Entity****")
+      (pretty-print-entity e))
     (for ([c (entity-components e)]
           [ci (in-naturals)])
 

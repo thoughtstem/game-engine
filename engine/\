@@ -33,7 +33,6 @@
   component=?
   component-done
   
-  handler
   handler?
   noop
   rule?
@@ -52,7 +51,6 @@
 (define mutable-state (make-parameter #f))
 (define debug-mode    (make-parameter #f))
 (define no-contracts  (make-parameter #f))
-
 
 (define-syntax-rule (maybe-contract c)
   (option/c c #:tester (const (not (no-contracts)))))
@@ -97,11 +95,6 @@
 (define operation? entity?)
 
 (define handler? (-> game? entity? component? operation?))
-
-(define-syntax-rule (handler (g e c) body ...)
-  (lambda (g e c)
-    body ...))
-
 (define rule? (-> game? entity? component? boolean?))
 
 (define noop (lambda (g e c) e))
@@ -212,7 +205,6 @@
 
 (define/contract (new-entity . cs)
   (->* () #:rest (listof component?) entity?)
-
   (entity (next-id) cs #f))
 
 (define next-id (id-generator 0))

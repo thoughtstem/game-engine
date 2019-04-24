@@ -38,13 +38,13 @@
                           (generate-other-stuff COMPONENT FIELD (FIELD ...))
                           ...
 
-                          (define #;/contract 
-                            (update-entity-COMPONENT e c)
+                          (define/contract (update-entity-COMPONENT e c)
 
-                            #;
-                            (-> entity? 
-                                component?
-                                entity?)
+                            (maybe-contract
+                              (-> entity? 
+                                  component?
+                                  entity?))
+
                             (update-component e COMPONENT? c))
 
                           (define (update:COMPONENT e c)
@@ -56,23 +56,22 @@
                             (lambda (g e c)
                               (update-component e COMPONENT? to-update)))
 
-                          (define #;/contract 
-                            (entity-COMPONENT e)
-                            #;
-                            (-> entity? COMPONENT?)
+                          (define/contract (entity-COMPONENT e)
+                            (maybe-contract
+                              (-> entity? COMPONENT?))
 
                             (get-component e COMPONENT?))
 
-                          (define #;/contract 
+                          (define/contract 
                             (COMPONENT 
                               #:update (update #f) 
                               FIELD ...)
-                            #;
-                            (->* anys 
-                                 [#:update (or/c (-> entity? COMPONENT? entity?) 
-                                                 (-> COMPONENT? COMPONENT?) 
-                                                 (or/c handler? #f) #f)]
-                                 COMPONENT?)
+                            (maybe-contract
+                              (->* anys 
+                                   [#:update (or/c (-> entity? COMPONENT? entity?) 
+                                                   (-> COMPONENT? COMPONENT?) 
+                                                   (or/c handler? #f) #f)]
+                                   COMPONENT?))
 
                             (new-COMPONENT (next-id)  
                                            update 
@@ -106,43 +105,38 @@
                   (syntax->datum #'FIELD))))]
        (quasisyntax/loc stx
          (begin
-           (define #;/contract 
-             (COMPONENT-FIELD x)
-             #;
-             (-> COMPONENT? any/c)
+           (define/contract (COMPONENT-FIELD x)
+             (maybe-contract
+               (-> COMPONENT? any/c))
 
              (vector-ref x i))
 
-           (define #;/contract 
-             (entity-COMPONENT-FIELD e)
-             #;
-             (-> entity? any/c)
+           (define/contract (entity-COMPONENT-FIELD e)
+             (maybe-contract
+               (-> entity? any/c))
 
              (COMPONENT-FIELD (get-component e COMPONENT?)))
 
 
-           (define #;/contract 
-             (entity-COMPONENT-FIELD? q)
-             #;
-             (-> (-> any/c boolean?) rule?)
+           (define/contract (entity-COMPONENT-FIELD? q)
+             (maybe-contract
+               (-> (-> any/c boolean?) rule?))
 
              (lambda (g e me)
                (define c (get-component e COMPONENT?))
 
                (q (COMPONENT-FIELD c))))
 
-           (define #;/contract 
-             (COMPONENT-FIELD? q)
-             #;
-             (-> (-> any/c boolean?) rule?)
+           (define/contract (COMPONENT-FIELD? q)
+             (maybe-contract
+               (-> (-> any/c boolean?) rule?))
 
              (lambda (g e c)
                (q (COMPONENT-FIELD c))))
 
-           (define #;/contract 
-             (set-COMPONENT-FIELD x v)
-             #;
-             (-> COMPONENT? any/c COMPONENT?)
+           (define/contract (set-COMPONENT-FIELD x v)
+             (maybe-contract
+               (-> COMPONENT? any/c COMPONENT?))
 
              (define temp (vector-copy x))
 
@@ -161,14 +155,16 @@
                copy-c))
 
 
-           (define #;/contract 
-             (update:COMPONENT/FIELD c f)
-             #;
-             (-> COMPONENT? 
-                 any/c
-                 COMPONENT?)
+           (define/contract (update:COMPONENT/FIELD c f)
+             (maybe-contract
+               (-> COMPONENT? 
+                   any/c
+                   COMPONENT?))
 
-             (define copy-c (vector-copy c))
+             (define copy-c 
+               (if (mutable-state) 
+                 c
+                 (vector-copy c)))
 
              (vector-set! copy-c
                           i 
@@ -178,30 +174,26 @@
 
              copy-c)
 
-           (define #;/contract 
-             (update:COMPONENT/FIELD^ f)
-             #;
-             (-> procedure? handler?)
+           (define/contract (update:COMPONENT/FIELD^ f)
+             (maybe-contract
+               (-> procedure? handler?))
 
              (lambda (g e c)
                (update-component e COMPONENT?
                                  (curryr update:COMPONENT/FIELD f))))
 
-           (define #;/contract 
-             (update:my/COMPONENT/FIELD^ f)
-             #;
-             (-> procedure? handler?)
+           (define/contract (update:my/COMPONENT/FIELD^ f)
+             (maybe-contract
+               (-> procedure? handler?))
 
              (lambda (g e c)
                (update-component e c 
                                  (update:COMPONENT/FIELD c f))))
 
-           (define #;/contract 
-             (read:COMPONENT/FIELD e-or-c)
-
-             #;
-             (-> (or/c entity? COMPONENT?)
-                 any/c)
+           (define/contract (read:COMPONENT/FIELD e-or-c)
+             (maybe-contract
+               (-> (or/c entity? COMPONENT?)
+                   any/c))
 
              (if (entity? e-or-c)
                (COMPONENT-FIELD (get-component e-or-c COMPONENT? )) 
@@ -241,10 +233,10 @@
                (rule:COMPONENT/FIELD e pred?)))
 
 
-           (define #;/contract 
-             (update-entity-COMPONENT-FIELD e f)
-             #;
-             (-> entity? any/c entity?)
+           (define/contract (update-entity-COMPONENT-FIELD e f)
+             (maybe-contract
+               (-> entity? any/c entity?))
+
              (update-component e COMPONENT? 
                                (update-COMPONENT-FIELD f)))
 

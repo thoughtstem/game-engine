@@ -45,7 +45,7 @@
 
 (define (conway-entity x y)
   (entity (conway #f x y #:update 
-                  (lambda (g e c)
+                  (handler (g e c)
                     (define new-alive? (game->conway-alive? g x y))  
 
                     (update-component e 0

@@ -90,16 +90,17 @@
   (define real-new-c 
     (action real-old-c))
 
- (when (not (equal? real-new-c real-old-c))
-   (if (mutable-state)
-     (begin 
-       (set-entity-components! e (list-set cs i real-new-c))
+  (if (equal? real-new-c real-old-c) 
+    e
+    (if (mutable-state)
+      (begin 
+        (set-entity-components! e (list-set cs i real-new-c))
 
-       (set-entity-changed?! e #t)
+        (set-entity-changed?! e #t)
 
-       e)
-     (struct-copy entity e
-                  [components (list-set cs i real-new-c)]))))
+        e)
+      (struct-copy entity e
+                   [components (list-set cs i real-new-c)]))))
 
 
 (define/contract (update-component^ to-update)
