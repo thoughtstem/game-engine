@@ -39,12 +39,30 @@
   
   next-id
   mutable-state
-  debug-mode)
+  mutable!
+  no-contracts!
+  debug-mode
+  maybe-contract
+  )
 
-(require "./util.rkt")
+(require "./util.rkt"
+         racket/contract/option )
 
 (define mutable-state (make-parameter #f))
-(define debug-mode (make-parameter #f))
+(define debug-mode    (make-parameter #f))
+(define no-contracts  (make-parameter #f))
+
+(define-syntax-rule (maybe-contract c)
+  (option/c c #:tester (const (not (no-contracts)))))
+
+
+(define-syntax-rule (mutable! exp)
+  (parameterize ([mutable-state #t])
+    exp))
+
+(define-syntax-rule (no-contracts! exp)
+  (parameterize ([no-contracts #t])
+    exp))
 
 ;Our basic struct types
 (struct entity (id components changed?) #:mutable  #:transparent)
@@ -81,20 +99,23 @@
 
 (define noop (lambda (g e c) e))
 
-;Component can be a bit more light weight
+;Commenting out this contract fixed a bug, but I don't know why... Be careful putting it back in.  However, it might be an easy bug to find once all the other contracts are back.  Tackle that next..
 (define/contract (component id handler)
-  (->  (or/c number? #f) 
-       (or/c handler? #f) component?)
+  (maybe-contract
+    (->  (or/c number? #f) 
+         (or/c handler? #f) component?))
   (vector 'component #f id handler)) 
 
-(define #;/contract 
-  (component-id c)
-  #;(-> component? (or/c number? #f))
+(define/contract (component-id c)
+  (maybe-contract
+    (-> component? (or/c number? #f)))
+
   (vector-ref c 2))
 
-(define #;/contract 
-  (component-num-fields c)
-   ;(-> component? number?)              
+(define/contract (component-num-fields c)
+  (maybe-contract
+    (-> component? number?))              
+
    (- (vector-length c) 4))
 
 (define/contract (component->list c)
@@ -102,27 +123,24 @@
 
    (drop (vector->list c) 4))
 
-(define #;/contract 
-  (set-component-id c i)
-  #;
-  (-> component? 
-      (or/c  number? #f) ;Would you want it to be false?  Yes -- before the game has started, sometimes you call CRUD functions (update-component) that propagate along the #f to the newly constructed component.   
-      component?)
+(define/contract (set-component-id c i)
+  (maybe-contract
+    (-> component? 
+        (or/c  number? #f) ;Would you want it to be false?  Yes -- before the game has started, sometimes you call CRUD functions (update-component) that propagate along the #f to the newly constructed component.   
+        component?))
 
-  #;
-  (define new-c (vector-copy c))
-  
-  (vector-set! c 2 i)
-  
-  c
-  
-  )
 
-(define #;/contract 
-  (component-subtype c)
+  (if (mutable-state)
+    (begin
+      (vector-set! c 2 i)
 
-  #;
-  (-> component? symbol?)
+      c) 
+    (vector-copy c)))
+
+(define/contract (component-subtype c)
+  (maybe-contract
+    (-> component? symbol?))
+
   (vector-ref c 1))
 
 (define/contract (component-done c)
@@ -133,32 +151,34 @@
 
 ;Contracts on this do affect FPS when there are lots of entities.
 ;  Gets called A LOT -- once per component in the game..
-(define #;/contract 
-  (component-update c)
-  #;(-> component? (or/c #f handler?))
+(define/contract (component-update c)
+  (maybe-contract
+    (-> component? (or/c #f handler?)))
 
   #;
   (define handlers (vector-ref c 3))
 
   (vector-ref c 3))
 
-(define #;/contract 
-  (component=? c1 c2)
- #; (-> component? component? boolean?)
+(define/contract (component=? c1 c2)
+  (maybe-contract (-> component? component? boolean?))
   (eq? (component-id c1)
        (component-id c2)))
 
-(define #;/contract 
-  (entity=? e1 e2)
-  #;
-  (-> entity? entity? boolean?)
+(define/contract (entity=? e1 e2)
+  (maybe-contract
+    (-> entity? entity? boolean?))
+
   (eq? (entity-id e1)
        (entity-id e2)))
 
 (define/contract (new-component #:update (update #f))
-  (->* () 
-       (#:update (or/c handler? #f)) 
-       component?)
+
+  (maybe-contract
+    (->* () 
+         (#:update (or/c handler? #f)) 
+         component?))
+
   (component (next-id) 
              update
              #;
@@ -178,13 +198,17 @@
 
 
 ;Our basic constructors
+;  Should the lists get converted to vectors?
+;  Should this too be parameterizable?
 (define/contract (new-game . es)
   (->* () #:rest (listof entity?) game?)
   (game es))
 
 (define/contract (new-entity . cs)
   (->* () #:rest (listof component?) entity?)
-  (entity (next-id) cs #f))
+  (entity (next-id) 
+          cs 
+          #f))
 
 (define next-id (id-generator 0))
 

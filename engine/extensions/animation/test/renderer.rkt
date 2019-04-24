@@ -129,7 +129,9 @@
     (conway-game quilted-donut)))
 
 (pretty-print-game to-play)
-(play to-play) 
+
+(mutable!
+  (play to-play)) 
 
 
 
@@ -246,5 +248,10 @@
 ;make a mutable-state toggle parameter.  Update crud accordingly.
 
 ;  entity components and game entities should be vectors, not lists?  (Experiment: Would make updates faster, but adds and removals slower, maybe...)
+
+
+
+;Get contracts back in.  It's driving me crazy not having them.  Debugging is a nightmare.
+
 
 

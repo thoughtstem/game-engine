@@ -24,11 +24,12 @@
 (define to-remove '())
 (define to-spawn  '())
 
-(define #;/contract 
-  (tick g)
-  #;
-  (-> game? game?)
+(define/contract (tick g)
+  (maybe-contract
+    (-> game? game?))
 
+  (debug-hook:tick-begin g)
+ 
   (if (mutable-state)
     (set! next-g g)
     (set! next-g (struct-copy game g)))
@@ -36,7 +37,6 @@
   (set! next-g (tick-entities next-g)) 
   (set! next-g (handle-removals next-g))
   (set! next-g (handle-spawns next-g))
-
 
   next-g)
 
@@ -130,10 +130,10 @@
   (define h (component-update c))
   (h g e c))
 
-(define #;/contract 
-  (has-id? e)
-  #;
-                 (-> entity? boolean?)
+;Does this get used?  Is it old?
+(define/contract (has-id? e)
+  (maybe-contract
+    (-> entity? boolean?))
                  (number? (entity-id e)))
 
 (define (all-entities pred?)

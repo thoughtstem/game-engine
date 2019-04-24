@@ -30,11 +30,9 @@
 ;COMPONENT CRUD
 
 
-(define #;/contract 
-  (add-component e c)
-  #;
-   (-> entity? component? entity?)
-
+(define/contract (add-component e c)
+  (maybe-contract
+    (-> entity? component? entity?))
 
    (define new-cs
      (append 
@@ -48,27 +46,22 @@
      (struct-copy entity e
                   [components new-cs]))) 
 
-(define #;/contract 
-  (add-component^ to-add)
-  #;
-   (-> component? handler?)
+(define/contract (add-component^ to-add)
+  (maybe-contract
+    (-> component? handler?))
 
    (lambda (g e c) 
      (add-component e to-add)))
 
 
 
-;Contracts here do have overhead
-;  about 5 FPS per 1000 entities...
+(define/contract (update-component e old-c new-c)
 
-(define #;/contract 
-  (update-component e old-c new-c)
-
-  #;
-  (-> entity? 
-      (or/c component? (-> component? boolean?)) 
-      (or/c component? (-> component? component?))
-      entity?)
+  (maybe-contract
+    (-> entity? 
+        (or/c component? (-> component? boolean?)) 
+        (or/c component? (-> component? component?))
+        entity?))
 
   (define cs (entity-components e))
 
@@ -109,12 +102,11 @@
                   [components (list-set cs i real-new-c)]))))
 
 
-(define #;/contract 
-  (update-component^ to-update)
-  #;
-   (-> (or/c component?
-             (-> component? component?)) 
-       handler?)
+(define/contract (update-component^ to-update)
+  (maybe-contract
+    (-> (or/c component?
+              (-> component? component?)) 
+        handler?))
 
    (lambda (g e c) 
      (update-component e c to-update)))
@@ -122,13 +114,13 @@
 
 
 
-(define #;/contract 
-  (remove-component e c)
-  #;
-   (-> entity? 
-       (or/c component?
-             (-> component? boolean?)) 
-       entity?)
+(define/contract (remove-component e c)
+
+  (maybe-contract
+    (-> entity? 
+        (or/c component?
+              (-> component? boolean?)) 
+        entity?))
 
    (define p (if (component? c)
                  (curry component=? c)
@@ -149,12 +141,11 @@
                 [components new-c]))) 
 
 
-(define #;/contract 
-  (remove-component^ to-remove)
-  #;
-   (-> (or/c component?
-             (-> component? boolean?))
-       handler?)
+(define/contract (remove-component^ to-remove)
+  (maybe-contract
+    (-> (or/c component?
+              (-> component? boolean?))
+        handler?))
 
    (lambda (g e c) 
      (remove-component e to-remove)))
@@ -178,10 +169,9 @@
   (filter real-query? (entity-components e)))
 
 
-(define #;/contract 
-  (get-component^ query?)
-  #;
-   (-> (-> component? any/c) handler?)
+(define/contract (get-component^ query?)
+   (maybe-contract
+     (-> (-> component? any/c) handler?))
 
    (lambda (g e c) 
      (get-component e query?)))
@@ -199,13 +189,12 @@
   i)
 
 
-(define #;/contract 
-  (get-entity g pred?-or-e)
+(define/contract (get-entity g pred?-or-e)
 
-  #;
-  (-> game? (or/c entity? 
-                  (-> entity? any/c)) 
-      (or/c entity? #f))
+  (maybe-contract
+    (-> game? (or/c entity? 
+                    (-> entity? any/c)) 
+        (or/c entity? #f)))
 
   (define es (game-entities g))
   (define i  (get-entity-index g pred?-or-e))
@@ -217,9 +206,9 @@
     (get-entity g pred?-or-e)))
 
 
-(define #;/contract 
-  (add-entity g e)
-  #;(-> game? entity? game?)
+(define/contract (add-entity g e)
+  (maybe-contract
+    (-> game? entity? game?))
 
   (define new-es (cons e (game-entities g)))
 
@@ -236,14 +225,12 @@
 
 
 
-(define #;/contract
-  (update-entity g old-e new-e)
-
-  #;
-  (-> game? (or/c number? entity? (-> entity? boolean?)) 
-            (or/c entity? 
-                  (-> entity? entity?))
-            game?)
+(define/contract (update-entity g old-e new-e)
+  (maybe-contract
+    (-> game? (or/c number? entity? (-> entity? boolean?)) 
+        (or/c entity? 
+              (-> entity? entity?))
+        game?))
 
   (define es (game-entities g))
   (define i  (if (number? old-e) 
@@ -270,12 +257,11 @@
 
 
 
-(define #;/contract
-  (remove-entity g old-e)
-  #;
-  (-> game? (or/c entity? 
-                  (-> entity? boolean?)) 
-      game?)
+(define/contract (remove-entity g old-e)
+  (maybe-contract
+    (-> game? (or/c entity? 
+                    (-> entity? boolean?)) 
+        game?))
 
   (define es (game-entities g))
   (define p  (if (entity? old-e)
