@@ -33,7 +33,7 @@
 (require posn
          threading)
 
-(define (change-sprite sprite-or-func)
+#|(define (change-sprite sprite-or-func)
   (lambda (g e)
     (define sprite (if (procedure? sprite-or-func)
                        (sprite-or-func)
@@ -41,7 +41,16 @@
     (define new-bb (image->bb (render sprite)))
     (update-entity (update-entity e animated-sprite? sprite)
                    bb?
-                   new-bb)))
+                   new-bb)))|#
+
+(define (change-sprite sprite-func-or-list)
+  (lambda (g e)
+    (define sprites-list (flatten (if (procedure? sprite-func-or-list)
+                                           (sprite-func-or-list)
+                                           sprite-func-or-list)))
+    (~> e
+        (remove-components _ animated-sprite?)
+        (add-components _ (reverse sprites-list)))))
 
 (define (set-size amount)
   (lambda (g e)

@@ -293,6 +293,8 @@
     (flatten
      (append
        (map fast-image (filter image? is))
+       (map (compose vector->list animated-sprite-frames)
+            (flatten (filter identity (filter image-animated-sprite? is))))
        (entities->sprites-to-compile (filter entity? is)))))
   
   (register-sprites-from-images! images)
