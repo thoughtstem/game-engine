@@ -7,12 +7,6 @@
 
 @defmodule[game-engine/engine/core/main]
 
-TODO: Fun example: generating trance music...
-
-;TODO: A "named" component -- impersonates the child, but can be queried more conveniently...  Replaces storage in v1
-
-TODO: Doc all the functions from define-component that we're going with.  Remove the ones we aren't.
-
 TODO: Document the meta-components.  Probably in their own scribble?  How do we organize the docs in a heirarchical project like this? 
 
 Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
@@ -51,6 +45,26 @@ I think the potential for exploding a whole ecosystem of composable game parts w
 @defproc[(entity [component component?] ...)
          entity?]{
   Constructor for a @racket[entity].  Takes nothing but a list of components.  Internally, though, entities have an id.  This id remains the same even as an entity is updated at runtime.  
+}
+
+@defproc[(new-component #:update handler?)]{
+  A compononent with no fields, just an update handler.  Usually, you'll make your own components, which have fields that are named by you.  See @racket[define-component].
+}
+
+@defthing[handler? (-> game? entity? component? entity?)]{
+
+  Handlers are just functions with a particular type.  The semantics of the game engine are that, on a tick, each handler attached to each component is "ticked", which means it is given the last game state, and the current state of the entity, and components it is attached to.  The returned entity is the state of that entity in the next tick.
+
+  Handlers on the same entity "stack", though.  Here both counters are updating the same counter.  Not necessarily somthing you'd want to do, but illustrates the point: Each handler attached to a component on an entity may modify other components on that entity, and they do so in turn, and they each contribute changes to the entity for the next tick.
+
+  @codeblock{
+    (define-component counter (amount))
+    (define-component other-counter (amount))
+
+    (entity 
+      (counter       0 #:update (update:counter/amount^ add1))
+      (other-counter 0 #:update (update:counter/amount^ (curry + 5))))
+  }
 }
 
 @defform[(define-component name (fields ...))]{
@@ -104,6 +118,10 @@ I think the potential for exploding a whole ecosystem of composable game parts w
 
 @defproc[(update:COMPONENT/FIELD [c component?] [f any/c]) component?]{
   If @racket[f] is a function, applys @racket[f] to the @racket[FIELD] field of @racket[c].  Otherwise, sets @racket[FIELD] to that value. 
+
+  When the game is run under @racket[(mutable! ...)], the update is destructive.  By default, a copy of the component is returned, with the new field updated according to @racket[f], which may either be the new value for @racket[FIELD], or it may be a function to apply to that field.
+
+  (If your field IS a function and you want to apply a function to it, you'll have to grab it out, apply your higher order function, and the pack it back in with the above.  In practice, this never comes up for me.) 
 }
 
 @defproc[(update:COMPONENT/FIELD^ [f any/c]) handler?]{
@@ -116,79 +134,30 @@ I think the potential for exploding a whole ecosystem of composable game parts w
 
   Essentially, it's a delayed version of @racket[update:COMPONENT/FIELD] -- one that will be applied to whatever component's @racket[#:update] it is attached.
 
+  Or, if it is not attached to a @racket[health] component, it will apply to the health component on the same entity.
 
-  TODO: Currently, these cannot be attached to other components on the same entity...  Should we allow that?  Or should it be a different function.  See test in test/define-component.rkt
-}
-
-@defproc[(update:COMPONENT/FIELD^ [f any/c]) handler?]{
-  Handler version the above.  For use when your component is attached to an entity.  
+  The following is equivalent to the above.
 
   @codeblock{
     (define-component health (amount))
-    (entity (health 5 #:update (update:health/amount^ sub1)))
+    (entity (health 5) 
+            (new-component #:update (update:health/amount^ sub1)))
   }
 
-  Essentially, it's a delayed version of @racket[update:COMPONENT/FIELD] -- one that will be applied to whatever component's @racket[#:update] it is attached.
 }
 
 
-
-  @racket[update-COMPONENT-FIELD] -- e.g. @racket[update-health-amount]. 
-  This function is not a handler, but it builds handlers when given a function that takes and returns a values of your field's type.  Since health amount is a number, you can create handlers like @racket[(update-health-amount sub1)], which expresses that the health will decrease whenever the handler runs.
-
-  Moving up the handler heirarchy, you also get a handler that works the same way:
-
-  @racket[update-entity-COMPONENT-FIELD] -- e.g. @racket[update-entity-health-amount]. 
-
-  The main difference is that one handler will return a @racket[operation?] that is a component-changing operation, whereas the other is one that returns an entity-changing operation.   
-
-  If you can do the same thing with an entity handler and a component handler, which should you pick?  The rule of thumb is always: Stay as low in the heirarchy as possible.  If you can use a component handler, do that.  It'll be faster.  If you must make other adjustmenst to the entity, use an entity handler.
-
-  The above two handler builders are for operating on a particular field of a component.  But it'll be quite common that you'll want to operate on an entity that the component is attached to -- i.e. to affect other components on that entity.  (Yes, components can change each other.)
+@defproc[(get:COMPONENT [e entity?]) COMPONENT?]{
+  Returns the first @racket[COMPONENT?] on @racket[e].  Equivalent to:
 
   @codeblock{
-    (define-component counter (amount))
-    (define-component other-counter (amount))
-
-    (entity 
-      (counter       0 #:update (update-counter-amount add1))
-      (other-counter 0 #:update (update-entity-counter-amount (curry + 5))))
+    (get-component e COMPONENT?)
   }
-  
-  Both update handlers are changing the same counter -- one with a component operation (which affects the normal counter because it's attached to it).  The other does so with an entity operation, which it must do -- because a component operation would update itself.
-
-  Here's a less abstract example:
-
-  @codeblock{
-
-          (define-component dead ())
-                  (define is-zero? (curry = 0))
-
-                  (define e
-                   (entity 
-                    (health 3 #:update (compose-handlers
-                                        (update-health-amount sub1)
-                                        (on-rule 
-                                         (entity-health-amount? is-zero?) 
-                                         (compose-handlers
-                                          (add-component (dead))
-                                          (remove-self)))))))
-  }
-
-  We attach a health component that counts down over time, and will remove itself when it gets to zero -- but not before adding a component named dead (presumably for some other entity or component to do further handling with).
-
-
-
-
-
-You can control games programmatically with @racket[init] and @racket[tick].  The idea is that you do a single call to @racket[init] followed by as many calls to @racket[tick] as you want.
-
-@defproc[(init [game game?])
-         game?]{
-  Does any necessary setup on a game.  This includes enforcing properties like uniqueness of ids across entities and components.
-
-  When we have features like @racket[#:on-start], they would execute at this time.
 }
+
+@defproc[(rule:COMPONENT/FIELD^ [pred predicate?]) rule?]{ }
+
+
 
 @defproc[(tick [game game?])
          game?]{
@@ -196,7 +165,7 @@ You can control games programmatically with @racket[init] and @racket[tick].  Th
 
   The simple runtime model is that the engine loops over every entity and every component in order, giving each component a chance to run its handlers.  Each component may have a component handler, an entity handler, and/or a game-hander attached.  These handlers run in the aforementioned order -- meaning that the game-handler takes precedience because it runs last.
 
-  TODO: As we inevitably encounter the need to make ticks faster, we'll adjust the above simple model with various optimizations.  If those optimizations could cause any of the game's immutability guarantees to break, they will be optional.  My hope is that developers can begin with the simple immutable model as they are prototyping and unit testing their games.  Then they can increase the speed when necessary (basically by adding more mutability).
+  By default, the game is copied -- not mutated.  To remove this guarantee, run within @racket[(mutable! ...)].
 }
 
 @defproc[(ticks [n number?]
@@ -215,7 +184,6 @@ You can control games programmatically with @racket[init] and @racket[tick].  Th
 
 When you are writing your game logic, you will mostly be defining components (or using other people's components).  And you'll be defining functions that specify how components and/or entities change over time.  There's a basic CRUD (create, read, update, destroy) model for both components and entities.
 
-
 @defproc[(add-component [entity entity?]
                         [component component?])
          entity?]{
@@ -223,6 +191,10 @@ When you are writing your game logic, you will mostly be defining components (or
 
   Adds the component to the beginning of the entity's list of components. 
   Returns a new entity where this is the case.  Does not change the original. 
+}
+
+@defproc[(add-component^ [component component?]) handler?]{
+  A handler that will add the given component to the entity to which it is attached. 
 }
 
 @defproc[(get-component [entity entity?]
@@ -244,6 +216,11 @@ When you are writing your game logic, you will mostly be defining components (or
   Either way, it will be updated according to @racket[new].  If @racket[new] is a component, that component will be swapped in (but @racket[old]'s id will remain).  If it is a function, that function will be called on @racket[old] to get the new component.
 }
 
+@defproc[(update-component^ [new-c (or/c component?
+                                         (-> component? component?))]) handler?]{
+  A handler that will replace or transform the component to which it is attached.
+}
+
 @defproc[(remove-component [entity entity?]
                            [old    (or/c component? (-> component? boolean?))])
          entity?]{
@@ -253,6 +230,11 @@ When you are writing your game logic, you will mostly be defining components (or
 
   The resulting entity no longer has @racket[old] in its list.
 }
+
+@defproc[(remove-component^ [query (or/c component?
+                                         (-> component? boolean?))]) handler?]{
+  A handler that will remove the component matching the query from the entity to which it is attached.
+e
 
 
 With entities, the CRUD model is similar.
@@ -318,15 +300,15 @@ Working with handlers is most of what you do as you develop in game-engine.  The
 The nice thing about game-engine is that you can express your logic however you want, in whatever language you want.  As long as you can make a handler out of it, you can run it in game-engine, and compose your functionality with the rest of the handler ecosystem.
 
 @defthing[handler? (-> game? entity? component? operation?)]{
-  Semantically, when the engine executes a @racket[handler?], it always does so with three things in its context: the mid-tick state of the component to which the handler is attached, the mid-tick state entity to which that component is attached, and the pre-tick game state of the game.
+  Semantically, when the engine executes a @racket[handler?], it always does so with three things in its context: the pre-tick state of the component to which the handler is attached, the mid-tick state entity to which that component is attached, and the pre-tick game state of the game.
 
-  The idea behind these input values is that, during a tick: 1) entities don't get to see the changes that other entities are making to themselves or to each other, 2) but they do get to see the changes that they themselves are making to themselves.   It just seems fair, right?  I get full knowlege of what I'm doing to myself.  But no one else gets to know until we all do (at the end of the tick).
+  The idea behind these input values is that, during a tick: 1) entities don't get to see the changes that other entities are making to themselves or to each other, 2) but they do get to see the changes that they themselves are making to themselves.   It just seems fair, right?  I get full knowlege of what I'm doing to myself.  But no one else gets to know until we all do (at the end of the tick).  (When mutability is turned on this guarantee vanishes -- though if you've developed and tested with mutability off, then you shouldn't have anything to worry about.) 
 
-  The return type is an @racket[operation?] which expresses a change to @racket[e].  Currently, it can either be a @racket[entity?] or a @racket[component?].  If it is an entity, this will be the new value of @racket[e] as the tick continues on to the next component after @racket[c], or (if @racket[c] was the last component on @racket[e]) it will continue on to the next entity after @racket[e].  Or, if there are no more entities, the tick will be complete and the next tick will begin.
+  The return type is an @racket[entity?] which expresses a change to @racket[e].  This will be the new value of @racket[e] as the tick continues on to the next component after @racket[c], or (if @racket[c] was the last component on @racket[e]) it will continue on to the next entity after @racket[e].  Or, if there are no more entities, the tick will be complete and the next tick will begin.
 }
 
 @defproc[(compose-handlers [input handler?] ... ) handler?]{
-  Equivalent to what would happen if each of @racket[input] were on separate components on the same entity:
+  Equivalent to what would happen if each of @racket[input] were on separate components on the same entity (modulo pathological cases where such functions behave weirdly when there are more components, or when they are attached to different components):
 
   @codeblock{
     (entity (new-component #:update i1)
@@ -384,48 +366,5 @@ This entity will lose one health per tick (and there's nothing stopping it from 
                           #:handler (for-ticks 1 reduce-health)))) 
 }
 
-
-
-;TODO: Should these higher order handler functionalities actually be implemented as components (extensions)?  
-
-
-@defproc[(for-ticks [n number?] [h handler?]) handler?]{
-  The handler (wrapped in the producer) returned by this function will behave like @racket[h] for @racket[n] ticks.  After that, it will behave like a noop. 
-
-  Note that this has the ability to "cut short" a handler that might have much longer term behaviour.   @racket[(ticks 1 h)] can turn an infinite producer into what feels like a one-shot.
-}
-
-@defproc[(for-ticks! [n number?] [h handler?]) handler?]{
-  The handler (wrapped in the producer) returned by this function will behave like @racket[h] for @racket[n] ticks.  After that, it will remove itself from the component.
-
-  Note that this has the ability to "cut short" a handler that might have much longer term behaviour.   @racket[(ticks 1 h)] can turn an infinite producer into a literal one-shot -- only attached to the component for one tick before marking the component as "done"
-
-  This is mainly useful with the @racket[times] function or the @racket[sequence] function.
-}
-
-
-@defproc[(times [n number?] [h handler?]) handler?]{
-  Returns whatever the input handler returns until it tries to register the component as "done" (by setting its update handler to @racket[#f]).  It does this n times.  
-
-  After that, it becomes a noop forever.
-}
-
-@defproc[(times! [n number?] [h handler?]) handler?]{
-  Returns whatever the input handler returns until it tries to register the component as "done" (by setting its update handler to @racket[#f]).  It does this n times.  
-
-  After that, it tries to mark the component as "done".
-}
-
-@defproc[(sequence [input handler?] ...) handler?]{
-  Does each input handler until it tries to mark the component as done, after which it proceeds to the next.  After that it behaves like a noop.
-}
-
-@defproc[(sequence! [input handler?] ...) handler?]{
-  Does each input handler until it tries to mark the component as done, after which it proceeds to the next.  After that it tries to mark the component as done.  
-}
-
-@defproc[(after-ticks [n number?] [h handler?]) handler?]{
-  For n ticks, behaves like a noop.  Then, it behaves like h. 
-}
 
 

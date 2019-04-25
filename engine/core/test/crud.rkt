@@ -20,7 +20,7 @@
                                                         (curryr update:health/amount add1)))
 
            (check-equal?
-             (read:health/amount e-with-more-health)
+             (get:health/amount e-with-more-health)
              6)
 
            (define no-health-again (remove-component e h))

@@ -39,7 +39,7 @@
 
            (check-game (game e e e)))
 
-(let () ;test-case "Testing adding a dead component and entity removal"
+(test-case "Testing adding a dead component and entity removal"
 
            (define poisoned
              (update:health/amount^ sub1))
@@ -118,6 +118,6 @@
              "There should be no entities in the game with the (test) component")
            
            (check-equal?
-             (read:health/amount (first (game-entities g2)))
+             (get:health/amount (first (game-entities g2)))
              7))
 

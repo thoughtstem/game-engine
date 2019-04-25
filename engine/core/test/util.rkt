@@ -12,9 +12,6 @@
 
          entity-health-amount?
          entity-health-amount
-         update-health-amount
-         update-entity-health-amount
-         update-entity-health
          ensure-uniqueness!
          
          update:health
@@ -23,8 +20,8 @@
          update:health/amount^
          rule:health/amount
          rule:health/amount^
-         read:health/amount
-         read:health/amount^
+         get:health/amount
+         get:health/amount^
 
          check-all-entities-health)
 

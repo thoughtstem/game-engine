@@ -2,7 +2,6 @@
 
 (provide ;Lifted versions
          add-component^
-         get-component^
          update-component^
          remove-component^
   
@@ -168,15 +167,6 @@
          query?))
 
   (filter real-query? (entity-components e)))
-
-
-(define/contract (get-component^ query?)
-   (maybe-contract
-     (-> (-> component? any/c) handler?))
-
-   (lambda (g e c) 
-     (get-component e query?)))
-
 
 
 

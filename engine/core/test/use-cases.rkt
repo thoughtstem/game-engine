@@ -57,8 +57,8 @@
 
   (define (update-position)
       (lambda (g e c)
-        (define dir (entity-direction e))
-        (define pos (entity-position e))
+        (define dir (get:direction e))
+        (define pos (get:position e))
         (define new-pos (update-position-from-direction dir pos))
         (update-component e pos new-pos)))
 

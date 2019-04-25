@@ -48,8 +48,9 @@
                   (handler (g e c)
                     (define new-alive? (game->conway-alive? g x y))  
 
+                    ;Optimizes over update:conway/alive?^
                     (update-component e 0
-                                      (curryr set-conway-alive? new-alive?))
+                                      (curryr update:conway/alive? new-alive?))
 
                     )))) 
 
