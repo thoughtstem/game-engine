@@ -26,11 +26,15 @@
 
 (define (x e)
   (define p
+    (get-component e position?)
+    #;
     (list-ref (entity-components e) 1))
   (position-x p))
 
 (define (y e)
   (define p
+    (get-component e position?)
+    #;
     (list-ref (entity-components e) 1))
   (position-y p))
 

@@ -1,6 +1,6 @@
 #lang racket
 
-(provide play)
+(provide play play!)
 
 (require racket/match
          racket/fixnum
@@ -16,7 +16,7 @@
 (require "../../core/main.rkt"
          "./animated-sprite.rkt")
 
-(struct demo ;TODO: CHANGE THIS NAME
+(struct game+render ;TODO: CHANGE THIS NAME
   ( state render-tick)
   #:methods gen:word
   [(define (word-fps w)
@@ -25,7 +25,7 @@
      (lux-standard-label "Values" ft))
    
    (define (word-output w)
-     (match-define (demo state render-tick) w)
+     (match-define (game+render state render-tick) w)
      (render-tick state))
 
    (define (word-event w e)
@@ -39,8 +39,8 @@
        ))
    
    (define (word-tick w)
-     (match-define (demo state render-tick) w)
-     (demo (tick state) render-tick))])
+     (match-define (game+render state render-tick) w)
+     (game+render (tick state) render-tick))])
 
 (define (get-gui #:width [w 480] #:height [h 360])
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
@@ -69,6 +69,9 @@
   (set! csd (ml:compile-sprite-db sd))
   csd)
 
+(define (play! g)
+  (mutable! (play g)))
+
 (define (play g)
   (define W 400)
   (define H 400)
@@ -77,7 +80,7 @@
 
   (call-with-chaos
    (get-gui #:width W #:height H)
-   (λ () (fiat-lux (demo g render-tick)))))
+   (λ () (fiat-lux (game+render g render-tick)))))
 
 (define (get-mode-lambda-render-tick g W H)
   (define W/2 (/ W 2))
@@ -131,11 +134,12 @@
     (define cs (entity-components e))
     (define s 
       ;TODO: this is not going to generalize as is....    
+
+      #;
       (if (> (length cs) 2)
         (list-ref cs 2)
         #f)
 
-      #;
       (get-component e sprite?) 
 
       )

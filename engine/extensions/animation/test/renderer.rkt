@@ -10,23 +10,29 @@
          threading
          (prefix-in h: 2htdp/image))
 
-;TODO: Figure out how to do tests
-;How to test renderer?  (Screenshots??)
 
-;TODO: Being able to slow down games will help with testing.
+;Finalize the rendering system.  Docs, and tests.
+;   So we can move on to input...
 
-;TODO: Rendering two games at once.  A child game?  Waahhh..
 
-;TODO: Start doing benchmarking early, so we know what to expect later.  How big of a conway implementation can we get?
-;      Write tests for speed (figure out how to make implementation dependent)
+;TODO: A few bugs leftover from refactoring for speed.
+;   Making assuptions in renderer and animated-sprite about sprite? and position? components being at a known index.  We need to find a generalized abstraction for that.
+
+;  Also the bullet test is failing.  not sure why.
+;
+;
+;  The conway test is failing with mutability on, which should never happen.  It should be the same semantically, just faster...  Why?  Maybe easier to debug with contracts working again!
+
+
 
 ;TODO: Start documenting the renderer so we can figure out what its features need to be.  Don't just start implementing stuff willy nilly. 
 
-;TODO:
-;What about sprites being constructed at runtime.  Just don't do it?  Throw a warning...  Maybe allow Document the behaviour.
+;TODO: Figure out how to do tests
+;How to test renderer?  (Screenshots??)
 
-;TODO: 
-;User input needs to get handled at the lux level.  Do we try to separate it from the renderer?
+;TODO: Rendering two games at once.  A child game?  Waahhh..
+
+
 
 (define (bullet c) 
   (entity 
@@ -34,25 +40,28 @@
     (sprite (h:circle 5 'solid c))
     (after-ticks 100 (die))))
 
-#;
-(lux-start (game
-             (entity
-               (position 200 200)
-               (sprite (h:circle 20 'solid 'red))
-               (new-component #:update
-                              (update:position/x^ (curry + 5)))
-               (forever
-                      (sequence
-                        (for-ticks 5
-                                   (spawn-here (bullet 'green)))
-                        (for-ticks 5
-                                   (spawn-here (bullet 'blue))))))
+(define g
+  (game
+    (entity
+      (position 200 200)
+      (sprite (h:circle 20 'solid 'red))
+      (new-component #:update
+                     (update:position/x^ (curry + 5)))
+      (forever
+        (sequence
+          (for-ticks 5
+                     (spawn-here (bullet 'green)))
+          (for-ticks 5
+                     (spawn-here (bullet 'blue))))))
 
-             (entity
-               (position 200 200)
-               (sprite (h:circle 20 'solid 'orange))
-               (new-component #:update
-                              (update:position/y^ add1)))))
+    (entity
+      (position 200 200)
+      (sprite (h:circle 20 'solid 'orange))
+      (new-component #:update
+                     (update:position/y^ add1)))))
+
+(debug-tick
+  (debug-tick g))
 
 
 
@@ -134,15 +143,7 @@
 #; ;Why is this erroring?
 (play to-play)
 
-(mutable!
-  (play to-play)) 
-
-
-;Another optimization, medium trickiness level:
-;  entity components and game entities should be vectors, not lists when mutable-state is on  
-;  (Need to Experiment, though: Would make updates faster, but adds and removals slower, maybe...)
-
-;What's next big picture wise?  Can prolly stop optimizing for a while.
+(play! to-play)  
 
 
 

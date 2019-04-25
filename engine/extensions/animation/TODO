@@ -1,9 +1,12 @@
 
-So this is a library that's (if we can get it to be) separate from any particular rendering
-system -- e.g. mode-lambda.  It's like animated-sprite in v1.  It manages the current frame
-of an animation, whether it is paused, its speed (unless we can lift that to a meta-component),
-etc. [what else?] 
+;TODO: Write tests for speed (figure out how to make implementation dependent)
 
-But one tweak we'll make on the old animated-sprite, is that we'll keep better track of 
-sprites.  We won't duplicate them unnecessarily or let them get passed around in the game state.
-We'll manage that memory separately.
+;TODO: Physics
+
+;TODO: User input needs to get handled at the lux level.  Do we try to separate it from the renderer?
+
+;TODO:
+;Another optimization, medium trickiness level:
+;  entity components and game entities should be vectors, not lists when mutable-state is on  
+;  (Need to Experiment, though: Would make updates faster, but adds and removals slower, maybe...)
+
