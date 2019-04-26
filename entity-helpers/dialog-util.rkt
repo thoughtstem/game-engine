@@ -49,7 +49,8 @@
 (require "../game-entities.rkt")
 (require "../components/animated-sprite.rkt")
 (require "../components/counter.rkt")
-(require "../components/spawn-dialog.rkt")
+;(require "../components/spawn-dialog.rkt")
+(require "../components/spawn-once.rkt")
 (require "../components/do-every.rkt")
 (require "../components/after-time.rkt")
 (require "../components/lock-to.rkt")
@@ -273,7 +274,7 @@
                                                 (- HEIGHT 40))
                                           #:sound rsound))
     (update-entity (add-component e
-                                  (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 5)))
+                                  (spawn-once #:relative? #f (dialog-lg avatar-box name message-entity WIDTH #:delay 5)))
                    counter?
                    (counter (add1 dialog-index)))))
 
@@ -291,7 +292,7 @@
                                                                    (- HEIGHT 40))
                                           #:sound rsound))
     (add-component (update-entity e counter? (counter (add1 npc-dialog-index)))
-                   (spawn-dialog (dialog-lg avatar-box name message-entity WIDTH #:delay 10)))))
+                   (spawn-once #:relative? #f  (dialog-lg avatar-box name message-entity WIDTH #:delay 10)))))
 
 (define (reached-frame? g e)
   (define as (get-component e animated-sprite?))
@@ -397,19 +398,16 @@
                  main-bordered-box)))
      
 (define (dialog-lg avatar name message-entity game-width #:delay [delay-time 0])
-  (sprite->entity (fast-dialog-lg name avatar game-width) ;bg-sprite
-                  ;(draw-dialog-lg name avatar game-width)
+  (sprite->entity (fast-dialog-lg name avatar game-width)
                   #:name       "dialog bg"
                   #:position   (posn 0 0)
                   #:components (static)
                                (hidden)
                                (layer "ui")
-                               ;(on-key 'space die)
-                               ;(fast-dialog-lg name avatar game-width)
                                (on-key 'enter #:rule last-dialog? die)
                                (on-start (go-to-pos-inside 'bottom-center))
                                (after-time delay-time (do-many show
-                                                               (open-dialog message-entity)))
+                                                               (spawn #:relative? #f message-entity)))
                   ))
 
 

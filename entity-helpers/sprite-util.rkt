@@ -11,7 +11,7 @@
 (provide random-color)
 (provide random-tint)
 (provide spawn)
-(provide open-dialog
+(provide ;open-dialog
          hide
          show
          start-animation
@@ -169,9 +169,9 @@
   (lambda (g e)
     (add-component e (spawn-once s #:relative? relative?))))
 
-(define (open-dialog s) 
-  (lambda (g e)
-    (add-component e (spawn-dialog s))))
+;(define (open-dialog s) 
+;  (lambda (g e)
+;    (add-component e (spawn-dialog s))))
 
 (define (hide g e)
   (add-component (remove-component e hidden?) (hidden)))
