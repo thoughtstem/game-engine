@@ -45,10 +45,15 @@
   (for ([e (game-entities g)]
         [ei (in-naturals)])
     (when (debug-mode)
-      (displayln "****Ticking Entity****")
+      (blue-display "****Ticking Entity****")
       (pretty-print-entity e))
+
     (for ([c (entity-components e)]
           [ci (in-naturals)])
+
+    (when (debug-mode)
+      (blue-display "****Ticking Component****")
+      (pretty-print-component c))
 
       (define h (component-update c))
 
@@ -65,9 +70,23 @@
                           (define e-string (pretty-print-entity-string e))
                           (error (~a "Error ticking entity\n" e-string "\n" (exn-message er))))])
 
-            (h g next-e c)))
+            (if (mutable-state) ;This is confusing as shit.
+              (let ([op (h g next-e c)])
+                (set! next-g 
+                  (apply-op op next-g e c))
+                op) 
+              (h g next-e c))))
+
+        ;Why do we get the op in the non-mutable case?  I'm starting to wonder if there's simpler way.
+
+
+        (blue-display "***Mid-Tick Entity***")
+        (pretty-print-entity op)
 
         (when (not (mutable-state))
+          (when (debug-mode)
+            (blue-display "****Applying op****")
+            (pretty-print-entity op))
           (set! next-g (apply-op op next-g ei c)))
 
 
@@ -82,8 +101,15 @@
                                       (get-components op spawner?))
                                  to-spawn))
 
+          (when (debug-mode)
+            (blue-display "***Found new spawn entity***") 
+
+            (blue-display "CURRENT SPAWN QUEUE:")
+            (map pretty-print-entity to-spawn)
+            
+            )
           (set! next-g (update-entity next-g op
-                                      (curryr remove-component spawner?))))
+                                      (curryr remove-component spawner?))) )
 
         )))
 
@@ -92,7 +118,7 @@
 (define (handle-removals next-g)
   (for ([r to-remove])
     (when (debug-mode)
-      (displayln "***REMOVING ENTITY***")
+      (red-display "***REMOVING ENTITY***")
       (pretty-print-entity r))
     (set! next-g (remove-entity next-g r)))
 
@@ -102,7 +128,7 @@
 (define (handle-spawns next-g)
   (for ([s to-spawn])
     (when (debug-mode)
-      (displayln "***SPAWNING ENTITY***")
+      (green-display "***SPAWNING ENTITY***")
       (pretty-print-entity s))
 
     (set! next-g (add-entity next-g s)))

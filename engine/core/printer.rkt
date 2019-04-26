@@ -4,9 +4,35 @@
          pretty-print-games
          pretty-print-entity
          pretty-print-entity-string
-         pretty-print-component)
+         pretty-print-component
+         blue-display
+         red-display
+         green-display
+         yellow-display
+         orange-display)
 
-(require "./base.rkt")
+(require "./base.rkt"
+         ansi-color)
+
+(define (blue-display . ss)
+  (my-color-display 'cyan ss))
+
+(define (red-display . ss)
+  (my-color-display 'red ss))
+
+(define (green-display . ss)
+  (my-color-display 'green ss))
+
+(define (yellow-display . ss)
+  (my-color-display 'yellow ss))
+
+(define (orange-display . ss)
+  (my-color-display 'orange ss))
+
+(define (my-color-display c ss)
+ (parameterize ( [foreground-color c])
+   (color-display (~a (string-join ss "\n")
+                      "\n"))))
 
 (define (pretty-print-games . gs)
   (for ([g gs])

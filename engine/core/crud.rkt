@@ -115,7 +115,6 @@
 
 
 (define/contract (remove-component e c)
-
   (maybe-contract
     (-> entity? 
         (or/c component?
@@ -127,7 +126,14 @@
                  c))
 
 
-   (define to-remove (findf p (entity-components e)))
+   (define to-remove 
+           (findf p (entity-components e)))
+
+   (when (not to-remove)
+     (displayln c)
+     (pretty-print-entity e)
+     (error "remove-component: No component matching query."))
+   
 
    (define new-c
      (filter-not (curry component=? to-remove) 
@@ -223,14 +229,26 @@
               (-> entity? entity?))
         game?))
 
+  ;TODO: Do debug hooks...
+  (blue-display "update-entity, game:")
+  (pretty-print-game g)
+
+  (blue-display "update-entity, query:")
+  (pretty-print-entity old-e)
+
+
   (define es (game-entities g))
   (define i  (if (number? old-e) 
                old-e
                (get-entity-index g old-e)))
 
+  (blue-display "update-entity, to change")
+  (pretty-print-entity (list-ref es i))
+
   (define action (if (entity? new-e)
                      (thunk* new-e)
                      new-e))
+
 
   (define new-es
     (list-set es i (action (list-ref es i))))

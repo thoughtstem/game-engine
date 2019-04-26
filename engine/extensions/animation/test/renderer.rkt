@@ -46,7 +46,16 @@
       (position 200 200)
       (sprite (h:circle 20 'solid 'red))
       (new-component #:update
-                     (update:position/x^ (curry + 5)))
+                     (update:position/x^ (curry + 1)))
+      (for-ticks 100
+                 (spawn-here (bullet 'green)))
+      #;
+      (sequence
+        (for-ticks 5
+                   (spawn-here (bullet 'green)))
+        (for-ticks 5
+                   (spawn-here (bullet 'blue))))
+      #;
       (forever
         (sequence
           (for-ticks 5
@@ -60,9 +69,17 @@
       (new-component #:update
                      (update:position/y^ add1)))))
 
-(debug-tick
-  (debug-tick g))
+#;
+(mutable!
+  (debug-tick
+    (debug-tick g)))
 
+;Works but weirdly...
+#;
+(play g)
+
+;Crashes for some reason...
+(play! g)
 
 
 
@@ -143,6 +160,7 @@
 #; ;Why is this erroring?
 (play to-play)
 
+#;
 (play! to-play)  
 
 

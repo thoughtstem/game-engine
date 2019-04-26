@@ -135,11 +135,14 @@
     (define s 
       ;TODO: this is not going to generalize as is....    
 
+      ;The fast way that we want it to be
       #;
       (if (> (length cs) 2)
         (list-ref cs 2)
         #f)
 
+
+      ;The slow way that we need it to be
       (get-component e sprite?) 
 
       )

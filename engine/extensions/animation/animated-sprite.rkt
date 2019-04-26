@@ -26,7 +26,11 @@
 
 (define (x e)
   (define p
+    ;TODO
+    ;Slow...
     (get-component e position?)
+
+    ;Fast...
     #;
     (list-ref (entity-components e) 1))
   (position-x p))
