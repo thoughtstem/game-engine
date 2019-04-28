@@ -23,6 +23,7 @@
          (all-from-out "./handler-util.rkt") 
 
          (all-from-out "./runtime.rkt")
+         (all-from-out "./debug.rkt")
          (all-from-out "./printer.rkt"))
 
 
@@ -33,4 +34,5 @@
          "./spawner.rkt"
          "./diffs.rkt"
          "./runtime.rkt"
+         "./debug.rkt"
          "./printer.rkt")

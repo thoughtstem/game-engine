@@ -2,7 +2,9 @@
 
 (provide init 
          tick
+         tick!
          debug-tick
+         debug
          ticks
          tick-component
 
@@ -16,7 +18,8 @@
          "./util.rkt"
          "./handler-util.rkt"
          "./spawner.rkt"
-         "./printer.rkt")
+         "./printer.rkt"
+         "./debug.rkt")
 
 
 (define next-g #f)
@@ -24,11 +27,14 @@
 (define to-remove '())
 (define to-spawn  '())
 
+(define (tick! g)
+  (mutable! (tick g)))
+
 (define/contract (tick g)
   (maybe-contract
     (-> game? game?))
 
-  (debug-hook:tick-begin g)
+  (debug:tick-begin g)
  
   (if (mutable-state)
     (set! next-g g)
@@ -44,16 +50,10 @@
 (define (tick-entities g)
   (for ([e (game-entities g)]
         [ei (in-naturals)])
-    (when (debug-mode)
-      (blue-display "****Ticking Entity****")
-      (pretty-print-entity e))
-
+    (debug:entity-tick-begin e)
     (for ([c (entity-components e)]
           [ci (in-naturals)])
-
-    (when (debug-mode)
-      (blue-display "****Ticking Component****")
-      (pretty-print-component c))
+      (debug:component-tick-begin c)
 
       (define h (component-update c))
 
@@ -80,57 +80,46 @@
         ;Why do we get the op in the non-mutable case?  I'm starting to wonder if there's simpler way.
 
 
-        (blue-display "***Mid-Tick Entity***")
-        (pretty-print-entity op)
 
         (when (not (mutable-state))
-          (when (debug-mode)
-            (blue-display "****Applying op****")
-            (pretty-print-entity op))
+          (debug:applying-op op)
           (set! next-g (apply-op op next-g ei c)))
 
 
         ;TODO: should require that dead and spawner be at the top two slots of the component list -- faster querying that way...  And use the "dirty bit"
-        (when (and (entity? op)
-                   (get-component op dead?))
-          (set! to-remove (cons e to-remove)))
+        (when (get-component op dead?)  
+          (set! to-remove (cons e to-remove))
+          (debug:adding-to-remove-queue to-remove))
 
-        (when (and (entity? op)
-                   (get-component op spawner?))
+        (when (get-component op spawner?)
           (set! to-spawn (append (map spawner-to-spawn 
                                       (get-components op spawner?))
                                  to-spawn))
+          (debug:adding-to-spawn-queue to-spawn) 
 
-          (when (debug-mode)
-            (blue-display "***Found new spawn entity***") 
-
-            (blue-display "CURRENT SPAWN QUEUE:")
-            (map pretty-print-entity to-spawn)
-            
-            )
+          ;TODO: Get the verb tenses right here.
+          (debug:stripping-spawner-from-entity op) 
           (set! next-g (update-entity next-g op
                                       (curryr remove-component spawner?))) )
 
         )))
 
+  (debug:all-entities-ticked next-g)
   next-g)
 
 (define (handle-removals next-g)
+  (debug:processing-removal-queue to-remove)
   (for ([r to-remove])
-    (when (debug-mode)
-      (red-display "***REMOVING ENTITY***")
-      (pretty-print-entity r))
+    (debug:removing-entity r)
     (set! next-g (remove-entity next-g r)))
 
   (set! to-remove '())
   next-g)
 
 (define (handle-spawns next-g)
+  (debug:processing-spawn-queue to-remove)
   (for ([s to-spawn])
-    (when (debug-mode)
-      (green-display "***SPAWNING ENTITY***")
-      (pretty-print-entity s))
-
+    (debug:spawning-entity s)
     (set! next-g (add-entity next-g s)))
   
   (set! to-spawn '())
@@ -176,10 +165,10 @@
     [else (raise (~a "Unsupported handler return value: " o))]) )
 
 (define (debug-tick g)
-  (parameterize ([debug-mode #t]) 
+  (debug
     (tick g)))
 
-(define (debug-hook:tick-begin g)
-  (when (debug-mode)
-    (displayln (~a "********TICK BEGIN*******"))
-    (pretty-print-game g)))
+
+
+
+

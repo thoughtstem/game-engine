@@ -79,7 +79,11 @@
 (play g)
 
 ;Crashes for some reason...
-(play! g)
+(debug
+  (tick! g)
+  (tick! g)
+  (tick! g)
+  (tick! g))
 
 
 
