@@ -50,3 +50,6 @@
 ;Takes in a for-ticks component, behaves like that component until it tries to remove itself, then resets that component-s ticks back to its original value and runs it again.  Does so n sequence.
 (define (default-sequence . cs)
   (sequence cs #:update update-sequence))
+
+
+

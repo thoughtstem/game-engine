@@ -26,6 +26,7 @@
 
   new-component
   component
+  copy-component
   component->list
   component?
   component-id
@@ -107,11 +108,15 @@
 (define noop (lambda (g e c) e))
 
 ;Commenting out this contract fixed a bug, but I don't know why... Be careful putting it back in.  However, it might be an easy bug to find once all the other contracts are back.  Tackle that next..
-(define/contract (component id handler)
+(define/contract (component id handler handler-code)
   (maybe-contract
     (->  (or/c number? #f) 
-         (or/c handler? #f) component?))
-  (vector 'component #f id handler)) 
+         (or/c handler? #f) 
+         any/c
+         component?))
+  ;5 pre-fields before the user defined fields.
+  (vector 'component #f id handler handler-code)) 
+
 
 (define/contract (component-id c)
   (maybe-contract
@@ -179,17 +184,25 @@
   (eq? (entity-id e1)
        (entity-id e2)))
 
-(define/contract (new-component #:update (update #f))
+(define-syntax-rule (new-component #:update update)
+  (new-component-f #:update update
+                   #:update-code 'update))
+
+(define/contract (new-component-f #:update (update #f)
+                                  #:update-code (update-code #f)
+                                  )
 
   (maybe-contract
     (->* () 
-         (#:update (or/c handler? #f)) 
+         (#:update (or/c handler? #f)
+          #:update-code any/c ) 
          component?))
 
   (component (next-id) 
              update
              #;
-             (vector update)))
+             (vector update)
+             update-code))
 
 
 
@@ -200,7 +213,16 @@
 
 (define/contract (copy-entity e)
   (-> entity? entity?)
-  (struct-copy entity e))
+
+  (apply new-entity
+    (map copy-component (entity-components e)))
+  
+  )
+
+(define/contract (copy-component c)
+  (-> component? component?)
+
+  (vector-copy c))
 
 
 ;Our basic constructors

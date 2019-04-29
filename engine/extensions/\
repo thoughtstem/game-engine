@@ -60,7 +60,6 @@
 
                             (new-COMPONENT (next-id)  
                                            update 
-                                           'unknown-update-function
                                            FIELD ...)))))]))
 
 

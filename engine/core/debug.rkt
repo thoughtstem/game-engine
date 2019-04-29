@@ -29,14 +29,20 @@
     (provide name)
     (define (name param ...)
       (when (debug-mode)
+        (blue-display "[begin] " 'name)
         body ...
+        (blue-display "[end] " 'name)
         (set! current-game (first (list param ...)))
         (save-it! 'name) ))))
 
 
 (define-syntax-rule (debug exp ...)
   (with-handlers ([debug-stop? (lambda (e)
-                                 (blue-display "DEBUG HAAAAAULT!!!") 
+                                 (blue-display "!!!!!!!!!!!!!!!!") 
+                                 (blue-display "!!!          !!!") 
+                                 (blue-display "!!!DEBUG STOP!!!") 
+                                 (blue-display "!!!          !!!") 
+                                 (blue-display "!!!!!!!!!!!!!!!!") 
                                  (raise e)
                                  )])
   (parameterize ([debug-mode #t]) 
@@ -55,15 +61,13 @@
       0))
   
   (when do-exception
-    (raise (debug-stop (~a 'name) (current-continuation-marks))))     
-
-  )
+    (raise (debug-stop (~a 'name) (current-continuation-marks)))))
 
 (define current-game #f)
 (define next-step #f)
 
 (define (step-current-game)
-  (next-step))
+  ((next-step)))
 
 
 (define-debug-hook (debug:tick-begin g)
@@ -99,25 +103,22 @@
 
 ;Adding what to spawn queue?  The mid-tick entity?  The op?  What's the diff?
 ;  Figure it out and reflect this in the name.
-(define-debug-hook (debug:adding-to-spawn-queue q)
-  (green-display "****Adding to spawn queue****"))
+(define-debug-hook (debug:added-to-spawn-queue q)
+  (green-display "****Added to spawn queue****")
+  (map pretty-print-entity q))
 
-(define-debug-hook (debug:adding-to-remove-queue q)
-  (red-display "****Adding to remove queue****"))
+(define-debug-hook (debug:added-to-remove-queue q)
+  (red-display "****Added to remove queue****")
+  (map pretty-print-entity q))
 
 
-(define-debug-hook (debug:stripping-spawner-from-entity e)
-  (green-display "****Stripping spawner from entity****"))
+(define-debug-hook (debug:stripped-spawner-from-entity e)
+  (green-display "****Stripped spawner from entity****")
+  (pretty-print-entity e))
 
 (define-debug-hook (debug:all-entities-ticked g)
   (blue-display "****All entities ticked****")
   (pretty-print-game g))
-
-(define-debug-hook (debug:processing-removal-queue q)
-  (blue-display "****Processing removal queue****"))
-
-(define-debug-hook (debug:processing-spawn-queue q)
-  (blue-display "****Processing spawn queue****"))
 
 (define-debug-hook (debug:removing-entity e)
   (red-display "***REMOVING ENTITY***")
@@ -126,3 +127,53 @@
 (define-debug-hook (debug:spawning-entity e)
   (green-display "***SPAWNING ENTITY***")
   (pretty-print-entity e))
+
+(define-debug-hook (debug:check-component c)
+  (green-display "*** Check component ***")
+  (pretty-print-component c))
+
+
+(define-debug-hook (debug:check-entity c)
+  (green-display "*** Check entity ***")
+  (pretty-print-entity c))
+
+(define-debug-hook (debug:check-game g)
+  (green-display "*** Check game ***")
+  (pretty-print-game g))
+
+(define-debug-hook (debug:check-all g e c)
+  (green-display "*** Check all ***")
+  (green-display "*** Game ***")
+  (pretty-print-game g)
+  (green-display "*** Entity ***")
+  (pretty-print-entity e)
+  (green-display "*** Component ***")
+  (pretty-print-component c))
+
+
+
+(define-debug-hook (debug:after-entity-update g e c)
+  (yellow-display "*** After Entity Update ***")
+  (green-display "*** Game ***")
+  (pretty-print-game g)
+  (green-display "*** Entity ***")
+  (pretty-print-entity e)
+  (green-display "*** Component ***")
+  (pretty-print-component c))
+
+
+
+(define-debug-hook (debug:after-removals g q)
+  (red-display "*** Removing ***")
+  (map pretty-print-entity q)
+
+  (red-display "*** After removals ***")
+  (pretty-print-game g))
+
+(define-debug-hook (debug:after-spawns g q)
+  (green-display "*** Spawning ***")
+  (map pretty-print-entity q)
+
+  (green-display "*** After spawns ***")
+  (pretty-print-game g))
+

@@ -154,11 +154,14 @@
 
 
       (define mls
-        #;
+
+        ;TODO: Simplifying for now.  Come back and debug the sprite cache later.
         (ml:sprite #:layer 0
                    (real->double-flonum (x e))
                    (real->double-flonum (y e))
                    sid)
+
+        #;
         (if (and (hash-has-key? sprite-cache eid)
                  (not (entity-changed? e)))
           (begin

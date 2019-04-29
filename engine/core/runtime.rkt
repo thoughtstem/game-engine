@@ -22,7 +22,6 @@
          "./debug.rkt")
 
 
-(define next-g #f)
 
 (define to-remove '())
 (define to-spawn  '())
@@ -35,6 +34,8 @@
     (-> game? game?))
 
   (debug:tick-begin g)
+  
+  (define next-g #f)
  
   (if (mutable-state)
     (set! next-g g)
@@ -57,7 +58,7 @@
 
       (define h (component-update c))
 
-      (define next-e (list-ref (game-entities next-g) ei))
+      (define next-e (list-ref (game-entities g) ei))
 
       (set-entity-changed?! next-e #f)
 
@@ -72,58 +73,67 @@
 
             (if (mutable-state) ;This is confusing as shit.
               (let ([op (h g next-e c)])
-                (set! next-g 
-                  (apply-op op next-g e c))
+                (set! g 
+                  (apply-op op g e c))
                 op) 
               (h g next-e c))))
 
-        ;Why do we get the op in the non-mutable case?  I'm starting to wonder if there's simpler way.
 
+        ;In the non-mutable case, the time before the op application we can still see the old and new versions of the entity.  I suppose we might want to do something in that intervening time, so we'll leave that space here.
 
 
         (when (not (mutable-state))
           (debug:applying-op op)
-          (set! next-g (apply-op op next-g ei c)))
+          (set! g (apply-op op g ei c)))
+
+        (debug:after-entity-update g op c)
 
 
         ;TODO: should require that dead and spawner be at the top two slots of the component list -- faster querying that way...  And use the "dirty bit"
         (when (get-component op dead?)  
           (set! to-remove (cons e to-remove))
-          (debug:adding-to-remove-queue to-remove))
+          (debug:added-to-remove-queue to-remove))
 
         (when (get-component op spawner?)
           (set! to-spawn (append (map spawner-to-spawn 
                                       (get-components op spawner?))
                                  to-spawn))
-          (debug:adding-to-spawn-queue to-spawn) 
+          (debug:added-to-spawn-queue to-spawn) 
 
           ;TODO: Get the verb tenses right here.
-          (debug:stripping-spawner-from-entity op) 
-          (set! next-g (update-entity next-g op
-                                      (curryr remove-component spawner?))) )
+          (set! g (update-entity g op
+                                 (curryr remove-component spawner?))) 
+          
+          (debug:stripped-spawner-from-entity op) 
+          )
 
         )))
 
-  (debug:all-entities-ticked next-g)
-  next-g)
+  (debug:all-entities-ticked g)
+  g)
 
-(define (handle-removals next-g)
-  (debug:processing-removal-queue to-remove)
+(define (handle-removals g)
+
   (for ([r to-remove])
-    (debug:removing-entity r)
-    (set! next-g (remove-entity next-g r)))
+    (set! g (remove-entity g r)))
+
+  (when (not (empty? to-remove))
+    (debug:after-removals g to-remove))
 
   (set! to-remove '())
-  next-g)
+  g)
 
-(define (handle-spawns next-g)
-  (debug:processing-spawn-queue to-remove)
+(define (handle-spawns g)
+
   (for ([s to-spawn])
-    (debug:spawning-entity s)
-    (set! next-g (add-entity next-g s)))
+    (set! g (add-entity g 
+                        (copy-entity s))))
   
+  (when (not (empty? to-spawn))
+    (debug:after-spawns g to-spawn))
+
   (set! to-spawn '())
-  next-g)
+  g)
 
 
 

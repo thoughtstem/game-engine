@@ -23,6 +23,7 @@
          get-field)
 
 (require "./base.rkt"
+         "./debug.rkt"
          "./printer.rkt")
 
 
@@ -229,21 +230,10 @@
               (-> entity? entity?))
         game?))
 
-  ;TODO: Do debug hooks...
-  (blue-display "update-entity, game:")
-  (pretty-print-game g)
-
-  (blue-display "update-entity, query:")
-  (pretty-print-entity old-e)
-
-
   (define es (game-entities g))
   (define i  (if (number? old-e) 
                old-e
                (get-entity-index g old-e)))
-
-  (blue-display "update-entity, to change")
-  (pretty-print-entity (list-ref es i))
 
   (define action (if (entity? new-e)
                      (thunk* new-e)

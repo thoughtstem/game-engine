@@ -11,6 +11,10 @@
          (prefix-in h: 2htdp/image))
 
 
+;TODO: COnsider a #:render on components.  Could this be a better/other paradigmn for rendering games.  Compare with (play g) triggering a sprite scrape on every tick.
+;  Makes it weirdly like react...
+
+
 ;Finalize the rendering system.  Docs, and tests.
 ;   So we can move on to input...
 
@@ -38,7 +42,7 @@
   (entity 
     (position 200 200)
     (sprite (h:circle 5 'solid c))
-    (after-ticks 100 (die))))
+    (after-ticks 50 (die))))
 
 (define g
   (game
@@ -47,15 +51,17 @@
       (sprite (h:circle 20 'solid 'red))
       (new-component #:update
                      (update:position/x^ (curry + 1)))
-      (for-ticks 100
+
+      #;
+      (for-ticks 200
                  (spawn-here (bullet 'green)))
+
       #;
       (sequence
         (for-ticks 5
                    (spawn-here (bullet 'green)))
         (for-ticks 5
                    (spawn-here (bullet 'blue))))
-      #;
       (forever
         (sequence
           (for-ticks 5
@@ -64,10 +70,41 @@
                      (spawn-here (bullet 'blue))))))
 
     (entity
+      (name "orange-dude")
       (position 200 200)
       (sprite (h:circle 20 'solid 'orange))
       (new-component #:update
-                     (update:position/y^ add1)))))
+                     (update:position/y^ add1))
+      
+      )))
+
+
+;Can we make this kind of query easier to make?
+;  "How does e with name ___'s ___ vary over the next ___ ticks?"
+#;
+(map 
+  (compose y 
+           (curryr get-by-name "orange-dude"))
+  (tick-list g 5))
+
+;TODO: Bug in the sprite cache.  Disabled for now.  But need to fix. 
+
+;TODO: Bugginess with forever, sequence, for-ticks
+;       Could keep tracking down the specific bugs, but what's really going on is that it's fucking hard to reason about these meta components.  It was hard before mutability.  Now it's impossible.  Go back to the drawing board on these.  Why do we need them?  Is there some other abstraction that would be better?  
+
+(play! g)
+
+
+#;
+(debug
+  (tick! g)
+  (tick! g)
+  (tick! g)
+  (tick! g)
+  (tick! g))
+
+
+
 
 #;
 (mutable!
@@ -78,12 +115,9 @@
 #;
 (play g)
 
-;Crashes for some reason...
-(debug
-  (tick! g)
-  (tick! g)
-  (tick! g)
-  (tick! g))
+
+
+;All of the bullets getting spawned have the same id.  That's one problem.  Possibly because of htat, their ids seems suspicious.
 
 
 

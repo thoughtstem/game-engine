@@ -31,7 +31,7 @@
 
 (define (my-color-display c ss)
  (parameterize ( [foreground-color c])
-   (color-display (~a (string-join ss "\n")
+   (color-display (~a (string-join (map ~a ss) "\n")
                       "\n"))))
 
 (define (pretty-print-games . gs)

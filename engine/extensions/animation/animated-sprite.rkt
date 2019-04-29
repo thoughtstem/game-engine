@@ -10,15 +10,33 @@
   y
   update:position/x^
   update:position/y^
+  position?
 
   get-queued-sprites
   flush-queued-sprites!
   
-  spawn-here)
+  spawn-here
+
+  name
+  named?
+  get-by-name
+  )
 
 (require "../../core/main.rkt"
          2htdp/image)
 
+(define-component name (s))
+
+(define (named? e s)
+  (define n
+    (get-component e name?))     
+  (and n
+       (string? s)
+       (string=? s
+                 (name-s n))))
+
+(define (get-by-name g s)
+  (findf (curryr named? s) (game-entities g)))
 
 
 ;TODO: Positioning is more general than animations, move somewhere
@@ -50,6 +68,8 @@
 (define (move-to-parent p c)
   (define parent-pos 
     (get-component p position?))
+
+
 
   (if (get-component c position?)
     (update-component c position?  parent-pos)
