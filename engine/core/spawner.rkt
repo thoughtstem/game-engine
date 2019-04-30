@@ -13,6 +13,7 @@
 
 (require "./define-component.rkt"
          "./base.rkt"
+         "./handler-util.rkt"
          "./crud.rkt"
          )
 
@@ -20,13 +21,17 @@
 (define-component dead ())
 
 (define (spawn to-spawn 
-               (before-spawn (lambda (parent child) child)))
+               (before-spawn (lambda (parent child) child))
+               #:update (u #f)
+               )
 
   (new-component
     #:update
-    (lambda (g e c)
-      (add-component e 
-                     (spawner (before-spawn e to-spawn))))))
+    (compose-handlers
+      (lambda (g e c)
+        (add-component e 
+                       (spawner (before-spawn e to-spawn))))
+      u)))
 
 
 ;This makes things like (after-ticks 5 (die))

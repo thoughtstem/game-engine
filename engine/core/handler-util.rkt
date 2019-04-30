@@ -32,9 +32,20 @@
         e ;noop
         )))
 
-(define/contract (compose-handlers . hs)
-   (->* () () #:rest (listof handler?) handler?)
+(define #;/contract 
+  (compose-handlers . hs)
+  #;
+  (->* () () #:rest (listof handler?) handler?)
 
+  (set! hs (filter identity hs))
+
+  (lambda (g e c) 
+    (define mid-e e)
+    (for ([h hs])
+      (set! mid-e (h g mid-e c)))
+    mid-e)
+
+   #;
    (lambda (g e c) 
      (define temp-e (struct-copy entity e))
 

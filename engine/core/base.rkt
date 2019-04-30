@@ -103,6 +103,8 @@
   (lambda (g e c)
     body ...))
 
+
+
 (define rule? (-> game? entity? component? boolean?))
 
 (define noop (lambda (g e c) e))

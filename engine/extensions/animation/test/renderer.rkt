@@ -11,6 +11,17 @@
          (prefix-in h: 2htdp/image))
 
 
+
+;TODO: CLean up this doc. It has too much brainstorming in it.
+
+;TODO: Can we simplify the component model so that components only update themselves?  
+; If so, that would be huge.
+;
+;for-ticks and stuff like that can be specialized handler functions.
+;
+;Just note that copying a component to another entity means copying along all of its update behaviour -- which is exactly what you want...  Just gets weird when it's a (position ...) and you don't expect it to have a behaviour attached.  But that's mostly just a mental pivot for me.  Doc the new behaviour.  Update the docs.
+
+
 ;TODO: COnsider a #:render on components.  Could this be a better/other paradigmn for rendering games.  Compare with (play g) triggering a sprite scrape on every tick.
 ;  Makes it weirdly like react...
 
@@ -42,19 +53,69 @@
   (entity 
     (position 200 200)
     (sprite (h:circle 5 'solid c))
+
+    #;
     (after-ticks 50 (die))))
+
 
 (define g
   (game
     (entity
-      (position 200 200)
+      ;Essentially, an entity is a bunch of data with some initial state.
+      ;And then that state evolves over time.
+      ;The evolution is described as a collection of functions that take and return new versions of the entity on every tick.  These are folded together to create the next entity.
+
+      ;
+      ;But that seems like it could be overkill.  These functions really just need to snipe out certain values in the data and read/change them.
+      ;  It also adds and removes components, but that could also be implemented with a queue -- a component (or meta structure) that stores a list of the components to be added, for example.
+
+      ;One idea is to build a dataflow graph, like in FRP.
+      ;  We would express the values as behaviours, etc.
+
+      ;But that seems like a big pivot.
+
+
+      ;The current question is how best to express abstractions like, for this many ticks, do this behavior.
+
+      ;That runs into a problem because I'm having trouble reconciling the notion of "behaviour" with the notion of "component".
+
+      ;What then is a "behaviour"
+      ;  Right now, it's the update functions, which express changes to values on the entity, as well as express component additions and removals.  Though in theory they can do much more than this in a single operation because they can return entirely new entities, which may have many changes.  However, in practice, it may be safe to assume that components will be "well behaved", meaning that they only express their output as a series of crud functions on the input entity...
+
+      ;The problem is that this is slow.  So we added mutability.  Crud functions can be mutable, meaning they transform their input.  This seemed to break some of the behavioural abstractions, which had been built upon the idea that a component could "behave like" another component by simulating it's effect on the input entity.  But now in the mutable case, those simulations are real.  So this breaks all of their logic.
+      ;
+      ;It raises the question of whether that logic needed to be their in the first place.  Maybe there are other perfectly good ways to do for-ticks, sequence, forever, etc...  
+      ;Or mabye we need to pivot something about what a "handler" is.  As long as something like the syntax below works, that's fine.
+
+      ;Maybe those don't need to happen at the component level.  
+      ;
+      ;If not, where?  What is a behaviour?  
+
+      ;Spawn here is a component.
+      ;It conveys the behaviour of, every tick spawn something.
+      ;It's handler produces an entity with a (spawn ...) component attached.  In the mutable case, it actually attaches that spawn component.
+
+
+      ;In v1: The natural abstraction we chose for for-ticks was (because it is taking a component as input) that it was going to add that component and then remove it after 200 ticks.
+
+      ;In v2: I was trying to make for-ticks simulate that entity for some number of ticks.  I guess I thought it was going to be messy to add the component and then keep a reference to it so it could be yanked back. 
+
+      ;Let's go back to v1, because I think it will be more resilient in the face of the mutability...
+
+      (position 200 200
+                #:update (update:position/x^ (curry + 1)))
+
+        
       (sprite (h:circle 20 'solid 'red))
-      (new-component #:update
-                     (update:position/x^ (curry + 1)))
+
+
+      (spawn-here (bullet 'green)
+                  #:update (for-ticks 20))
 
       #;
       (for-ticks 200
                  (spawn-here (bullet 'green)))
+
 
       #;
       (sequence
@@ -62,12 +123,15 @@
                    (spawn-here (bullet 'green)))
         (for-ticks 5
                    (spawn-here (bullet 'blue))))
+      #;
       (forever
         (sequence
           (for-ticks 5
                      (spawn-here (bullet 'green)))
           (for-ticks 5
-                     (spawn-here (bullet 'blue))))))
+                     (spawn-here (bullet 'blue)))))
+      
+      )
 
     (entity
       (name "orange-dude")

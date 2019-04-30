@@ -60,8 +60,8 @@
     (list-ref (entity-components e) 1))
   (position-y p))
 
-(define (make-position x y)
-  (position x y))
+(define (make-position x y #:update (u #f))
+  (position x y #:update u))
 
 ;Now that x and y exist in our discourse, we can agument spawner with the ability to spawn at the location of the parent
 
@@ -69,14 +69,17 @@
   (define parent-pos 
     (get-component p position?))
 
-
+  (define my-pos (position (position-x parent-pos)
+                           (position-y parent-pos)))
 
   (if (get-component c position?)
-    (update-component c position?  parent-pos)
-    (add-component c parent-pos)))
+    (update-component c position?  my-pos)
+    (add-component c my-pos)))
 
-(define (spawn-here to-spawn)
-  (spawn to-spawn move-to-parent))
+(define (spawn-here to-spawn
+                    #:update (u #f))
+  (spawn to-spawn move-to-parent
+         #:update u))
 
 
 
@@ -110,7 +113,7 @@
     (~a "sprite-"
         (equal-hash-code (~a (image->color-list i))))))
 
-(define (make-sprite i (maybe-id #f))
+(define (make-sprite i (maybe-id #f) #:update (u #f))
   (define id 
     (if maybe-id maybe-id (image->id i))) 
 
@@ -118,7 +121,7 @@
     (set! insertion-queue (cons (list id i) insertion-queue))
     (set! seen-sprite-ids (cons id seen-sprite-ids)))
 
-  (sprite id))
+  (sprite id #:update u))
 
 
 (define (get-queued-sprites) insertion-queue)
