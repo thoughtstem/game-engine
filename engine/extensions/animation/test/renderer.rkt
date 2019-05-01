@@ -11,6 +11,16 @@
          (prefix-in h: 2htdp/image))
 
 
+;TODO: Wrap up this project of figuring out what to do with meta components.  
+;  Use these existing rendering tests to prototype a replacement.
+;  Delete the meta-components directory, or make them into macros or something.
+
+;  - Look at the red/green pooper example.  There must be ways to simplify that.
+;    What is the abstraction?  What is the language?  Shall we pivot the model once again?
+;      If we are pivoting, can we pivot gradually?  A pivot plan, so to speak?
+;    If we didn't pivot all at once, what would we do instead with that time?
+
+
 
 ;TODO: CLean up this doc. It has too much brainstorming in it.
 
@@ -57,69 +67,50 @@
     #;
     (after-ticks 50 (die))))
 
+;TODO: Let's make this less gross...
+(bullet 'green)
+(bullet 'red)
+(bullet 'blue)
+
+
+(define-component weapon  (bullet))
+(define-component counter (n))
+(define-component shooter ())
+
 
 (define g
   (game
     (entity
-      ;Essentially, an entity is a bunch of data with some initial state.
-      ;And then that state evolves over time.
-      ;The evolution is described as a collection of functions that take and return new versions of the entity on every tick.  These are folded together to create the next entity.
-
-      ;
-      ;But that seems like it could be overkill.  These functions really just need to snipe out certain values in the data and read/change them.
-      ;  It also adds and removes components, but that could also be implemented with a queue -- a component (or meta structure) that stores a list of the components to be added, for example.
-
-      ;One idea is to build a dataflow graph, like in FRP.
-      ;  We would express the values as behaviours, etc.
-
-      ;But that seems like a big pivot.
-
-
-      ;The current question is how best to express abstractions like, for this many ticks, do this behavior.
-
-      ;That runs into a problem because I'm having trouble reconciling the notion of "behaviour" with the notion of "component".
-
-      ;What then is a "behaviour"
-      ;  Right now, it's the update functions, which express changes to values on the entity, as well as express component additions and removals.  Though in theory they can do much more than this in a single operation because they can return entirely new entities, which may have many changes.  However, in practice, it may be safe to assume that components will be "well behaved", meaning that they only express their output as a series of crud functions on the input entity...
-
-      ;The problem is that this is slow.  So we added mutability.  Crud functions can be mutable, meaning they transform their input.  This seemed to break some of the behavioural abstractions, which had been built upon the idea that a component could "behave like" another component by simulating it's effect on the input entity.  But now in the mutable case, those simulations are real.  So this breaks all of their logic.
-      ;
-      ;It raises the question of whether that logic needed to be their in the first place.  Maybe there are other perfectly good ways to do for-ticks, sequence, forever, etc...  
-      ;Or mabye we need to pivot something about what a "handler" is.  As long as something like the syntax below works, that's fine.
-
-      ;Maybe those don't need to happen at the component level.  
-      ;
-      ;If not, where?  What is a behaviour?  
-
-      ;Spawn here is a component.
-      ;It conveys the behaviour of, every tick spawn something.
-      ;It's handler produces an entity with a (spawn ...) component attached.  In the mutable case, it actually attaches that spawn component.
-
-
-      ;In v1: The natural abstraction we chose for for-ticks was (because it is taking a component as input) that it was going to add that component and then remove it after 200 ticks.
-
-      ;In v2: I was trying to make for-ticks simulate that entity for some number of ticks.  I guess I thought it was going to be messy to add the component and then keep a reference to it so it could be yanked back. 
-
-      ;Let's go back to v1, because I think it will be more resilient in the face of the mutability...
 
       (position 200 200
-                #:update (update:position/x^ (curry + 1)))
-
+                #:update (update:position/x^ (curry + 7)))
         
       (sprite (h:circle 20 'solid 'red))
 
+      (counter 0 
+               #:update (update:counter/n^ add1))
 
-      (spawn-here (bullet 'green)
-                  #:update (for-ticks 20))
+      (weapon (bullet 'green)
+              #:update 
+              (lambda (g e c)
+                (update-component e weapon?
+                                  (update:weapon/bullet c
+                                    (bullet (if (odd? (get:counter/n e)) 
+                                              'red 
+                                              'green)))))) 
+      (shooter
+        #:update (compose-handlers (for-ticks 20)
+                                   (lambda (g e c)
+                                     (define current-bullet (get:weapon/bullet e))
+                                     (add-component e 
+                                                    (spawner (move-to-parent e current-bullet))))))
 
       #;
       (for-ticks 200
                  (spawn-here (bullet 'green)))
 
-
       #;
-      (sequence
-        (for-ticks 5
+      ((
                    (spawn-here (bullet 'green)))
         (for-ticks 5
                    (spawn-here (bullet 'blue))))
@@ -133,6 +124,7 @@
       
       )
 
+    #;
     (entity
       (name "orange-dude")
       (position 200 200)
@@ -156,8 +148,7 @@
 ;TODO: Bugginess with forever, sequence, for-ticks
 ;       Could keep tracking down the specific bugs, but what's really going on is that it's fucking hard to reason about these meta components.  It was hard before mutability.  Now it's impossible.  Go back to the drawing board on these.  Why do we need them?  Is there some other abstraction that would be better?  
 
-(play! g)
-
+(play! g)  
 
 #;
 (debug

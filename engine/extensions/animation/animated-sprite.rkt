@@ -16,6 +16,7 @@
   flush-queued-sprites!
   
   spawn-here
+  move-to-parent
 
   name
   named?
@@ -78,8 +79,8 @@
 
 (define (spawn-here to-spawn
                     #:update (u #f))
-  (spawn to-spawn move-to-parent
-         #:update u))
+  (spawner to-spawn move-to-parent
+           #:update u))
 
 
 

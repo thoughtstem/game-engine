@@ -1,6 +1,7 @@
 #lang racket
 
-(provide debug current-game step-current-game)
+(provide debug current-game step-current-game
+         (rename-out [step-current-game step]))
 
 (require "./printer.rkt"
          "./base.rkt")
