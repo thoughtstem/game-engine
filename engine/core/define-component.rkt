@@ -205,3 +205,52 @@
 
 
 
+(provide define-signal)
+(define-syntax (define-signal stx)
+  (syntax-case stx ()
+    [(_ COMPONENT KIND?)
+     (with-syntax [(new-COMPONENT (format-id #'COMPONENT "new-~a" #'COMPONENT))
+                   (COMPONENT? (format-id #'COMPONENT "~a?" #'COMPONENT)) 
+                   (get-COMPONENT (format-id #'COMPONENT "get-~a" #'COMPONENT)) 
+                   ]
+       (quasisyntax/loc stx (begin
+                              (define (COMPONENT? x) 
+                                (and (vector? x)
+                                     (eq? 'COMPONENT (vector-ref x 1))))
+
+                              (define 
+                                (new-COMPONENT id handler handler-code FIELD)
+                                (vector 'component 'COMPONENT id handler handler-code FIELD))
+
+                              (define (get-COMPONENT e)
+                                (vector-ref
+                                  (get-component e COMPONENT?)
+                                  5))
+
+                              (define-syntax-rule
+                                (COMPONENT FIELD update)
+
+                                (new-COMPONENT (next-id)  
+                                               ;Prototyping new components (signals) on top of old components....
+                                               (lambda (g e c)
+
+                                                 (define next-val
+                                                   (cond
+                                                     [(= 1 (procedure-arity update)) 
+                                                      (update (vector-ref c 5))] 
+                                                     [(= 2 (procedure-arity update)) 
+                                                      (update (vector-ref c 5) e)]      
+                                                     [else (raise "Bad arity in component update function.")]))
+
+                                                 (cond 
+                                                   [(KIND? next-val)
+                                                    (vector-set! c 5 next-val)]
+                                                   [(entity? next-val)
+                                                    (set! e next-val)]
+                                                   [else (raise "What are you returning from your signal update fucntion?")]
+                                                   )
+                                                 e)
+                                               'update
+                                               FIELD)))))]))
+
+

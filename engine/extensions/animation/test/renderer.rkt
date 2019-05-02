@@ -11,6 +11,9 @@
          (prefix-in h: 2htdp/image))
 
 
+;TODO: Wow! Switching to signals seems to be working well.   Logic in the red/green Pooper example was a lot simpler this time.  Another pass?  Or maybe a few more examples to get the feel for crafting logic with signals.  I want to know what abstractions we'll need before we get too deep into refactoring things.
+;  For now, can experiment with "signals" without removing components.  Eventually clean everything up and rename signals to components (or behaviours).
+
 ;TODO: Wrap up this project of figuring out what to do with meta components.  
 ;  Use these existing rendering tests to prototype a replacement.
 ;  Delete the meta-components directory, or make them into macros or something.
@@ -19,6 +22,9 @@
 ;    What is the abstraction?  What is the language?  Shall we pivot the model once again?
 ;      If we are pivoting, can we pivot gradually?  A pivot plan, so to speak?
 ;    If we didn't pivot all at once, what would we do instead with that time?
+
+
+
 
 
 
@@ -77,6 +83,9 @@
 (define-component counter (n))
 (define-component shooter ())
 
+(define-signal Counter number?)
+(define-signal Weapon  entity?)
+(define-signal Shooter boolean?)
 
 (define g
   (game
@@ -87,9 +96,26 @@
         
       (sprite (h:circle 20 'solid 'red))
 
-      (counter 0 
-               #:update (update:counter/n^ add1))
 
+      (Counter 0 add1)
+
+      (Weapon (bullet 'green) 
+              (lambda (b e)
+                (if (odd? (get-Counter e))
+                  (bullet 'red)    
+                  (bullet 'green))))
+
+
+      (Shooter (void) 
+               (lambda (v e)
+                 (define current-bullet (get-Weapon e)) 
+                 (add-component e 
+                                (spawner (move-to-parent e current-bullet)))))
+
+      #;
+      (counter 0 #:update (update:counter/n^ add1))
+
+      #;
       (weapon (bullet 'green)
               #:update 
               (lambda (g e c)
@@ -98,6 +124,7 @@
                                     (bullet (if (odd? (get:counter/n e)) 
                                               'red 
                                               'green)))))) 
+      #;
       (shooter
         #:update (compose-handlers (for-ticks 20)
                                    (lambda (g e c)
@@ -148,7 +175,7 @@
 ;TODO: Bugginess with forever, sequence, for-ticks
 ;       Could keep tracking down the specific bugs, but what's really going on is that it's fucking hard to reason about these meta components.  It was hard before mutability.  Now it's impossible.  Go back to the drawing board on these.  Why do we need them?  Is there some other abstraction that would be better?  
 
-(play! g)  
+(play! g)      
 
 #;
 (debug
