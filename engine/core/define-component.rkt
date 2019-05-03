@@ -212,6 +212,7 @@
      (with-syntax [(new-COMPONENT (format-id #'COMPONENT "new-~a" #'COMPONENT))
                    (COMPONENT? (format-id #'COMPONENT "~a?" #'COMPONENT)) 
                    (get-COMPONENT (format-id #'COMPONENT "get-~a" #'COMPONENT)) 
+                   (set-COMPONENT (format-id #'COMPONENT "set-~a" #'COMPONENT)) 
                    ]
        (quasisyntax/loc stx (begin
                               (define (COMPONENT? x) 
@@ -224,8 +225,17 @@
 
                               (define (get-COMPONENT e)
                                 (vector-ref
-                                  (get-component e COMPONENT?)
+                                  (if (entity? e)
+                                    (get-component e COMPONENT?)
+                                    e
+                                    )
                                   5))
+
+                              (define (set-COMPONENT e v)
+                                (vector-set!
+                                  (get-component e COMPONENT?)
+                                  5
+                                  v))
 
                               (define-syntax-rule
                                 (COMPONENT FIELD update)
@@ -241,6 +251,9 @@
                                                      [(= 2 (procedure-arity update)) 
                                                       (update (vector-ref c 5) e)]      
                                                      [else (raise "Bad arity in component update function.")]))
+
+                                                 (displayln "next-val")
+                                                 (displayln next-val)
 
                                                  (cond 
                                                    [(KIND? next-val)

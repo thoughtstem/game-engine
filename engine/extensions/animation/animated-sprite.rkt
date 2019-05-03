@@ -5,17 +5,26 @@
   sprite?
   sprite-id
   
+  #;
   (rename-out [make-position position])
   x
   y
+  #;
   update:position/x^
+  #;
   update:position/y^
+  #;
   position?
 
   get-queued-sprites
   flush-queued-sprites!
   
+  move-to
+
+  #;
   spawn-here
+
+  #;
   move-to-parent
 
   name
@@ -41,42 +50,68 @@
 
 
 ;TODO: Positioning is more general than animations, move somewhere
+#;
 (define-component position (x y))
+
+(require posn)
+(define-signal Position posn?)
 
 (define (x e)
   (define p
     ;TODO
     ;Slow...
-    (get-component e position?)
+    (get-component e Position?)
 
     ;Fast...
     #;
     (list-ref (entity-components e) 1))
-  (position-x p))
+  (posn-x (get-Position p)))
 
 (define (y e)
   (define p
-    (get-component e position?)
+    (get-component e Position?)
     #;
     (list-ref (entity-components e) 1))
-  (position-y p))
 
+  (posn-y (get-Position p)))
+
+#;
 (define (make-position x y #:update (u #f))
   (position x y #:update u))
 
 ;Now that x and y exist in our discourse, we can agument spawner with the ability to spawn at the location of the parent
 
+
+
+;TODO: What does "move to parent" mean in the new component -> signal transition?  How does an entity get "moved", in a world where all of its signals only move themselves.  Presumably those signals needed to have been altered
+;Do we need to rethink how spawning works too?
+;   Yup...
+
+(define (move-to p e)
+  (define current-p 
+    (get-component e Position?))
+
+  (define new-p
+    (set-Position current-p p))
+
+  (update-component e 
+                    current-p
+                    new-p))
+
+#;
 (define (move-to-parent p c)
   (define parent-pos 
-    (get-component p position?))
+    (get-component p Position?))
 
-  (define my-pos (position (position-x parent-pos)
-                           (position-y parent-pos)))
+  (define my-pos (Position parent-pos 
+                           identity))
 
-  (if (get-component c position?)
-    (update-component c position?  my-pos)
+  (if (get-component c Position?)
+    (update-component c Position?  my-pos)
     (add-component c my-pos)))
 
+
+#;
 (define (spawn-here to-spawn
                     #:update (u #f))
   (spawner to-spawn move-to-parent

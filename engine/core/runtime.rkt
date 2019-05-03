@@ -11,7 +11,9 @@
          tick-list
 
          all-entities
-         has-id?)
+         has-id?
+         (struct-out spawn-me)
+         )
 
 (require "./base.rkt"
          "./crud.rkt"
@@ -21,6 +23,7 @@
          "./printer.rkt"
          "./debug.rkt")
 
+(struct spawn-me (entity))
 
 
 (define to-remove '())
