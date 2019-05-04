@@ -151,7 +151,7 @@
          component?
          component-eq?
          component-id
-         component-or-system?
+         ;component-or-system?
          new-sprite
          ensure-sprite
          )
@@ -249,8 +249,8 @@
         (and (struct? c)
              (component-id c)))))
 
-(define component-or-system?
-  (or/c component? (listof component?)))
+;(define component-or-system?
+;  (or/c component? (listof component?)))
 
 (require (for-syntax racket))
 (define-syntax (component stx)
