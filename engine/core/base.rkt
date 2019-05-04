@@ -45,10 +45,20 @@
   no-contracts!
   debug-mode
   maybe-contract
-  )
+
+  CURRENT-ENTITY
+
+  (struct-out despawn-me) 
+  (struct-out spawn-me))
 
 (require "./util.rkt"
          racket/contract/option )
+
+(struct spawn-me (entity))
+(struct despawn-me ())
+
+(define CURRENT-ENTITY 
+  (make-parameter #f))
 
 (define mutable-state (make-parameter #f))
 (define debug-mode    (make-parameter #f))

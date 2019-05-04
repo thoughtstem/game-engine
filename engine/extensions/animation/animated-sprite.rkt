@@ -1,8 +1,8 @@
 #lang racket
 
 (provide 
-  (rename-out [make-sprite sprite])
-  sprite?
+  (rename-out [make-sprite Sprite])
+  Sprite?
   sprite-id
   
   #;
@@ -88,6 +88,7 @@
 ;   Yup...
 
 (define (move-to p e)
+
   (define current-p 
     (get-component e Position?))
 
@@ -98,32 +99,14 @@
                     current-p
                     new-p))
 
-#;
-(define (move-to-parent p c)
-  (define parent-pos 
-    (get-component p Position?))
-
-  (define my-pos (Position parent-pos 
-                           identity))
-
-  (if (get-component c Position?)
-    (update-component c Position?  my-pos)
-    (add-component c my-pos)))
-
-
-#;
-(define (spawn-here to-spawn
-                    #:update (u #f))
-  (spawner to-spawn move-to-parent
-           #:update u))
-
-
-
 ;A component that wraps a single sprite id
 ;  there's no animation at this component's level.
 ;  It can be used to create animation systems with more complex
 ;  components.
-(define-component sprite (id))  ;Can add things like tint, offset, extra scale, extra rotation, etc. laster
+(define-signal Sprite symbol?)
+
+(define (sprite-id s)
+  (get-Sprite s))
 
 ;Whenever you construct a new sprite, it ends up in the
 ; insertion queue, along with its id.  This is the last step
@@ -157,7 +140,7 @@
     (set! insertion-queue (cons (list id i) insertion-queue))
     (set! seen-sprite-ids (cons id seen-sprite-ids)))
 
-  (sprite id #:update u))
+  (Sprite id (get-Sprite)))
 
 
 (define (get-queued-sprites) insertion-queue)

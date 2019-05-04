@@ -122,7 +122,7 @@
   (make-hasheq))
 
 (require (prefix-in h: 2htdp/image))
-(define dummy (sprite (h:circle 5 'solid 'blue)))
+(define dummy (Sprite (h:circle 5 'solid 'blue)))
 
 (define (game->ml-sprite-list g)
   (define ret '())
@@ -143,7 +143,7 @@
 
 
       ;The slow way that we need it to be
-      (get-component e sprite?) 
+      (get-component e Sprite?) 
 
       )
 

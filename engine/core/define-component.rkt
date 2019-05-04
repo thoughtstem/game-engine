@@ -5,7 +5,8 @@
 (provide define-component)
 
 (require "./base.rkt"
-         "./crud.rkt")
+         "./crud.rkt"
+         )
 
 (require (for-syntax racket))
 (require (for-syntax racket/syntax))
@@ -223,47 +224,69 @@
                                 (new-COMPONENT id handler handler-code FIELD)
                                 (vector 'component 'COMPONENT id handler handler-code FIELD))
 
-                              (define (get-COMPONENT e)
+                              (define (get-COMPONENT (c #f))
                                 (vector-ref
-                                  (if (entity? e)
-                                    (get-component e COMPONENT?)
-                                    e
-                                    )
-                                  5))
+                                  (if c
+                                    c
+                                    (get-component (CURRENT-ENTITY) 
+                                                   COMPONENT?))
+                                  5)
+                                
+                                )
 
                               (define (set-COMPONENT e v)
+                                (define to-update
+                                  (if (entity? e)
+                                    (get-component e COMPONENT?)
+                                    e))
+
                                 (vector-set!
-                                  (get-component e COMPONENT?)
+                                  to-update 
                                   5
-                                  v))
+                                  v)
+                                
+                                e)
 
                               (define-syntax-rule
                                 (COMPONENT FIELD update)
 
-                                (new-COMPONENT (next-id)  
-                                               ;Prototyping new components (signals) on top of old components....
-                                               (lambda (g e c)
+                                (let ([update-lambda (thunk update)])
 
-                                                 (define next-val
-                                                   (cond
-                                                     [(= 1 (procedure-arity update)) 
-                                                      (update (vector-ref c 5))] 
-                                                     [(= 2 (procedure-arity update)) 
-                                                      (update (vector-ref c 5) e)]      
-                                                     [else (raise "Bad arity in component update function.")]))
+                                  (new-COMPONENT (next-id)  
+                                                 ;Prototyping new components (signals) on top of old components....
+                                                 (lambda (g e c)
 
-                                                 (displayln "next-val")
-                                                 (displayln next-val)
+                                                   (define next-val
+                                                     (update-lambda))
 
-                                                 (cond 
-                                                   [(KIND? next-val)
-                                                    (vector-set! c 5 next-val)]
-                                                   [(entity? next-val)
-                                                    (set! e next-val)]
-                                                   [else (raise "What are you returning from your signal update fucntion?")]
-                                                   )
-                                                 e)
-                                               'update
-                                               FIELD)))))]))
+                                                   (cond 
+                                                     [(KIND? next-val)
+                                                      (vector-set! c 5 next-val)]
+                                                     [(entity? next-val)
+                                                      (set! e next-val)]
+
+                                                     [(despawn-me? next-val)
+                                                      (add-component e
+                                                                     (vector 'component
+                                                                             'dead
+                                                                             -1
+
+                                                                             #f
+                                                                             'none)) ]
+                                                     [(spawn-me? next-val)
+                                                      ;Hack to get spawning to work on top of the old system
+                                                      (add-component e 
+                                                                     (vector 'component
+                                                                             'spawner
+                                                                             -1
+                                                                             #f
+                                                                             'none
+                                                                             (spawn-me-entity next-val)
+                                                                             ))]
+                                                     [else (raise "What are you returning from your signal update fucntion?")]
+                                                     )
+                                                   e)
+                                                 '(lambda () update)
+                                                 FIELD))))))]))
 
 

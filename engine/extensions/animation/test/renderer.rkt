@@ -10,47 +10,12 @@
          threading
          (prefix-in h: 2htdp/image))
 
-;Weird bug where a Position component seems to be getting into the game list?  At least that's how I read the error:
-Error ticking entity
-  Entity: 19 
-    COMPONENT: Position, 11
-      (lambda (p)  (posn-add p (posn 0 1)))
-      #s(posn 200 201)
-      #<procedure:...ne-component.rkt:245:47>
-    COMPONENT: sprite, 12
-      unknown-update-function
-      sprite--2994216625177786298
-      #f
-    COMPONENT: Counter, 13
-      add1
-      1
-      #<procedure:...ne-component.rkt:245:47>
-    COMPONENT: Weapon, 14
-      (lambda (b e)  (if (odd? (get-Counter e))  (bullet (quote red))  (bullet (quote green))))
-      #(struct:entity 22 (#(component Position 20 #<procedure:...ne-component.rkt:245:47> identity #s (posn -1 -1)) # (component sprite 21 #f unknown-update-function sprite-3833518649628565063)) #f)
-      #<procedure:...ne-component.rkt:245:47>
-    COMPONENT: Shooter, 18
-      (lambda (v e)  (define current-bullet (get-Weapon e))  (spawn-me (move-to (get-Position e) current-bullet)))
-      #<void>
-      #<procedure:...ne-component.rkt:245:47>
 
-entity-components: contract violation
-  expected: entity?
-  given: '#(component Position 20 #<procedure:...ne-component.rkt:245:47> identity #s (posn -1 -1))
-  context...:
-   /usr/share/racket/collects/racket/private/more-scheme.rkt:163:2: select-handler/no-breaks
-   /home/thoughtstem/Desktop/Dev/game-engine/engine/core/runtime.rkt:58:4: for-loop
-   /home/thoughtstem/Desktop/Dev/game-engine/engine/core/runtime.rkt:55:2: for-loop
-   /home/thoughtstem/Desktop/Dev/game-engine/engine/core/runtime.rkt:54:0: tick-entities
-   /home/thoughtstem/Desktop/Dev/game-engine/engine/core/runtime.rkt:35:0: tick
-   /home/thoughtstem/Desktop/Dev/game-engine/engine/extensions/animation/renderer.rkt:41:3: word-tick
-   /home/thoughtstem/.racket/7.0/pkgs/lux/word.rkt:142:18
-   /home/thoughtstem/.racket/7.0/pkgs/lux/word.rkt:84:0: call-with-chaos
-   "/home/thoughtstem/Desktop/Dev/game-engine/engine/extensions/animation/test/renderer.rkt":  [running body]
-   for-loop
-   run-module-instance!125
-   perform-require!78
+;Okay, syntax is looking great.  But it's getting as slow as a butt.  Let's try putting in some optimizations.
+;  Or, if necessary, refactor the runtime...
 
+;WHyyyy don't we get better error line numbers from macro-defined functions?
+;  Nope.  It's not the macros.  It's the way we catch errors in runtime.  Need to rethrow that shit somehow...  See "Error ticking entity" handler...
 
 ;Game-oriented programming?
 ;A game-based programming "paradigmn"?
@@ -82,30 +47,24 @@ entity-components: contract violation
 
 ;TODO: Rendering two games at once.  A child game?  Waahhh..
 
-
-
-
-;TODO: Let's make this less gross...
-
-
-(define-component weapon  (bullet))
-(define-component counter (n))
-(define-component shooter ())
-
 (require posn)
 (define-signal Counter number?)
 (define-signal Position posn?)
 (define-signal Weapon  entity?)
 (define-signal Shooter boolean?)
-
+(define-signal Killer boolean?)
 
 (define (bullet c) 
   (entity 
-    (Position (posn -1 -1) identity)
-    (sprite (h:circle 5 'solid c))
-
-    #;
-    (after-ticks 50 (die))))
+    (Position (posn -1 -1) 
+              (get-Position))
+    (Sprite (h:circle 5 'solid c))
+    (Counter 0 
+             (+ 1 (get-Counter)))
+    (Killer  #f 
+             (if (= 50 (get-Counter))
+                    (despawn-me)
+                    #f))))
 
 (bullet 'green)
 (bullet 'red)
@@ -116,102 +75,29 @@ entity-components: contract violation
     (entity
 
       (Position (posn 200 200) 
-                (lambda (p) 
-                  (posn-add p 
-                            (posn 0 1))))
+                (posn-add (get-Position)
+                          (posn 0 1)))
         
-      (sprite (h:circle 20 'solid 'red))
+      (Sprite (h:circle 20 'solid 'red))
 
 
-      (Counter 0 add1)
+      (Counter 0 (+ (get-Counter) 
+                    1))
 
       (Weapon (bullet 'green) 
-              (lambda (b e)
-                (if (odd? (get-Counter e))
+              (if (odd? (get-Counter))
                   (bullet 'red)    
-                  (bullet 'green))))
+                  (bullet 'green)))
 
 
-      (Shooter (void) 
-               (lambda (v e)
-                 (define current-bullet (get-Weapon e)) 
+      (Shooter #f
+               (let 
+                 ([current-bullet (get-Weapon)])
+
                  (spawn-me 
-                   (move-to (get-Position e) current-bullet))
-                 ))
+                   (move-to (get-Position) current-bullet)))))))
 
-      #;
-      (counter 0 #:update (update:counter/n^ add1))
-
-      #;
-      (weapon (bullet 'green)
-              #:update 
-              (lambda (g e c)
-                (update-component e weapon?
-                                  (update:weapon/bullet c
-                                    (bullet (if (odd? (get:counter/n e)) 
-                                              'red 
-                                              'green)))))) 
-      #;
-      (shooter
-        #:update (compose-handlers (for-ticks 20)
-                                   (lambda (g e c)
-                                     (define current-bullet (get:weapon/bullet e))
-                                     (add-component e 
-                                                    (spawner (move-to-parent e current-bullet))))))
-
-      #;
-      (for-ticks 200
-                 (spawn-here (bullet 'green)))
-
-      #;
-      ((
-                   (spawn-here (bullet 'green)))
-        (for-ticks 5
-                   (spawn-here (bullet 'blue))))
-      #;
-      (forever
-        (sequence
-          (for-ticks 5
-                     (spawn-here (bullet 'green)))
-          (for-ticks 5
-                     (spawn-here (bullet 'blue)))))
-      
-      )
-
-    #;
-    (entity
-      (name "orange-dude")
-      (position 200 200)
-      (sprite (h:circle 20 'solid 'orange))
-      (new-component #:update
-                     (update:position/y^ add1))
-      
-      )))
-
-
-;Can we make this kind of query easier to make?
-;  "How does e with name ___'s ___ vary over the next ___ ticks?"
-#;
-(map 
-  (compose y 
-           (curryr get-by-name "orange-dude"))
-  (tick-list g 5))
-
-;TODO: Bug in the sprite cache.  Disabled for now.  But need to fix. 
-
-;TODO: Bugginess with forever, sequence, for-ticks
-;       Could keep tracking down the specific bugs, but what's really going on is that it's fucking hard to reason about these meta components.  It was hard before mutability.  Now it's impossible.  Go back to the drawing board on these.  Why do we need them?  Is there some other abstraction that would be better?  
-
-(play! g)        
-#;
-(debug
-  (tick! g)
-  (tick! g)
-  (tick! g)
-  (tick! g)
-  (tick! g))
-
-
+(play! g)
 
 
 #;
@@ -235,10 +121,10 @@ entity-components: contract violation
 (
 
 (define dead-sprite
-  (sprite (h:circle 5 'solid 'red)))
+  (Sprite (h:circle 5 'solid 'red)))
 
 (define live-sprite
-  (sprite (h:circle 5 'solid 'green)))
+  (Sprite (h:circle 5 'solid 'green)))
 
 (define (entity-conway-alive? e)
   (conway-alive?
