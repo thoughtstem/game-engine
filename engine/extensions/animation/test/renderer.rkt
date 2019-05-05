@@ -10,8 +10,10 @@
          (prefix-in h: 2htdp/image))
 
 
-;Make sure the mutable/non-mutable games both work the same (with fps only difference)
+;TODO: Maybe a few more examples to get the feel for crafting logic with signals.  
+;  -> Add input?? 
 
+;TODO: Make conway fast again.  Query optimizations.  Caching.
 
 ;Keep having ideas about using rosette or constraint based programming to do
 ; * Procedural geneartion
@@ -22,33 +24,17 @@
 ; * Run subgames within a game...
 ; * Procedurally create games at runtime, run them, do something with the result.
 ; * "Bake" a game, by running it and observing its values.  Faster now as a sub-game...
+;For the paper we write about this engine:
+; * Game-oriented programming?
+; * A game-based programming "paradigmn"?
 
 
 ;WHyyyy don't we get better error line numbers from macro-defined functions?
 ;  Nope.  It's not the macros.  It's the way we catch errors in runtime.  Need to rethrow that shit somehow...  See "Error ticking entity" handler...
 
-;Game-oriented programming?
-;A game-based programming "paradigmn"?
-
-;TODO: Wow! Switching to signals seems to be working well.   Logic in the red/green Pooper example was a lot simpler this time.  Another pass?  Or maybe a few more examples to get the feel for crafting logic with signals.  I want to know what abstractions we'll need before we get too deep into refactoring things.
-;  For now, can experiment with "signals" without removing components.  Eventually clean everything up and rename signals to components (or behaviours).
-
-;TODO: Wrap up this project of figuring out what to do with meta components.  
-;  Use these existing rendering tests to prototype a replacement.
-;  Delete the meta-components directory, or make them into macros or something.
-
-;  - Look at the red/green pooper example.  There must be ways to simplify that.
-;    What is the abstraction?  What is the language?  Shall we pivot the model once again?
-;      If we are pivoting, can we pivot gradually?  A pivot plan, so to speak?
-;    If we didn't pivot all at once, what would we do instead with that time?
-
-
 
 ;Finalize the rendering system.  Docs, and tests.
 ;   So we can move on to input...
-
-;TODO: A few bugs leftover from refactoring for speed.
-;   Making assuptions in renderer and animated-sprite about sprite? and position? components being at a known index.  We need to find a generalized abstraction for that.
 
 ;TODO: Start documenting the renderer so we can figure out what its features need to be.  Don't just start implementing stuff willy nilly. 
 
@@ -87,7 +73,7 @@
   (play! g) )
 
 (begin
-
+  
   (define-component Weapon  entity?)
   (define-component Shooter boolean?)
   (define-component Killer boolean?)
@@ -122,45 +108,97 @@
     (posn-add (get-Position)
               (posn 0 -5)))
 
+  (define (move-left)
+    (posn-add (get-Position)
+              (posn -5 0)))
+
+  (define (move-right)
+    (posn-add (get-Position)
+              (posn 5 0)))
+
+
+  (define-component Rotating-Counter number?)
+  (define-component Direction number?)
+
+  (define (on-edge)
+    (define p (get-Position))
+    
+    (or 
+      (> (posn-x p) 400) 
+      (< (posn-x p) 0)
+      (> (posn-y p) 400) 
+      (< (posn-y p) 0)))
+
+  (define (bounce)
+    (define p (get-Direction))
+    
+    (posn (* -1 (posn-x p))
+          (* -1 (posn-y p))))
+
+  (define (e)
+    (entity
+      (Counter 0 (+ (get-Counter) 1))
+
+      (Rotating-Counter 0 (remainder (get-Counter) 100))
+
+      (Direction (posn 0 0)
+                 ;Should vary from 0 to 3, but should only change every 10 ticks.
+                 ;  Or if it is on the edge...
+                 (cond
+                   [(on-edge) (bounce)]
+                   [(= 0 (get-Rotating-Counter)) 
+                    (list-ref
+                      (list
+                        (posn -1 0) 
+                        (posn 1 0) 
+                        (posn 0 -1) 
+                        (posn 0 1)) 
+                      (random 4))]
+                   [else (get-Direction)]))
+
+      (Position (posn (random 200)
+                      (random 200)) 
+                (posn-add
+                  (get-Position)
+                  (get-Direction)))
+
+      (Sprite (register-sprite (h:circle 20 'solid (h:make-color (random 255)
+                                                                 (random 255) 
+                                                                 (random 255)
+                                                                 100)))
+              (get-Sprite))
+
+
+
+      (Weapon (bullet 'green) 
+              (if (odd? (get-Counter))
+                (bullet 'red)    
+                (bullet 'green)))
+
+      (Shooter #f
+               (let 
+                 ([current-bullet (get-Weapon)])
+
+                 (spawn 
+                   (move-to (get-Position) current-bullet))))))
+
   (define g
-    (game
-      (entity
-        (Counter 0 (+ (get-Counter) 1))
-
-        (Position (posn 200 200) 
-                  (if (odd? (floor 
-                              (/ (get-Counter)
-                                 50)))
-                    (move-up)
-                    (move-down)))
-
-        (Sprite (register-sprite (h:circle 20 'solid 'red))
-                (get-Sprite))
-
-
-
-        (Weapon (bullet 'green) 
-                (if (odd? (get-Counter))
-                  (bullet 'red)    
-                  (bullet 'green)))
-
-        (Shooter #f
-                 (let 
-                   ([current-bullet (get-Weapon)])
-
-                   (spawn 
-                     (move-to (get-Position) current-bullet)))))))
-
-
-  #;
+           (game (e)
+                 (e) 
+                 (e)))
   (play! g)
 
   #;
   (play g)
 
+
+
   )
 
 
+  
+
+  #;
 (begin
 
   (define dead-sprite
