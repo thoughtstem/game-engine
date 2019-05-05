@@ -62,6 +62,7 @@
 (define-component Position posn?)
 (define-component Counter number?)
 
+#;
 (begin
 
   (define dead-sprite
@@ -77,18 +78,14 @@
       (entity 
         (Position (posn 200 200))
         (Counter 0 (+ 1 (get-Counter)))
-
-        #;
         (Sprite live-sprite
                 (if (odd? (get-Counter))
                   live-sprite
                   dead-sprite)))))  
 
 
-  (play g) 
-  )
+  (play! g) )
 
-#;
 (begin
 
   (define-component Weapon  entity?)
@@ -147,8 +144,6 @@
                   (bullet 'red)    
                   (bullet 'green)))
 
-
-        #;
         (Shooter #f
                  (let 
                    ([current-bullet (get-Weapon)])
@@ -160,14 +155,12 @@
   #;
   (play! g)
 
-  ;TODO: Still works?
+  #;
   (play g)
 
   )
 
 
-
-#;
 (begin
 
   (define dead-sprite
@@ -231,17 +224,12 @@
     (augment 
       (conway-game quilted-donut)))
 
-  #;
-  (debug-tick to-play)
 
   #;
   (play to-play)
 
-
+  #;
   (play! to-play)  
-
-
-
 
   )
 

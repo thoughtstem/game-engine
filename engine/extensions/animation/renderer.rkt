@@ -42,8 +42,6 @@
      (match-define (game+render state render-tick) w)
      (define new-state (tick state))
 
-     (pretty-print-game new-state)
-
      (game+render new-state 
                   render-tick))])
 
