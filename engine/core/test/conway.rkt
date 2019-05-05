@@ -11,17 +11,18 @@
          conway-y
          conway-alive?
          game->conway-alive?
-         conway?)
+         conway?
+         get-conway
+         )
 
 (require (prefix-in impl: "./conway-impl.rkt"))
 
-(define-component conway-manager (data))
+(define-component conway-data any/c)
 
 (define (conway-manager-entity data)
   (entity
-    (conway-manager (impl:conway-list->vector data) 
-                    #:update 
-                    (update:conway-manager/data^ impl:conway-tick))))
+    (conway-data (impl:conway-list->vector data) 
+                 (impl:conway-tick (get-conway-data)))))
 
 (define (game->conway-manager g)
   (define cme (first (game-entities g))) 
@@ -33,7 +34,7 @@
     (define cm 
       (game->conway-manager g))  
 
-    (define d (conway-manager-data cm))
+    (define d (get-conway-data cm))
 
     (eq? '*
          (vector-ref (vector-ref d y)
@@ -41,22 +42,29 @@
   
   )
 
-(define-component conway (alive? x y))
+(define-component conway 
+                  list?
+                  #;
+                  (alive? x y))
+
+(define (conway-alive? c)
+  (first c))
+
+(define (conway-x c)
+  (second c))
+
+(define (conway-y c)
+  (third c))
 
 (define (conway-entity x y)
-  (entity (conway #f x y #:update 
-                  (handler (g e c)
-                    (define new-alive? (game->conway-alive? g x y))  
-
-                    ;Optimizes over update:conway/alive?^
-                    (update-component e 0
-                                      (curryr update:conway/alive? new-alive?))
-
-                    )))) 
+  (entity (conway (list #f x y) 
+                  (let ([new-alive? (game->conway-alive? (CURRENT-GAME) x y)])
+                    (list-set (get-conway) 0
+                              new-alive?)))))
 
 
 (define (conway-game->symbols g)
-  (conway-manager-data (game->conway-manager g)))
+  (get-conway-data (game->conway-manager g)))
 
 (define (print-symbols ls)
   (map displayln ls))

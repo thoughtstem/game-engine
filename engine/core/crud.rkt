@@ -6,6 +6,8 @@
          remove-component^
   
          add-component
+         add-components
+
          get-component
          get-components
          update-component
@@ -45,6 +47,13 @@
        e)
      (struct-copy entity e
                   [components new-cs]))) 
+
+(define (add-components e . cs)
+  (if (empty? cs)
+    e
+    (apply add-components (add-component e (first cs)) 
+           (rest cs))))
+
 
 (define/contract (add-component^ to-add)
   (maybe-contract

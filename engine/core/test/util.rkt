@@ -6,31 +6,21 @@
 
 ;It also provides other useful things to make tests more lean and to-the-point
 
-(provide health-amount 
+(provide health
+         set-health
+         get-health
          health?
-         health
 
-         entity-health-amount?
-         entity-health-amount
          ensure-uniqueness!
-         
-         update:health
-         update:health^
-         update:health/amount
-         update:health/amount^
-         rule:health/amount
-         rule:health/amount^
-         get:health/amount
-         get:health/amount^
 
          check-all-entities-health)
 
-(define-component health (amount))
+(define-component health number?)
 
 
 (define (check-all-entities-health g amount)
   (define (health=? amount e)
-    (= amount (health-amount (get-component e health?))))
+    (= amount (get-health (get-component e health?))))
 
   (check-pred (all-entities (curry health=? amount)) 
               g
@@ -38,12 +28,6 @@
   
   (void)) 
 
-;Testing a runtime property of id uniqueness.
-;
-;In other words, when we pass in e three times to start-game, each will start to change over time, as ticks begin happening.  We need a way to distinguish between two versions of the same entity (i.e. one from a previous tick), even though they have changed.  And we also want to differentiate between the copies of e.  They all came from the same constructor, so we can't use eq?  Comparing by id is the answer, which is what entity=? does.  Since id uniqueness is so fundamental to entity=? comparisons, we should test to make sure the property never breaks.
-
-;Here's how we can ensure that property on a game.
-;  (actually a slightly stronger property -- that no two entities or components share an id on any given tick.  And they maintain their id from creation through updates.)
 (define (ensure-uniqueness! g)
   (define eis (map entity-id (game-entities g)))
   (define cis (map component-id (flatten (map entity-components (game-entities g)))))

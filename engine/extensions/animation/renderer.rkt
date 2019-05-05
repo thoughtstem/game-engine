@@ -40,7 +40,12 @@
    
    (define (word-tick w)
      (match-define (game+render state render-tick) w)
-     (game+render (tick state) render-tick))])
+     (define new-state (tick state))
+
+     (pretty-print-game new-state)
+
+     (game+render new-state 
+                  render-tick))])
 
 (define (get-gui #:width [w 480] #:height [h 360])
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
@@ -76,13 +81,14 @@
   (define W 400)
   (define H 400)
 
-  (define render-tick (get-mode-lambda-render-tick g W H))
+  (define render-tick (get-mode-lambda-render-tick W H))
 
   (call-with-chaos
    (get-gui #:width W #:height H)
-   (λ () (fiat-lux (game+render g render-tick)))))
+   (λ () (fiat-lux 
+            (game+render g render-tick))))) 
 
-(define (get-mode-lambda-render-tick g W H)
+(define (get-mode-lambda-render-tick W H)
   (define W/2 (/ W 2))
   (define H/2 (/ H 2))
 
@@ -90,9 +96,10 @@
   ;Use the entities, plus their sprites, to determine the initial sprite database
 
   (define csd (init-db))
-(define layers (vector
-		   (ml:layer (real->double-flonum W/2)
-			     (real->double-flonum H/2))))
+
+  (define layers (vector
+                   (ml:layer (real->double-flonum W/2)
+                             (real->double-flonum H/2))))
 
 
   ;Set up our open gl render function with the current sprite database
@@ -102,10 +109,6 @@
   (define (render-game g)
     ;Find uncompiled entities...
     ;Recompile the database if we added anything:
-
-    ;Create our sprites
-    (define sprite-id (ml:sprite-idx csd 'sprite-1))
-
     (define dynamic-sprites 
       (game->ml-sprite-list g))
 
@@ -113,8 +116,8 @@
 
     ;Actually render them
     (ml:render layers
-	       static-sprites
-	       dynamic-sprites))
+               static-sprites
+               dynamic-sprites))
 
   render-game)
 
@@ -122,36 +125,24 @@
   (make-hasheq))
 
 (require (prefix-in h: 2htdp/image))
-(define dummy (Sprite (h:circle 5 'solid 'blue)))
+
+#;
+(define dummy (Sprite 
+                (h:circle 5 'solid 'blue)
+                (get-Sprite)))
 
 (define (game->ml-sprite-list g)
   (define ret '())
   (define hits 0)
 
   (for ([e (game-entities g)])
-    ;How much slowdown from get-component vs from ml:sprite vs from just looping over everything...?
-    ;vs the x and y getters?
     (define cs (entity-components e))
     (define s 
-      ;TODO: this is not going to generalize as is....    
+      (get-component e Sprite?))
 
-      ;The fast way that we want it to be
-      #;
-      (if (> (length cs) 2)
-        (list-ref cs 2)
-        #f)
-
-
-      ;The slow way that we need it to be
-      (get-component e Sprite?) 
-
-      )
-
-    ;When there's a sprite? component
     (when s 
       (define eid (entity-id e))
       (define sid (ml:sprite-idx csd (sprite-id s)))
-
 
       (define mls
 

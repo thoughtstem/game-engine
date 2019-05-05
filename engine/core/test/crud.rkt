@@ -4,10 +4,11 @@
          "../main.rkt"
          "./util.rkt")
 
+
+
+
 (test-case "Create/Read/Update/Destroy component"
   
-           (define-component health (amount))
-
            (define no-health (entity))
            (define h (health 5))
 
@@ -16,11 +17,12 @@
            (check-not-false
              (get-component e health?))
 
-           (define e-with-more-health (update-component e health? 
-                                                        (curryr update:health/amount add1)))
+           (define e-with-more-health (update-component e 
+                                                        health? 
+                                                        (set-health h 6)))
 
            (check-equal?
-             (get:health/amount e-with-more-health)
+             (get-health (get-component e-with-more-health health?))
              6)
 
            (define no-health-again (remove-component e h))
@@ -29,14 +31,14 @@
              (get-component no-health-again health?)))
 
 
-
-
 (test-case "Add/Remove entity from game"
    (define bullet (entity))
 
-   (define e (entity (health 5 
-                             #:update 
-                             (add-component^ (spawner bullet)))))         
+   (define-component weapon void?)
+
+   (define e (entity (health 5)
+                     (weapon (void)
+                             (spawn bullet))))
 
    (define g0 (game e))
    (define g1 (tick g0))

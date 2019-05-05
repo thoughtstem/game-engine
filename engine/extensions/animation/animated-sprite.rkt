@@ -1,9 +1,11 @@
 #lang racket
 
 (provide 
-  (rename-out [make-sprite Sprite])
+  Sprite
   Sprite?
   sprite-id
+  get-Sprite
+  register-sprite
   
   #;
   (rename-out [make-position position])
@@ -30,12 +32,14 @@
   name
   named?
   get-by-name
+  set-insertion-queue!
+  set-seen-sprite-ids! 
   )
 
 (require "../../core/main.rkt"
          2htdp/image)
 
-(define-component name (s))
+(define-component name string?)
 
 (define (named? e s)
   (define n
@@ -43,18 +47,13 @@
   (and n
        (string? s)
        (string=? s
-                 (name-s n))))
+                 (get-name n))))
 
 (define (get-by-name g s)
   (findf (curryr named? s) (game-entities g)))
 
-
-;TODO: Positioning is more general than animations, move somewhere
-#;
-(define-component position (x y))
-
 (require posn)
-(define-signal Position posn?)
+(define-component Position posn?)
 
 (define (x e)
   (define p
@@ -75,18 +74,6 @@
 
   (posn-y (get-Position p)))
 
-#;
-(define (make-position x y #:update (u #f))
-  (position x y #:update u))
-
-;Now that x and y exist in our discourse, we can agument spawner with the ability to spawn at the location of the parent
-
-
-
-;TODO: What does "move to parent" mean in the new component -> signal transition?  How does an entity get "moved", in a world where all of its signals only move themselves.  Presumably those signals needed to have been altered
-;Do we need to rethink how spawning works too?
-;   Yup...
-
 (define (move-to p e)
 
   (define current-p 
@@ -103,7 +90,7 @@
 ;  there's no animation at this component's level.
 ;  It can be used to create animation systems with more complex
 ;  components.
-(define-signal Sprite symbol?)
+(define-component Sprite symbol?)
 
 (define (sprite-id s)
   (get-Sprite s))
@@ -132,20 +119,26 @@
     (~a "sprite-"
         (equal-hash-code (~a (image->color-list i))))))
 
-(define (make-sprite i (maybe-id #f) #:update (u #f))
-  (define id 
-    (if maybe-id maybe-id (image->id i))) 
+(define (register-sprite i)
+  (let ([id (image->id i)])
+    (when (not (seen? id))
+      (set-insertion-queue! (cons (list id i) insertion-queue))
+      (set-seen-sprite-ids! (cons id seen-sprite-ids)))
 
-  (when (not (seen? id))
-    (set! insertion-queue (cons (list id i) insertion-queue))
-    (set! seen-sprite-ids (cons id seen-sprite-ids)))
+    id))
 
-  (Sprite id (get-Sprite)))
+(define (set-insertion-queue! l)
+  (set! insertion-queue l))
 
+(define (set-seen-sprite-ids! l)
+  (set! seen-sprite-ids l))
 
 (define (get-queued-sprites) insertion-queue)
 (define (flush-queued-sprites!) 
   (set! insertion-queue '()))
+
+
+
 
 ;Is this where we tie in the mode-lambda stuff??
 ;When do things get added to the sprite database?
@@ -183,26 +176,6 @@
 ;As for sprites, I'd like to try to minimize memory usage.  One option is to make the user register all the sprite up front, then reference them by ids from then on.  We can throw them away after they go to the graphics card.
 
 ;Buuut.  That feels onerous compared to letting the user lexically see what sprite will be attached to what entity..
-
-#;
-(begin
-  (define wizard  (entity (sprite [WIZARD-IMAGE])))
-  (define wizard2 (entity (sprite [WIZARD-IMAGE])))
- )
-
-;Here, both wizards have the same sprite.  We want the appearance of a 2 to 1 relationship there.
-;But at render time, each entity should render separately.  They should just look the same.
-;On the bottom end, at the mode-lambda level (and presumably the gcard level), we need to refer to sprites by ids.  So each wizard sprite will have the same id. 
-
-
-
-
-
-
-
-
-;META: Thinking about what user will write, how to teach them how to write it, how to make the writing meaningful -- all at one time is the task of a programminer.  We call it tests, docs, code.
-
 
 
 

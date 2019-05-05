@@ -1,8 +1,7 @@
 #lang racket
 
 (require "../animated-sprite.rkt"
-         "../renderer.rkt"
-         "../../meta-components.rkt")
+         "../renderer.rkt")
 
 (require "../../../core/main.rkt")
 
@@ -11,9 +10,18 @@
          (prefix-in h: 2htdp/image))
 
 
-;Refactored the runtime
-;  Go back and rewrite all tests... great meta-test to see if signals are as expressive as components were...
-;  Ideally, everything just gets shorter and clearer!
+;Make sure the mutable/non-mutable games both work the same (with fps only difference)
+
+
+;Keep having ideas about using rosette or constraint based programming to do
+; * Procedural geneartion
+; * Generating entire games, sequences
+; * Flockin behavior
+;Or other meta stuff:
+; * A component containing a game and a behaviour that ticks it...
+; * Run subgames within a game...
+; * Procedurally create games at runtime, run them, do something with the result.
+; * "Bake" a game, by running it and observing its values.  Faster now as a sub-game...
 
 
 ;WHyyyy don't we get better error line numbers from macro-defined functions?
@@ -49,121 +57,143 @@
 
 ;TODO: Rendering two games at once.  A child game?  Waahhh..
 
+
 (require posn)
-(define-signal Counter number?)
-(define-signal Position posn?)
-(define-signal Weapon  entity?)
-(define-signal Shooter boolean?)
-(define-signal Killer boolean?)
+(define-component Position posn?)
+(define-component Counter number?)
 
-(define (bullet c) 
-  (entity 
-    (Position (posn -1 -1) 
-              (let ()
-                (posn-add 
-                  (posn (random -1 2)
-                        (random -1 2))
-                  (get-Position)
-                  )))
-    (Sprite (h:circle 5 'solid c))
-    (Counter 0 
-             (+ 1 (get-Counter)))
-    (Killer  #f 
-             (if (= 50 (get-Counter))
-                    (despawn-me)
-                    #f))))
+(begin
 
-(bullet 'green)
-(bullet 'red)
-(bullet 'blue)
+  (define dead-sprite
+    (register-sprite
+      (h:circle 5 'solid 'red))) 
 
-(define (move-down)
-  (posn-add (get-Position)
-            (posn 0 5)))
+  (define live-sprite
+    (register-sprite
+      (h:circle 5 'solid 'green))) 
 
-(define (move-up)
-  (posn-add (get-Position)
-            (posn 0 -5)))
+  (define g 
+    (game
+      (entity 
+        (Position (posn 200 200))
+        (Counter 0 (+ 1 (get-Counter)))
 
-(define g
-  (game
-    (entity
-      (Counter 0 (+ (get-Counter) 1))
-
-      (Position (posn 200 200) 
-                (if (odd? (floor 
-                            (/ (get-Counter)
-                              50)))
-                  (move-up)
-                  (move-down)))
-        
-      (Sprite (h:circle 20 'solid 'red))
+        #;
+        (Sprite live-sprite
+                (if (odd? (get-Counter))
+                  live-sprite
+                  dead-sprite)))))  
 
 
+  (play g) 
+  )
 
-      (Weapon (bullet 'green) 
-              (if (odd? (get-Counter))
+#;
+(begin
+
+  (define-component Weapon  entity?)
+  (define-component Shooter boolean?)
+  (define-component Killer boolean?)
+
+  (define (bullet c) 
+    (entity 
+      (Position (posn -1 -1) 
+                (let ()
+                  (posn-add 
+                    (posn (random -1 2)
+                          (random -1 2))
+                    (get-Position)
+                    )))
+      (Sprite (register-sprite (h:circle 5 'solid c)) 
+              (get-Sprite))
+      (Counter 0 
+               (+ 1 (get-Counter)))
+      (Killer  #f 
+               (if (= 50 (get-Counter))
+                 (despawn)
+                 #f))))
+
+  (bullet 'green)
+  (bullet 'red)
+  (bullet 'blue)
+
+  (define (move-down)
+    (posn-add (get-Position)
+              (posn 0 5)))
+
+  (define (move-up)
+    (posn-add (get-Position)
+              (posn 0 -5)))
+
+  (define g
+    (game
+      (entity
+        (Counter 0 (+ (get-Counter) 1))
+
+        (Position (posn 200 200) 
+                  (if (odd? (floor 
+                              (/ (get-Counter)
+                                 50)))
+                    (move-up)
+                    (move-down)))
+
+        (Sprite (register-sprite (h:circle 20 'solid 'red))
+                (get-Sprite))
+
+
+
+        (Weapon (bullet 'green) 
+                (if (odd? (get-Counter))
                   (bullet 'red)    
                   (bullet 'green)))
 
 
-      (Shooter #f
-               (let 
-                 ([current-bullet (get-Weapon)])
+        #;
+        (Shooter #f
+                 (let 
+                   ([current-bullet (get-Weapon)])
 
-                 (spawn-me 
-                   (move-to (get-Position) current-bullet)))))))
-
-(play! g)
-
-
-#;
-(mutable!
-  (debug-tick
-    (debug-tick g)))
-
-;Works but weirdly...
-#;
-(play g)
+                   (spawn 
+                     (move-to (get-Position) current-bullet)))))))
 
 
+  #;
+  (play! g)
 
-;All of the bullets getting spawned have the same id.  That's one problem.  Possibly because of htat, their ids seems suspicious.
+  ;TODO: Still works?
+  (play g)
+
+  )
+
 
 
 #;
 (begin
 
   (define dead-sprite
-    (Sprite (h:circle 5 'solid 'red)))
+    (register-sprite
+      (h:circle 5 'solid 'red))) 
 
   (define live-sprite
-    (Sprite (h:circle 5 'solid 'green)))
-
-  (define (entity-conway-alive? e)
-    (conway-alive?
-      (first (entity-components e))))
-
-  (define (live/dead-sprite-swap g e c)
-    (if (entity-conway-alive? e) 
-      (update-component e 2 live-sprite)
-      (update-component e 2 dead-sprite)))
+    (register-sprite
+      (h:circle 5 'solid 'green))) 
 
   (define (augment g)
     (define (aug-e e)
-      (define c (get-component e conway?))  
+      (define c (get-component e conway?))
 
       ;TODO: make add-components
       (if c
-        (add-component
-          (add-component
-            (add-component e 
-                           (position
-                             (+ 50 (* 10 (conway-x c)))
-                             (+ 100 (* 10 (conway-y c)))))
-            dead-sprite)
-          (new-component #:update 
-                         live/dead-sprite-swap))
+
+        (add-components e
+                        (Position
+                          (posn
+                            (+ 50 (* 10 (conway-x (get-conway c))))
+                            (+ 100 (* 10 (conway-y (get-conway c))))))
+                        (Sprite dead-sprite
+                                (if (conway-alive? (get-conway))
+                                  live-sprite 
+                                  dead-sprite)))
         e))
 
     (apply game (map aug-e (game-entities g))))
@@ -204,8 +234,9 @@
   #;
   (debug-tick to-play)
 
-  #; ;Why is this erroring?
+  #;
   (play to-play)
+
 
   (play! to-play)  
 

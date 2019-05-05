@@ -88,6 +88,9 @@
      (pretty-print-component c)  
      )
 
+(define-debug-hook (debug:component-tick-end c)
+     (blue-display "****Done Ticking Component****")
+     (pretty-print-component c) )
 
 
 

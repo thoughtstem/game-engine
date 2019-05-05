@@ -54,7 +54,14 @@
         [ei (in-naturals)])
     (debug:entity-tick-begin e)
 
-    (parameterize ([CURRENT-ENTITY e])
+    (define next-e
+      (if (mutable-state)
+        e
+        (struct-copy entity e) ))
+
+    ;Tick the components
+    (parameterize ([CURRENT-ENTITY next-e]
+                   [CURRENT-GAME g])
       (for ([c (entity-components e)]
             [ci (in-naturals)])
         (debug:component-tick-begin c)
@@ -62,20 +69,32 @@
         (define h (component-update c))
 
         (when h
+          
+          (set! c (h c))
 
-          (parameterize ([CURRENT-ENTITY e])
-            (set! c (h c)))  
+          (set-entity-components! next-e
+                                  (list-set
+                                    (entity-components next-e)
+                                    ci
+                                    c)) 
 
           (define v (get-value c)) 
 
-          (when (despawn-me? v)
-            (set! to-remove (cons e to-remove))
+          (when (despawn? v)
+            (set! to-remove (cons next-e to-remove))
             (debug:added-to-remove-queue to-remove))
 
-          (when (spawn-me? v)
-            (set! to-spawn (cons (spawn-me-entity v) to-spawn))
+          (when (spawn? v)
+            (set! to-spawn (cons (spawn-entity v) to-spawn))
+            (debug:added-to-spawn-queue to-spawn) ))
 
-            (debug:added-to-spawn-queue to-spawn) )))))
+        (debug:component-tick-end c)))
+    
+
+
+    (set-game-entities! g
+                        (list-set (game-entities g) ei next-e))) 
+
 
   (debug:all-entities-ticked g)
   g)

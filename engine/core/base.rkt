@@ -47,18 +47,21 @@
   maybe-contract
 
   CURRENT-ENTITY
+  CURRENT-GAME
 
   get-value
-  (struct-out despawn-me) 
-  (struct-out spawn-me))
+  (struct-out despawn) 
+  (struct-out spawn))
 
 (require "./util.rkt"
          racket/contract/option )
 
-(struct spawn-me (entity))
-(struct despawn-me ())
+(struct spawn (entity))
+(struct despawn ())
 
 (define CURRENT-ENTITY 
+  (make-parameter #f))
+(define CURRENT-GAME 
   (make-parameter #f))
 
 (define mutable-state (make-parameter #f))
@@ -248,7 +251,7 @@
 ;  Should this too be parameterizable?
 (define/contract (new-game . es)
   (->* () #:rest (listof entity?) game?)
-  (game es))
+  (game (map copy-entity es)))
 
 (define/contract (new-entity . cs)
   (->* () #:rest (listof component?) entity?)
