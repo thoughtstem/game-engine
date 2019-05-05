@@ -225,14 +225,13 @@
                                 (vector 'component 'COMPONENT id handler handler-code FIELD))
 
                               (define (get-COMPONENT (c #f))
+
                                 (vector-ref
                                   (if c
                                     c
                                     (get-component (CURRENT-ENTITY) 
                                                    COMPONENT?))
-                                  5)
-                                
-                                )
+                                  5))
 
                               (define (set-COMPONENT e v)
                                 (define to-update
@@ -254,38 +253,14 @@
 
                                   (new-COMPONENT (next-id)  
                                                  ;Prototyping new components (signals) on top of old components....
-                                                 (lambda (g e c)
+                                                 (lambda (c)
 
                                                    (define next-val
                                                      (update-lambda))
 
-                                                   (cond 
-                                                     [(KIND? next-val)
-                                                      (vector-set! c 5 next-val)]
-                                                     [(entity? next-val)
-                                                      (set! e next-val)]
-
-                                                     [(despawn-me? next-val)
-                                                      (add-component e
-                                                                     (vector 'component
-                                                                             'dead
-                                                                             -1
-
-                                                                             #f
-                                                                             'none)) ]
-                                                     [(spawn-me? next-val)
-                                                      ;Hack to get spawning to work on top of the old system
-                                                      (add-component e 
-                                                                     (vector 'component
-                                                                             'spawner
-                                                                             -1
-                                                                             #f
-                                                                             'none
-                                                                             (spawn-me-entity next-val)
-                                                                             ))]
-                                                     [else (raise "What are you returning from your signal update fucntion?")]
-                                                     )
-                                                   e)
+                                                   ;Maybe only if mutable?
+                                                   (vector-set! c 5 next-val)  
+                                                   c)
                                                  '(lambda () update)
                                                  FIELD))))))]))
 

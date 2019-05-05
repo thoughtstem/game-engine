@@ -61,59 +61,21 @@
 
         (define h (component-update c))
 
-        (define next-e (list-ref (game-entities g) ei))
-
-        (set-entity-changed?! next-e #f)
-
-
-        ;WHyyyy don't we get better error line numbers from macro-defined functions?
-        ;  Nope.  It's not the macros.  It's the way we catch errors in runtime.  Need to rethrow that shit somehow...  See "Error ticking entity" handler...
         (when h
-          (define op
-            (with-handlers
 
-              ([exn:fail? (lambda (er)
-                            (define e-string (pretty-print-entity-string e))
-                            (error (~a "Error ticking entity\n" e-string "\n" (exn-message er))))])
+          (parameterize ([CURRENT-ENTITY e])
+            (set! c (h c)))  
 
-              (if (mutable-state) ;This is confusing as shit.
-                (let ([op (h g next-e c)])
-                  (set! g 
-                    (apply-op op g e c))
-                  op) 
-                (h g next-e c))))
+          (define v (get-value c)) 
 
-
-          ;In the non-mutable case, the time before the op application we can still see the old and new versions of the entity.  I suppose we might want to do something in that intervening time, so we'll leave that space here.
-
-
-          (when (not (mutable-state))
-            (debug:applying-op op)
-            (set! g (apply-op op g ei c)))
-
-          (debug:after-entity-update g op c)
-
-
-          ;TODO: should require that dead and spawner be at the top two slots of the component list -- faster querying that way...  And use the "dirty bit"
-          (when (get-component op dead?)  
+          (when (despawn-me? v)
             (set! to-remove (cons e to-remove))
             (debug:added-to-remove-queue to-remove))
 
-          (when (get-component op spawner?)
-            (set! to-spawn (append (map spawner-to-spawn 
-                                        (get-components op spawner?))
-                                   to-spawn))
-            (debug:added-to-spawn-queue to-spawn) 
+          (when (spawn-me? v)
+            (set! to-spawn (cons (spawn-me-entity v) to-spawn))
 
-            ;TODO: Get the verb tenses right here.
-            (set! g (update-entity g op
-                                   (curryr remove-component spawner?))) 
-
-            (debug:stripped-spawner-from-entity op) 
-            )
-
-
-          ))))
+            (debug:added-to-spawn-queue to-spawn) )))))
 
   (debug:all-entities-ticked g)
   g)

@@ -11,8 +11,10 @@
          (prefix-in h: 2htdp/image))
 
 
-;Okay, syntax is looking great.  But it's getting as slow as a butt.  Let's try putting in some optimizations.
-;  Or, if necessary, refactor the runtime...
+;Refactored the runtime
+;  Go back and rewrite all tests... great meta-test to see if signals are as expressive as components were...
+;  Ideally, everything just gets shorter and clearer!
+
 
 ;WHyyyy don't we get better error line numbers from macro-defined functions?
 ;  Nope.  It's not the macros.  It's the way we catch errors in runtime.  Need to rethrow that shit somehow...  See "Error ticking entity" handler...
@@ -57,7 +59,12 @@
 (define (bullet c) 
   (entity 
     (Position (posn -1 -1) 
-              (get-Position))
+              (let ()
+                (posn-add 
+                  (posn (random -1 2)
+                        (random -1 2))
+                  (get-Position)
+                  )))
     (Sprite (h:circle 5 'solid c))
     (Counter 0 
              (+ 1 (get-Counter)))
@@ -70,19 +77,29 @@
 (bullet 'red)
 (bullet 'blue)
 
+(define (move-down)
+  (posn-add (get-Position)
+            (posn 0 5)))
+
+(define (move-up)
+  (posn-add (get-Position)
+            (posn 0 -5)))
+
 (define g
   (game
     (entity
+      (Counter 0 (+ (get-Counter) 1))
 
       (Position (posn 200 200) 
-                (posn-add (get-Position)
-                          (posn 0 1)))
+                (if (odd? (floor 
+                            (/ (get-Counter)
+                              50)))
+                  (move-up)
+                  (move-down)))
         
       (Sprite (h:circle 20 'solid 'red))
 
 
-      (Counter 0 (+ (get-Counter) 
-                    1))
 
       (Weapon (bullet 'green) 
               (if (odd? (get-Counter))
@@ -114,94 +131,88 @@
 ;All of the bullets getting spawned have the same id.  That's one problem.  Possibly because of htat, their ids seems suspicious.
 
 
-
-;make a way to patch/expand?  What's a good language for making conway games??   (Composing other games together??)
-
 #;
-(
+(begin
 
-(define dead-sprite
-  (Sprite (h:circle 5 'solid 'red)))
+  (define dead-sprite
+    (Sprite (h:circle 5 'solid 'red)))
 
-(define live-sprite
-  (Sprite (h:circle 5 'solid 'green)))
+  (define live-sprite
+    (Sprite (h:circle 5 'solid 'green)))
 
-(define (entity-conway-alive? e)
-  (conway-alive?
-    (first (entity-components e))))
+  (define (entity-conway-alive? e)
+    (conway-alive?
+      (first (entity-components e))))
 
-(define (live/dead-sprite-swap g e c)
-  (if (entity-conway-alive? e) 
-    (update-component e 2 live-sprite)
-    (update-component e 2 dead-sprite)))
+  (define (live/dead-sprite-swap g e c)
+    (if (entity-conway-alive? e) 
+      (update-component e 2 live-sprite)
+      (update-component e 2 dead-sprite)))
 
-(define (augment g)
-  (define (aug-e e)
-    (define c (get-component e conway?))  
+  (define (augment g)
+    (define (aug-e e)
+      (define c (get-component e conway?))  
 
-    ;TODO: make add-components
-    (if c
-      (add-component
+      ;TODO: make add-components
+      (if c
         (add-component
-          (add-component e 
-                         (position
-                           (+ 50 (* 10 (conway-x c)))
-                           (+ 100 (* 10 (conway-y c)))))
-          dead-sprite)
-        (new-component #:update 
-                       live/dead-sprite-swap))
-      e))
+          (add-component
+            (add-component e 
+                           (position
+                             (+ 50 (* 10 (conway-x c)))
+                             (+ 100 (* 10 (conway-y c)))))
+            dead-sprite)
+          (new-component #:update 
+                         live/dead-sprite-swap))
+        e))
 
-  (apply game (map aug-e (game-entities g))))
+    (apply game (map aug-e (game-entities g))))
 
 
-(require "../../../core/test/conway-impl.rkt")
+  (require "../../../core/test/conway-impl.rkt")
 
-(define donut
-  '((* * *)
-    (* _ *)
-    (* * *)))
+  (define donut
+    '((* * *)
+      (* _ *)
+      (* * *)))
 
-(define square-3 (square 3))
+  (define square-3 (square 3))
 
-(define padded-donut
-  (overlay  
-    (square 11)
-    donut))
+  (define padded-donut
+    (overlay  
+      (square 11)
+      donut))
 
-(define quilt
-  (beside
-    (above donut square-3)
-    (above square-3 donut)))
+  (define quilt
+    (beside
+      (above donut square-3)
+      (above square-3 donut)))
 
-(define padded-donut3
-  (beside (beside padded-donut padded-donut) padded-donut))
+  (define padded-donut3
+    (beside (beside padded-donut padded-donut) padded-donut))
 
-(define quilted-donut
-  (above quilt padded-donut3))
+  (define quilted-donut
+    (above quilt padded-donut3))
 
-(define quilted-donut2
-  (above quilted-donut quilted-donut))
+  (define quilted-donut2
+    (above quilted-donut quilted-donut))
 
-(define to-play
-  (augment 
-    #;
-    (conway-game donut)
-    (conway-game quilted-donut)))
+  (define to-play
+    (augment 
+      (conway-game quilted-donut)))
 
-#;
-(debug-tick to-play)
+  #;
+  (debug-tick to-play)
 
-#; ;Why is this erroring?
-(play to-play)
+  #; ;Why is this erroring?
+  (play to-play)
 
-#;
-(play! to-play)  
+  (play! to-play)  
 
 
 
 
-)
+  )
 
 
 

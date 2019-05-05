@@ -48,6 +48,7 @@
 
   CURRENT-ENTITY
 
+  get-value
   (struct-out despawn-me) 
   (struct-out spawn-me))
 
@@ -99,6 +100,9 @@
                       remove-e?))
 (define f-crud? update-f?)
 
+
+(define (get-value c)
+  (vector-ref c 5))
 
 (define/contract (component? c)
   (-> any/c boolean?)
@@ -177,7 +181,9 @@
 ;  Gets called A LOT -- once per component in the game..
 (define/contract (component-update c)
   (maybe-contract
-    (-> component? (or/c #f handler?)))
+    (-> component? 
+        (or/c #f 
+              (-> any/c any/c))))
 
   #;
   (define handlers (vector-ref c 3))
