@@ -136,7 +136,7 @@
   (for ([e (game-entities g)])
     (define cs (entity-components e))
     (define s 
-      (get-component e Sprite?))
+      (get-component e 'Sprite))
 
     (when s 
       (define eid (entity-id e))

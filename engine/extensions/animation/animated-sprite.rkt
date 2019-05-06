@@ -59,7 +59,12 @@
   (define p
     ;TODO
     ;Slow...
+    #;
     (get-component e Position?)
+
+
+    ;Maybe faster?
+    (get-component e 'Position)
 
     ;Fast...
     #;
@@ -68,7 +73,12 @@
 
 (define (y e)
   (define p
+    #;
     (get-component e Position?)
+
+    ;Maybe faster?
+    (get-component e 'Position)
+
     #;
     (list-ref (entity-components e) 1))
 

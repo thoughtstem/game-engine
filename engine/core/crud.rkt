@@ -41,12 +41,16 @@
        (entity-components e)
        (list c)))
 
-   (if (mutable-state)
-     (begin
-       (set-entity-components! e new-cs)
-       e)
-     (struct-copy entity e
-                  [components new-cs]))) 
+
+   (refresh-component-lookup
+     (if (mutable-state)
+       (begin
+         (set-entity-components! e new-cs)
+         e)
+       (struct-copy entity e
+                    [components new-cs])))
+   
+   ) 
 
 (define (add-components e . cs)
   (if (empty? cs)
@@ -99,17 +103,18 @@
   (define real-new-c 
     (action real-old-c))
 
-  (if (equal? real-new-c real-old-c) 
-    e
-    (if (mutable-state)
-      (begin 
-        (set-entity-components! e (list-set cs i real-new-c))
+  (refresh-component-lookup
+    (if (equal? real-new-c real-old-c) 
+      e
+      (if (mutable-state)
+        (begin 
+          (set-entity-components! e (list-set cs i real-new-c))
 
-        (set-entity-changed?! e #t)
+          (set-entity-changed?! e #t)
 
-        e)
-      (struct-copy entity e
-                   [components (list-set cs i real-new-c)]))))
+          e)
+        (struct-copy entity e
+                     [components (list-set cs i real-new-c)])))))
 
 
 (define/contract (update-component^ to-update)
@@ -149,12 +154,13 @@
      (filter-not (curry component=? to-remove) 
                  (entity-components e)))
 
-   (if (mutable-state)
-     (begin
-       (set-entity-components! e new-c) 
-       e) 
-     (struct-copy entity e
-                [components new-c]))) 
+   (refresh-component-lookup
+     (if (mutable-state)
+       (begin
+         (set-entity-components! e new-c) 
+         e) 
+       (struct-copy entity e
+                    [components new-c])))) 
 
 
 (define/contract (remove-component^ to-remove)
@@ -167,14 +173,20 @@
      (remove-component e to-remove)))
 
 
-(define (get-component e query?)
-  (define real-query?
-    (if (component? query?)
-         (curry component=? query?)
-         query?))
+#;
+(require memoize)
 
-  (findf real-query? (entity-components e))
-  )
+(define #;/memo 
+  (get-component e query?)
+
+  (if (symbol? query?)
+    (hash-ref (entity-lookup e) query? #f) 
+    (let ([real-query?
+            (if (component? query?)
+              (curry component=? query?)
+              query?)])
+
+      (findf real-query? (entity-components e)))))
 
 (define (get-components e query?)
   (define real-query?

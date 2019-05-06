@@ -31,7 +31,13 @@
                                   (if c
                                     c
                                     (get-component (CURRENT-ENTITY) 
-                                                   COMPONENT?))
+                                                   'COMPONENT
+
+                                                   #;
+                                                   COMPONENT?
+
+                                                   
+                                                   ))
                                   5))
 
                               (define (set-COMPONENT e v)
@@ -44,32 +50,37 @@
                                   to-update 
                                   5
                                   v)
+
                                 
                                 e)
 
                               (define-syntax COMPONENT 
                                 (syntax-rules ()
                                   [(COMPONENT FIELD)
-                                   (COMPONENT FIELD (get-COMPONENT))]
+                                   (new-COMPONENT (next-id)
+                                                  #f
+                                                  'noop
+                                                  FIELD
+                                                  )]
                                   [(COMPONENT FIELD update)
                                    (let ([update-lambda (thunk update)])
 
                                      (new-COMPONENT (next-id)  
                                                     ;Prototyping new components (signals) on top of old components....
-                                    (lambda (c)
+                                                    (lambda (c)
 
-                                      (define next-val
-                                        (update-lambda))
+                                                      (define next-val
+                                                        (update-lambda))
 
-                                      ;Maybe only if mutable?
-                                      (define new-c
-                                        (if (mutable-state)
-                                          c
-                                          (vector-copy c)))
-                                      
-                                        (vector-set! new-c 5 next-val) 
+                                                      ;Maybe only if mutable?
+                                                      (define new-c
+                                                        (if (mutable-state)
+                                                          c
+                                                          (vector-copy c)))
 
-                                        new-c)
+                                                      (vector-set! new-c 5 next-val) 
+
+                                                      new-c)
                                                     '(lambda () update)
                                                     FIELD))] 
                                   )  

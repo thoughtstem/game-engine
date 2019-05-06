@@ -72,6 +72,10 @@
           
           (set! c (h c))
 
+          (hash-set! (entity-lookup next-e)
+                     (vector-ref c 1) ;Gross...  Gotta hide all the explicit vector nonsense
+                     c)
+
           (set-entity-components! next-e
                                   (list-set
                                     (entity-components next-e)

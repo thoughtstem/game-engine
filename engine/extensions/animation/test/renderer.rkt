@@ -9,11 +9,26 @@
          threading
          (prefix-in h: 2htdp/image))
 
+;TODO: Roll a profiler (or build on top of Racket's now that we've simplified things again).
+
+;TODO: Make conway fast again.  Query optimizations.  Caching.
+;  I tried adding a lookup hash to entities, but I'm not seeing any speed improvement on the red/green poopers...
+;    Should remove if it's not helping
+
+;  Put noops back in -- don't do component update if there is no update function...
+;     Did this.  Slightly faster on the pooper example.  But no improvement on conway that I can see...
+
+;  The weapon component seems to be slow
+;    Constructing a new entity on every frame.
+;  Spawning may also be slow (compared to updates) -- entity copy in spawn queue handling
+;  Make some kind of profiler so we know which components on which entities are sucking up the FPS.  Generally useful tool -- like debugger.  
 
 ;TODO: Maybe a few more examples to get the feel for crafting logic with signals.  
 ;  -> Add input?? 
 
-;TODO: Make conway fast again.  Query optimizations.  Caching.
+
+;TODO: Need to figure out how to reference component values on other entities.
+;      How do you describe the other entity?  How to make queries fast?
 
 ;Keep having ideas about using rosette or constraint based programming to do
 ; * Procedural geneartion
@@ -73,7 +88,6 @@
   (play! g) )
 
 (begin
-  
   (define-component Weapon  entity?)
   (define-component Shooter boolean?)
   (define-component Killer boolean?)
@@ -87,10 +101,10 @@
                           (random -1 2))
                     (get-Position)
                     )))
-      (Sprite (register-sprite (h:circle 5 'solid c)) 
-              (get-Sprite))
+      (Sprite (register-sprite (h:circle 5 'solid c)))
       (Counter 0 
                (+ 1 (get-Counter)))
+      
       (Killer  #f 
                (if (= 50 (get-Counter))
                  (despawn)
@@ -165,19 +179,19 @@
       (Sprite (register-sprite (h:circle 20 'solid (h:make-color (random 255)
                                                                  (random 255) 
                                                                  (random 255)
-                                                                 100)))
-              (get-Sprite))
+                                                                 100))))
 
 
 
       (Weapon (bullet 'green) 
+
+              #;
               (if (odd? (get-Counter))
                 (bullet 'red)    
                 (bullet 'green)))
 
       (Shooter #f
-               (let 
-                 ([current-bullet (get-Weapon)])
+               (let ([current-bullet (get-Weapon)])
 
                  (spawn 
                    (move-to (get-Position) current-bullet))))))
@@ -185,7 +199,10 @@
   (define g
            (game (e)
                  (e) 
-                 (e)))
+                 (e)
+                 (e) 
+                 (e) 
+                 ))
   (play! g)
 
   #;
@@ -197,8 +214,7 @@
 
 
   
-
-  #;
+#;
 (begin
 
   (define dead-sprite
@@ -266,7 +282,6 @@
   #;
   (play to-play)
 
-  #;
   (play! to-play)  
 
   )

@@ -14,6 +14,9 @@
   operation?
 
   entity
+  entity-lookup
+  lookup-hash
+  refresh-component-lookup
   new-entity
   entity?
   entity-components
@@ -82,7 +85,7 @@
     exp))
 
 ;Our basic struct types
-(struct entity (id components changed?) #:mutable  #:transparent)
+(struct entity (id components changed? lookup) #:mutable  #:transparent)
 (struct game (entities) #:mutable #:transparent)
 
 (struct add-e    (e))
@@ -245,6 +248,17 @@
 
   (vector-copy c))
 
+(define (lookup-hash cs)
+  (make-hash
+    (map
+      (lambda (c)
+        (cons (vector-ref c 1) c)) 
+      cs)))
+
+(define (refresh-component-lookup e)
+  (struct-copy entity e
+               [lookup (lookup-hash
+                         (entity-components e))])) 
 
 ;Our basic constructors
 ;  Should the lists get converted to vectors?
@@ -256,7 +270,10 @@
 (define/contract (new-entity . cs)
   (->* () #:rest (listof component?) entity?)
 
-  (entity (next-id) cs #f))
+  (refresh-component-lookup
+    (entity (next-id) cs #f #f))
+  
+  )
 
 (define next-id (id-generator 0))
 
