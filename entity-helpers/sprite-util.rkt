@@ -165,9 +165,11 @@
     (define new-list (map (curry tint-img random-color) (vector->list frames)))
     (update-entity e animated-sprite? (struct-copy animated-sprite s [frames (list->vector new-list)]))))
 
-(define (spawn s #:relative? [relative? #t]) 
+(define (spawn s #:relative? [relative? #t] #:rule [rule (λ (g e) #t)]) 
   (lambda (g e)
-    (add-component e (spawn-once s #:relative? relative?))))
+    (if (rule g e)
+        (add-component e (spawn-once s #:relative? relative?))
+        e)))
 
 ;(define (open-dialog s) 
 ;  (lambda (g e)
