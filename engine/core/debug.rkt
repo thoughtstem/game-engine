@@ -46,6 +46,7 @@
                                  (blue-display "!!!!!!!!!!!!!!!!") 
                                  (raise e)
                                  )])
+
   (parameterize ([debug-mode #t]) 
     exp ...)))
 
@@ -73,6 +74,7 @@
 
 (define-debug-hook (debug:tick-begin g)
     (blue-display (~a "********TICK BEGIN*******"))
+
     (pretty-print-game g)  
     )
 
@@ -80,7 +82,6 @@
       (blue-display "****ENTITY TICK BEGIN****")
       (pretty-print-entity e)  
       )
-
 
 
 (define-debug-hook (debug:component-tick-begin c)

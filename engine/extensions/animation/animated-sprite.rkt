@@ -52,7 +52,7 @@
 (define (get-by-name g s)
   (findf (curryr named? s) (game-entities g)))
 
-(require posn)
+(require "./test/fast-posn.rkt")
 (define-component Position posn?)
 
 (define (x e)

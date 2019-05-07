@@ -10,6 +10,28 @@
          (prefix-in h: 2htdp/image))
 
 ;TODO: Roll a profiler (or build on top of Racket's now that we've simplified things again).
+;  Done.
+;  Testing it.  It seemed to blame Position for being slow, so I changed to an implementation of posn that it claims is faster.
+;    But... it doesn't feel faster and the FPS looks the same.
+;    (Then again, I need to disable the sampling to have a true test...)
+
+;Have it print the stats over time
+
+
+;One big problem is that I don't know what I should be expecting from this engine.  Is 20 FPS with 250 entities good or bad?
+;  What would happen with unity?
+;  What would happen with 2htdp/universe?
+
+;Or another angle:
+;  How many math operations per second should Racket be able to do?  How much overhead from garbage?  How much from memory allocations?
+;  How many is this engine doing?
+;  High level profiler might be able to give us that picture, btw.  So we can keep our estimations honest.
+
+
+
+
+
+
 
 ;TODO: Make conway fast again.  Query optimizations.  Caching.
 ;  I tried adding a lookup hash to entities, but I'm not seeing any speed improvement on the red/green poopers...
@@ -59,7 +81,7 @@
 ;TODO: Rendering two games at once.  A child game?  Waahhh..
 
 
-(require posn)
+(require "./fast-posn.rkt")
 (define-component Position posn?)
 (define-component Counter number?)
 
@@ -96,7 +118,7 @@
     (entity 
       (Position (posn -1 -1) 
                 (let ()
-                  (posn-add 
+                  (posn-add*
                     (posn (random -1 2)
                           (random -1 2))
                     (get-Position)
@@ -113,23 +135,6 @@
   (bullet 'green)
   (bullet 'red)
   (bullet 'blue)
-
-  (define (move-down)
-    (posn-add (get-Position)
-              (posn 0 5)))
-
-  (define (move-up)
-    (posn-add (get-Position)
-              (posn 0 -5)))
-
-  (define (move-left)
-    (posn-add (get-Position)
-              (posn -5 0)))
-
-  (define (move-right)
-    (posn-add (get-Position)
-              (posn 5 0)))
-
 
   (define-component Rotating-Counter number?)
   (define-component Direction number?)
@@ -172,7 +177,7 @@
 
       (Position (posn (random 200)
                       (random 200)) 
-                (posn-add
+                (posn-add*
                   (get-Position)
                   (get-Direction)))
 
@@ -203,7 +208,10 @@
                  (e) 
                  (e) 
                  ))
-  (play! g)
+
+
+  (begin ;profile
+   (play! g))
 
   #;
   (play g)
@@ -285,7 +293,6 @@
   (play! to-play)  
 
   )
-
 
 
 

@@ -33,7 +33,9 @@
        [(or (eq? e 'close)
             (and (key-event? e)
                  (eq? (send e get-key-code) 'escape)))
-        #f
+        (begin
+          (display-performance-stats)
+          #f)
         ]
        [else w]
        ))

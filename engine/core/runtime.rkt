@@ -12,7 +12,8 @@
 
          all-entities
          has-id?
-         )
+         display-performance-stats
+         profile)
 
 (require "./base.rkt"
          "./crud.rkt"
@@ -30,10 +31,19 @@
 (define (tick! g)
   (mutable! (tick g)))
 
+(define component-times #f)
+(define profiler-on (make-parameter #f))
+
+(define-syntax-rule (profile exp)
+  (parameterize ([profiler-on #t])
+    exp))
+
 (define/contract (tick g)
   (maybe-contract
     (-> game? game?))
 
+
+  (set! component-times (make-hash))
   (debug:tick-begin g)
   
   (define next-g #f)
@@ -66,10 +76,13 @@
             [ci (in-naturals)])
         (debug:component-tick-begin c)
 
+
+
         (define h (component-update c))
 
         (when h
-          
+          (define component-start-time (current-inexact-milliseconds))
+
           (set! c (h c))
 
           (hash-set! (entity-lookup next-e)
@@ -82,6 +95,16 @@
                                     ci
                                     c)) 
 
+
+          (when (profiler-on)
+            (hash-update!
+              component-times
+              (cons ei (vector-ref c 1))
+              (lambda (t)
+                (+ t
+                   (- (current-inexact-milliseconds) component-start-time)))
+              (- (current-inexact-milliseconds) component-start-time)))
+
           (define v (get-value c)) 
 
           (when (despawn? v)
@@ -90,7 +113,7 @@
 
           (when (spawn? v)
             (set! to-spawn (cons (spawn-entity v) to-spawn))
-            (debug:added-to-spawn-queue to-spawn) ))
+            (debug:added-to-spawn-queue to-spawn) )) 
 
         (debug:component-tick-end c)))
     
@@ -171,5 +194,43 @@
 
 
 
+(define (display-performance-stats)
+
+  (define data (hash->list component-times))
+
+  (define grouped-by-type
+    (let ([h (make-hash)])
+      (for ([d data])
+        (define type (cdr (car d)))
+        (define time (cdr d))
+        (hash-update! h 
+                      type
+                      (lambda (t)
+                        (+ t time) )
+                      time))
+      h))
+  
+  (define sorted
+    (sort data < #:key cdr))
+
+  (define total
+    (apply + (map cdr data)))
+
+  (define top
+    (take sorted 5))
+
+
+  (pretty-print
+    (map
+      (lambda (t)
+        (list (car t)
+              (/ (cdr t) total)))
+      (sort
+        (hash->list grouped-by-type)
+        <
+        #:key cdr))
+    
+    )
+  )
 
 
