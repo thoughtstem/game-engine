@@ -21,8 +21,6 @@
 
   (define g0 (game e))
 
-
-  (define gs (tick-list g0 4))
   (define g4 (ticks 4 g0))
 
 

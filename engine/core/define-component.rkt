@@ -29,15 +29,11 @@
 
                                 (vector-ref
                                   (if c
-                                    c
+                                    (if (entity? c)
+                                     (get-component c 'COMPONENT )
+                                     c)
                                     (get-component (CURRENT-ENTITY) 
-                                                   'COMPONENT
-
-                                                   #;
-                                                   COMPONENT?
-
-                                                   
-                                                   ))
+                                                   'COMPONENT))
                                   5))
 
                               (define (set-COMPONENT e v)
@@ -63,26 +59,19 @@
                                                   FIELD
                                                   )]
                                   [(COMPONENT FIELD update)
-                                   (let ([update-lambda (thunk update)])
+                                   (new-COMPONENT (next-id)  
+                                                  (lambda (c)
+                                                    (define new-c
+                                                      (if (mutable-state)
+                                                        c
+                                                        (vector-copy c)))
 
-                                     (new-COMPONENT (next-id)  
-                                                    ;Prototyping new components (signals) on top of old components....
-                                                    (lambda (c)
+                                                    (vector-set! new-c 5 update) 
 
-                                                      (define next-val
-                                                        (update-lambda))
-
-                                                      ;Maybe only if mutable?
-                                                      (define new-c
-                                                        (if (mutable-state)
-                                                          c
-                                                          (vector-copy c)))
-
-                                                      (vector-set! new-c 5 next-val) 
-
-                                                      new-c)
-                                                    '(lambda () update)
-                                                    FIELD))] 
+                                                    new-c)
+                                                  'update
+                                                  FIELD)
+                                   ]
                                   )  
 
                                 ))))]))

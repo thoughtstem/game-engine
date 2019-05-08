@@ -43,7 +43,9 @@
     (-> game? game?))
 
 
-  (set! component-times (make-hash))
+  (when profiler-on
+    (set! component-times (make-hash)))
+
   (debug:tick-begin g)
   
   (define next-g #f)
@@ -70,57 +72,58 @@
         (struct-copy entity e) ))
 
     ;Tick the components
-    (parameterize ([CURRENT-ENTITY next-e]
-                   [CURRENT-GAME g])
-      (for ([c (entity-components e)]
-            [ci (in-naturals)])
-        (debug:component-tick-begin c)
+      (parameterize ([CURRENT-ENTITY next-e]
+                     [CURRENT-GAME g])
+        (for ([c (entity-components e)]
+              [ci (in-naturals)])
+          (debug:component-tick-begin c)
 
 
+          (define h (component-update c))
 
-        (define h (component-update c))
+          (when h
+            (define component-start-time (current-inexact-milliseconds))
 
-        (when h
-          (define component-start-time (current-inexact-milliseconds))
+            (set! c (h c))
 
-          (set! c (h c))
+            (hash-set! (entity-lookup next-e)
+                       (vector-ref c 1) ;Gross...  Gotta hide all the explicit vector nonsense
+                       c)
 
-          (hash-set! (entity-lookup next-e)
-                     (vector-ref c 1) ;Gross...  Gotta hide all the explicit vector nonsense
-                     c)
-
-          (set-entity-components! next-e
-                                  (list-set
-                                    (entity-components next-e)
-                                    ci
-                                    c)) 
+            (when (not (mutable-state))
+              (set-entity-components! next-e
+                                      (list-set
+                                        (entity-components next-e)
+                                        ci
+                                        c))) 
 
 
-          (when (profiler-on)
-            (hash-update!
-              component-times
-              (cons ei (vector-ref c 1))
-              (lambda (t)
-                (+ t
-                   (- (current-inexact-milliseconds) component-start-time)))
-              (- (current-inexact-milliseconds) component-start-time)))
+            (when (profiler-on)
+              (hash-update!
+                component-times
+                (cons ei (vector-ref c 1))
+                (lambda (t)
+                  (+ t
+                     (- (current-inexact-milliseconds) component-start-time)))
+                (- (current-inexact-milliseconds) component-start-time)))
 
-          (define v (get-value c)) 
+            (define v (get-value c)) 
 
-          (when (despawn? v)
-            (set! to-remove (cons next-e to-remove))
-            (debug:added-to-remove-queue to-remove))
+            (when (despawn? v)
+              (set! to-remove (cons next-e to-remove))
+              (debug:added-to-remove-queue to-remove))
 
-          (when (spawn? v)
-            (set! to-spawn (cons (spawn-entity v) to-spawn))
-            (debug:added-to-spawn-queue to-spawn) )) 
+            (when (spawn? v)
+              (set! to-spawn (cons (spawn-entity v) to-spawn))
+              (debug:added-to-spawn-queue to-spawn) )) 
 
-        (debug:component-tick-end c)))
+          (debug:component-tick-end c)))
     
 
 
-    (set-game-entities! g
-                        (list-set (game-entities g) ei next-e))) 
+      (when (not (mutable-state))
+        (set-game-entities! g
+                            (list-set (game-entities g) ei next-e)))) 
 
 
   (debug:all-entities-ticked g)
@@ -195,42 +198,43 @@
 
 
 (define (display-performance-stats)
+  (displayln "Performance stats disabled")
+  #;
+  (when component-times
+    (define data (hash->list component-times))
 
-  (define data (hash->list component-times))
+    (define grouped-by-type
+      (let ([h (make-hash)])
+        (for ([d data])
+          (define type (cdr (car d)))
+          (define time (cdr d))
+          (hash-update! h 
+                        type
+                        (lambda (t)
+                          (+ t time) )
+                        time))
+        h))
 
-  (define grouped-by-type
-    (let ([h (make-hash)])
-      (for ([d data])
-        (define type (cdr (car d)))
-        (define time (cdr d))
-        (hash-update! h 
-                      type
-                      (lambda (t)
-                        (+ t time) )
-                      time))
-      h))
-  
-  (define sorted
-    (sort data < #:key cdr))
+    (define sorted
+      (sort data < #:key cdr))
 
-  (define total
-    (apply + (map cdr data)))
+    (define total
+      (apply + (map cdr data)))
 
-  (define top
-    (take sorted 5))
+    (define top
+      (take sorted 5))
 
 
-  (pretty-print
-    (map
-      (lambda (t)
-        (list (car t)
-              (/ (cdr t) total)))
-      (sort
-        (hash->list grouped-by-type)
-        <
-        #:key cdr))
-    
-    )
-  )
+    (pretty-print
+      (map
+        (lambda (t)
+          (list (car t)
+                (/ (cdr t) total)))
+        (sort
+          (hash->list grouped-by-type)
+          <
+          #:key cdr))
+
+      )))
 
 

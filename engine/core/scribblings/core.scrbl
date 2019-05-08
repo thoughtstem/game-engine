@@ -7,7 +7,28 @@
 
 @defmodule[game-engine/engine/core/main]
 
-TODO: Document the meta-components.  Probably in their own scribble?  How do we organize the docs in a heirarchical project like this? 
+;ADD a section about performance. Raw notes below...
+;TODO: Make conway fast again.  Query optimizations.  Caching.
+;  I tried adding a lookup hash to entities, but I'm not seeing any speed improvement on the red/green poopers...
+;    Should remove if it's not helping
+;TODO: Roll a profiler (or build on top of Racket's now that we've simplified things again).
+;  Done.
+;  Testing it.  It seemed to blame Position for being slow, so I changed to an implementation of posn that it claims is faster.
+;    But... it doesn't feel faster and the FPS looks the same.
+;    (Then again, I need to disable the sampling to have a true test...)
+
+;Have it print the stats over time
+
+
+;One big problem is that I don't know what I should be expecting from this engine.  Is 20 FPS with 250 entities good or bad?
+;  What would happen with unity?
+;  What would happen with 2htdp/universe?
+
+;Or another angle:
+;  How many math operations per second should Racket be able to do?  How much overhead from garbage?  How much from memory allocations?
+;  How many is this engine doing?
+;  High level profiler might be able to give us that picture, btw.  So we can keep our estimations honest.
+
 
 Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
 

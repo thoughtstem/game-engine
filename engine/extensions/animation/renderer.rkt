@@ -16,6 +16,11 @@
 (require "../../core/main.rkt"
          "./animated-sprite.rkt")
 
+(provide buttons)
+
+(define buttons
+  '(#f #f))
+
 (struct game+render ;TODO: CHANGE THIS NAME
   ( state render-tick)
   #:methods gen:word
@@ -30,6 +35,40 @@
 
    (define (word-event w e)
      (cond
+       [(and (key-event? e)
+             (eq? (send e get-key-code) #\a)) 
+        (begin
+          (set! buttons
+            (list-set buttons
+                      0
+                      #t))
+          w) ]
+
+       [(and (key-event? e)
+             (eq? (send e get-key-code) #\d)) 
+        (begin
+          (set! buttons
+            (list-set buttons
+                      1
+                      #t))
+          w) ]
+       [(and (key-event? e)
+             (eq? (send e get-key-release-code) #\a)) 
+        (begin
+          (set! buttons
+            (list-set buttons
+                      0
+                      #f))
+          w) ]
+
+       [(and (key-event? e)
+             (eq? (send e get-key-release-code) #\d)) 
+        (begin
+          (set! buttons
+            (list-set buttons
+                      1
+                      #f))
+          w) ]
        [(or (eq? e 'close)
             (and (key-event? e)
                  (eq? (send e get-key-code) 'escape)))
