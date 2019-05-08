@@ -137,6 +137,10 @@
 
   ticky-tick)
 
+(define lux:key-event?     #f)
+(define lux:mouse-event-xy #f)
+(define lux:mouse-event?   #f)
+
 (define g/v (make-gui/val))
 (struct demo
   ( state render-tick)
@@ -154,10 +158,13 @@
      (get-render render-tick))
    
    (define (word-event w e)
-     (define lux:key-event? (dynamic-require 'lux/chaos/gui/key 'key-event?))
-     (define lux:mouse-event-xy (dynamic-require 'lux/chaos/gui/mouse 'mouse-event-xy))
-     (define lux:mouse-event? (dynamic-require 'lux/chaos/gui/mouse 'mouse-event?))
-     
+     (set! lux:key-event?  
+       (or lux:key-event? (dynamic-require 'lux/chaos/gui/key 'key-event?)))
+     (set! lux:mouse-event-xy 
+       (or lux:mouse-event-xy (dynamic-require 'lux/chaos/gui/mouse 'mouse-event-xy)))
+     (set! lux:mouse-event? 
+       (or lux:mouse-event? (dynamic-require 'lux/chaos/gui/mouse 'mouse-event?)))
+
      (match-define (demo  state render-tick) w)
      (define closed? #f)
      (cond
@@ -175,6 +182,7 @@
         (let-values ([(mouse-x mouse-y) (lux:mouse-event-xy e)])
           (demo  (handle-mouse-xy state (posn mouse-x mouse-y)) render-tick))
         ]
+
        [(and (lux:mouse-event? e)
              (send e button-changed?))
         (if (send e button-down?)

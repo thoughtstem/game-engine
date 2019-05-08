@@ -819,11 +819,14 @@
         ))
 
 
-(struct mouse-state (left right pos))
+(struct mouse-state (left right pos) #:mutable)
 
 (define (handle-mouse-xy larger-state mouse-posn)
-  ;(displayln (~a "Mouse: " x-pos " " y-pos))
   (define ms (game-mouse-input larger-state))
+
+  (set-mouse-state-pos! ms mouse-posn)
+
+  #;
   (set-game-mouse-input! larger-state (struct-copy mouse-state ms
                                                    [pos mouse-posn]))
   larger-state)
