@@ -44,6 +44,7 @@
          player-dialog-open?
          last-dialog?
          not-last-dialog?
+         (rename-out (last-dialog? npc-last-dialog?))
          )
 
 (require "../game-entities.rkt")
