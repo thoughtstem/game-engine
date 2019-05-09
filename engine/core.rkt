@@ -178,7 +178,7 @@
               [mouse-input #:mutable]
               [mouse-prev-input #:mutable]
               [collisions #:mutable]
-              [separations #:mutable]) #;#:transparent)
+              [separations #:mutable]) #:transparent)
 
 ;For use in contracts
 
@@ -333,9 +333,9 @@
 
 
 
-(struct entity [id components] #;#:transparent)
+(struct entity [id components] #:transparent)
 
-(struct entity-name (string) #;#:transparent)
+(struct entity-name (string) #:transparent)
 
 
 (define (entity-eq? e1 e2)
