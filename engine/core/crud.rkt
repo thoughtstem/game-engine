@@ -1,11 +1,6 @@
 #lang racket
 
-(provide ;Lifted versions
-         add-component^
-         update-component^
-         remove-component^
-  
-         add-component
+(provide add-component
          add-components
 
          get-component
@@ -20,9 +15,8 @@
          remove-entity
 
          ;Query language
-         get
          has-component
-         get-field)
+         )
 
 (require "./base.rkt"
          "./debug.rkt"
@@ -57,16 +51,6 @@
     e
     (apply add-components (add-component e (first cs)) 
            (rest cs))))
-
-
-(define/contract (add-component^ to-add)
-  (maybe-contract
-    (-> component? handler?))
-
-   (lambda (g e c) 
-     (add-component e to-add)))
-
-
 
 (define/contract (update-component e old-c new-c)
 
@@ -117,18 +101,6 @@
                      [components (list-set cs i real-new-c)])))))
 
 
-(define/contract (update-component^ to-update)
-  (maybe-contract
-    (-> (or/c component?
-              (-> component? component?)) 
-        handler?))
-
-   (lambda (g e c) 
-     (update-component e c to-update)))
-
-
-
-
 (define/contract (remove-component e c)
   (maybe-contract
     (-> entity? 
@@ -161,16 +133,6 @@
          e) 
        (struct-copy entity e
                     [components new-c])))) 
-
-
-(define/contract (remove-component^ to-remove)
-  (maybe-contract
-    (-> (or/c component?
-              (-> component? boolean?))
-        handler?))
-
-   (lambda (g e c) 
-     (remove-component e to-remove)))
 
 
 #;
@@ -219,12 +181,6 @@
   (define i  (get-entity-index g pred?-or-e))
   (if i (list-ref es i) #f))
 
-
-(define (get-entity^ pred?-or-e)
-  (lambda (g e c)
-    (get-entity g pred?-or-e)))
-
-
 (define/contract (add-entity g e)
   (maybe-contract
     (-> game? entity? game?))
@@ -236,13 +192,6 @@
       (set-game-entities! g new-es)
       g)
     (game new-es)))
-
-
-(define (add-entity^ to-add)
-  (lambda (g e c)
-    (add-entity g to-add)))
-
-
 
 (define/contract (update-entity g old-e new-e)
   (maybe-contract
@@ -271,12 +220,6 @@
       (struct-copy game g [entities new-es])))
 
 
-(define (update-entity^ old-e new-e)
-  (lambda (g e c)
-    (update-entity g old-e new-e)))
-
-
-
 (define/contract (remove-entity g old-e)
   (maybe-contract
     (-> game? (or/c entity? 
@@ -299,51 +242,6 @@
     (struct-copy game g
                 [entities new-es])))
 
-(define (remove-entity^ old-e)
-  (lambda (g e c)
-    (remove g old-e)))
-
-;Useful query predicates that can be used in update-entity and get-entity
-
-
 (define (has-component e c?)
   (findf c? (entity-components e)))
-
-
-(define (get-field g entity-q? component-q? field-f)
-  (field-f 
-    (get-component 
-      (entity-q? (game-entities g))
-      component-q?)))
-
-
-
-
-(define (get root . qs)
-  (define orig-root root)
-  (define orig-qs qs )
-  (define (get-recur root . qs) 
-    (cond 
-      [(not root) (error "Couldn't get: " orig-root orig-qs)  ]
-      [(empty? qs) root]
-      [(game? root) 
-       (apply get-recur
-              (get-entity root (first qs))
-              (rest qs))]
-      [(entity? root) 
-        (apply get-recur 
-                (get-component root (first qs))
-                (rest qs))]
-      [(component? root) 
-       ((first qs) root)]))
-
-  (define ret
-    (apply get-recur root qs))
-
-  ret)
-
-
-
-
-
 

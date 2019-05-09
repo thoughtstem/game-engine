@@ -1,12 +1,17 @@
 #lang racket
 
-(provide define-component)
+(provide define-component
+         lift
+         ^
+         CURRENT-COMPONENT)
 
 (require "./base.rkt"
          "./crud.rkt")
 
 (require (for-syntax racket))
 (require (for-syntax racket/syntax))
+
+(define CURRENT-COMPONENT (make-parameter #f))
 
 (define-syntax (define-component stx)
   (syntax-case stx ()
@@ -25,16 +30,23 @@
                                 (new-COMPONENT id handler handler-code FIELD)
                                 (vector 'component 'COMPONENT id handler handler-code FIELD))
 
-                              (define (get-COMPONENT (c #f))
+                              (define (get-COMPONENT (c #f) (fail (void)))
 
-                                (vector-ref
+                                (define real-c 
                                   (if c
-                                    (if (entity? c)
-                                     (get-component c 'COMPONENT )
-                                     c)
+                                      (if (entity? c)
+                                          (get-component c 'COMPONENT )
+                                          c)
                                     (get-component (CURRENT-ENTITY) 
-                                                   'COMPONENT))
-                                  5))
+                                                   'COMPONENT)))
+
+                                (if (not real-c)
+                                  (if (void? fail)
+                                    (error (~a "No component " 'COMPONENT " found"))
+                                    fail)
+                                  (vector-ref
+                                    real-c 
+                                    5))) 
 
                               (define (set-COMPONENT e v)
                                 (define to-update
@@ -66,7 +78,8 @@
                                                         c
                                                         (vector-copy c)))
 
-                                                    (vector-set! new-c 5 update) 
+                                                    (parameterize ([CURRENT-COMPONENT new-c])
+                                                      (vector-set! new-c 5 update)) 
 
                                                     new-c)
                                                   'update
@@ -77,3 +90,8 @@
                                 ))))]))
 
 
+
+(define (lift f)
+  (f (get-value (CURRENT-COMPONENT))))
+
+(define ^ lift)

@@ -1,7 +1,4 @@
 #lang racket
-
-;TODO: Need to figure out the handler combinators.
-
 ;TODO: 
 ;  Sprite management is the big one...
 ;  Big steps: Get rendering working
@@ -16,23 +13,17 @@
                      [new-entity entity]) 
 
          (all-from-out "./define-component.rkt") 
-         (all-from-out "./spawner.rkt") 
          (all-from-out "./crud.rkt") 
-         (all-from-out "./diffs.rkt") 
-
-         (all-from-out "./handler-util.rkt") 
-
          (all-from-out "./runtime.rkt")
          (all-from-out "./debug.rkt")
-         (all-from-out "./printer.rkt"))
+         (all-from-out "./printer.rkt")
+         (all-from-out posn))
 
 
 (require "./define-component.rkt"
-         "./handler-util.rkt"
          "./base.rkt"
          "./crud.rkt"
-         "./spawner.rkt"
-         "./diffs.rkt"
          "./runtime.rkt"
          "./debug.rkt"
-         "./printer.rkt")
+         "./printer.rkt"
+         posn)

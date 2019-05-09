@@ -11,7 +11,6 @@
   game-entities
   set-game-entities!
   copy-game
-  operation?
 
   entity
   entity-lookup
@@ -30,17 +29,11 @@
   new-component
   component
   copy-component
-  component->list
   component?
   component-id
   component-update
   component=?
   component-done
-  
-  handler
-  handler?
-  noop
-  rule?
   
   next-id
   mutable-state

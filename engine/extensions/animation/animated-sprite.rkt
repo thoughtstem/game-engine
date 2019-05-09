@@ -1,96 +1,55 @@
 #lang racket
 
 (provide 
-  Sprite
-  Sprite?
+  sprite
+  sprite?
   sprite-id
-  get-Sprite
+  get-sprite
   register-sprite
   
-  #;
-  (rename-out [make-position position])
   x
   y
-  #;
-  update:position/x^
-  #;
-  update:position/y^
-  #;
+
+  position
+  get-position
   position?
+
+  rotation
+  get-rotation
+
+  size
+  get-size
 
   get-queued-sprites
   flush-queued-sprites!
   
   move-to
 
-  #;
-  spawn-here
-
-  #;
-  move-to-parent
-
-  name
-  named?
-  get-by-name
   set-insertion-queue!
   set-seen-sprite-ids! 
   )
 
 (require "../../core/main.rkt"
-         2htdp/image)
+         (only-in 2htdp/image image->color-list)posn)
 
-(define-component name string?)
+(define-component position posn?)
+(define-component rotation number?)
+(define-component size number?)                                         
 
-(define (named? e s)
-  (define n
-    (get-component e name?))     
-  (and n
-       (string? s)
-       (string=? s
-                 (get-name n))))
-
-(define (get-by-name g s)
-  (findf (curryr named? s) (game-entities g)))
-
-(require "./test/fast-posn.rkt")
-(define-component Position posn?)
 
 (define (x e)
-  (define p
-    ;TODO
-    ;Slow...
-    #;
-    (get-component e Position?)
-
-
-    ;Maybe faster?
-    (get-component e 'Position)
-
-    ;Fast...
-    #;
-    (list-ref (entity-components e) 1))
-  (posn-x (get-Position p)))
+  (posn-x (get-position e)))
 
 (define (y e)
-  (define p
-    #;
-    (get-component e Position?)
-
-    ;Maybe faster?
-    (get-component e 'Position)
-
-    #;
-    (list-ref (entity-components e) 1))
-
-  (posn-y (get-Position p)))
+  (posn-y (get-position e)))
 
 (define (move-to p e)
 
   (define current-p 
-    (get-component e Position?))
+    (get-component e 'position))
 
   (define new-p
-    (set-Position current-p p))
+    (set-position current-p p))
 
   (update-component e 
                     current-p
@@ -100,10 +59,10 @@
 ;  there's no animation at this component's level.
 ;  It can be used to create animation systems with more complex
 ;  components.
-(define-component Sprite symbol?)
+(define-component sprite symbol?)
 
 (define (sprite-id s)
-  (get-Sprite s))
+  (get-sprite s))
 
 ;Whenever you construct a new sprite, it ends up in the
 ; insertion queue, along with its id.  This is the last step

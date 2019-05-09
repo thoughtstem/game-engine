@@ -8,8 +8,7 @@
 (require "../../../core/test/conway.rkt"
          threading
          (prefix-in h: 2htdp/image)
-         (prefix-in p: profile)
-         "./fast-posn.rkt")
+         (prefix-in p: profile))
 
 (define-component Position posn?)
 (define-component Counter number?)

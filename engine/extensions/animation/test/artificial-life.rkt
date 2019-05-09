@@ -1,74 +1,42 @@
 #lang racket
 
-(require "../animated-sprite.rkt"
-         "../renderer.rkt")
-
-(require "../../../core/main.rkt")
+(require "../main.rkt")
 
 (require "../../../core/test/conway.rkt"
-         threading
-         (prefix-in h: 2htdp/image)
-         (prefix-in p: profile))
-
-(require "./fast-posn.rkt")
-(define-component Position posn?)
-(define-component Counter number?)
-
-#;
-(begin
-
-  (define dead-sprite
-    (register-sprite
-      (h:circle 5 'solid 'red))) 
-
-  (define live-sprite
-    (register-sprite
-      (h:circle 5 'solid 'green))) 
-
-  (define g 
-    (game
-      (entity 
-        (Position (posn 200 200))
-        (Counter 0 (+ 1 (get-Counter)))
-        (Sprite live-sprite
-                (if (odd? (get-Counter))
-                  live-sprite
-                  dead-sprite)))))  
+         2htdp/image)
 
 
-  (play! g) )
+(define-component counter number?)
+(define-component killer boolean?)
 
+(define (bullet color) 
+  (define bullet-sprite
+    (register-sprite (circle 5 'solid color)))
 
-(define-component Weapon  entity?)
-(define-component Shooter boolean?)
-(define-component Killer boolean?)
-
-(define (bullet c) 
   (entity 
-    (Position (posn -1 -1) 
-              (posn-add*
+    (position (posn -1 -1) 
+              (posn-add
                 (posn (random -1 2)
                       (random -1 2))
-                (get-Position)))
+                (get-position)))
 
-    (Sprite (register-sprite (h:circle 5 'solid c)))
-    (Counter 0 
-             (+ 1 (get-Counter)))
+    (sprite bullet-sprite)
+    (counter 0 
+             (^ add1))
 
-    (Killer  #f 
-             (if (= 50 (get-Counter))
+    (killer  #f 
+             (if (= 50 (get-counter))
                (despawn)
                #f))))
 
-(bullet 'green)
-(bullet 'red)
-(bullet 'blue)
 
-(define-component Rotating-Counter number?)
-(define-component Direction number?)
+(define-component weapon  entity?)
+(define-component shooter boolean?)
+(define-component rotating-counter number?)
+(define-component direction number?)
 
 (define (on-edge)
-  (define p (get-Position))
+  (define p (get-position))
 
   (or 
     (> (posn-x p) 400) 
@@ -77,23 +45,21 @@
     (< (posn-y p) 0)))
 
 (define (bounce)
-  (define p (get-Direction))
+  (define p (get-direction))
 
   (posn (* -1 (posn-x p))
         (* -1 (posn-y p))))
 
 (define (e)
   (entity
-    (Counter 0 (+ (get-Counter) 1))
+    (counter 0 (+ (get-counter) 1))
 
-    (Rotating-Counter 0 (remainder (get-Counter) 100))
+    (rotating-counter 0 (remainder (get-counter) 100))
 
-    (Direction (posn 0 0)
-               ;Should vary from 0 to 3, but should only change every 10 ticks.
-               ;  Or if it is on the edge...
+    (direction (posn 0 0)
                (cond
                  [(on-edge) (bounce)]
-                 [(= 0 (get-Rotating-Counter)) 
+                 [(= 0 (get-rotating-counter)) 
                   (list-ref
                     (list
                       (posn -1 0) 
@@ -101,67 +67,33 @@
                       (posn 0 -1) 
                       (posn 0 1)) 
                     (random 4))]
-                 [else (get-Direction)]))
+                 [else (get-direction)]))
 
-    (Position (posn (random 200)
+    (position (posn (random 200)
                     (random 200)) 
-              (posn-add*
-                (get-Position)
-                (get-Direction)))
+              (posn-add
+                (get-position)
+                (get-direction)))
 
-    (Sprite (register-sprite (h:circle 20 'solid (h:make-color (random 255)
+    (sprite (register-sprite (circle 20 'solid (make-color (random 255)
                                                                (random 255) 
                                                                (random 255)
                                                                100))))
 
 
 
-    (Weapon (bullet 'green) 
+    (weapon (bullet 'green))
 
-            #;
-            (if (odd? (get-Counter))
-              (bullet 'red)    
-              (bullet 'green)))
-
-    (Shooter #f
-             (let ([current-bullet (get-Weapon)])
-
+    (shooter #f
+             (let ([current-bullet (get-weapon)])
                (spawn 
-                 (move-to (get-Position) current-bullet))))))
+                 (move-to (get-position) current-bullet))))))
 
 (define g
   (game (e)
         (e) 
         (e)
         (e) 
-        (e) 
-        ))
-
-(require (prefix-in p: profile/render-graphviz))
-(require (prefix-in p: (only-in profile/analyzer analyze-samples)))
-(require (prefix-in p: (only-in profile/sampler create-sampler)))
+        (e)))
 
 (play! g)  
-
-#;
-(define t
-  (thread
-    (thunk
-      (play! g))))
-
-#;
-(define sampler
-  (p:create-sampler
-    t 
-    0))
-
-(sleep 10)
-
-
-#;
-(p:render
-  (p:analyze-samples
-    (sampler
-     'get-snapshots)))
-
-

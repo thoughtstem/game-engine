@@ -165,10 +165,6 @@
 
 (require (prefix-in h: 2htdp/image))
 
-#;
-(define dummy (Sprite 
-                (h:circle 5 'solid 'blue)
-                (get-Sprite)))
 
 (define (game->ml-sprite-list g)
   (define ret '())
@@ -177,7 +173,7 @@
   (for ([e (game-entities g)])
     (define cs (entity-components e))
     (define s 
-      (get-component e 'Sprite))
+      (get-component e 'sprite))
 
     (when s 
       (define eid (entity-id e))
@@ -187,6 +183,8 @@
 
         ;TODO: Simplifying for now.  Come back and debug the sprite cache later.
         (ml:sprite #:layer 0
+	           #:m (real->double-flonum (get-size e 1))
+		   #:theta (real->double-flonum (get-rotation e 0))
                    (real->double-flonum (x e))
                    (real->double-flonum (y e))
                    sid)

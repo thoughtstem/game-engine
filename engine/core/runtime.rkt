@@ -18,8 +18,6 @@
 (require "./base.rkt"
          "./crud.rkt"
          "./util.rkt"
-         "./handler-util.rkt"
-         "./spawner.rkt"
          "./printer.rkt"
          "./debug.rkt")
 
@@ -171,10 +169,6 @@
                          (tick-list (tick g) 
                                     (sub1 n)))))
 
-(define (tick-component g e c)
-  (define h (component-update c))
-  (h g e c))
-
 ;Does this get used?  Is it old?
 (define/contract (has-id? e)
   (maybe-contract
@@ -184,12 +178,6 @@
 (define (all-entities pred?)
   (lambda (g)
     (andmap pred? (game-entities g))))
-
-(define (apply-op o g ei c)
-  (cond
-    [(entity? o) (begin 
-                   (update-entity g ei o))]
-    [else (raise (~a "Unsupported handler return value: " o))]) )
 
 (define (debug-tick g)
   (debug
@@ -236,5 +224,14 @@
           #:key cdr))
 
       )))
+
+(define (tick-component c)
+  (define h (component-update c)) 
+  (h c))
+
+(define (tick-entity e)
+  (struct-copy entity e
+               [components
+                 (map tick-component (entity-components e)) ]))
 
 

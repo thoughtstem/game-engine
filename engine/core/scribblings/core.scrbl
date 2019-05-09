@@ -7,36 +7,15 @@
 
 @defmodule[game-engine/engine/core/main]
 
-;ADD a section about performance. Raw notes below...
-;TODO: Make conway fast again.  Query optimizations.  Caching.
-;  I tried adding a lookup hash to entities, but I'm not seeing any speed improvement on the red/green poopers...
-;    Should remove if it's not helping
-;TODO: Roll a profiler (or build on top of Racket's now that we've simplified things again).
-;  Done.
-;  Testing it.  It seemed to blame Position for being slow, so I changed to an implementation of posn that it claims is faster.
-;    But... it doesn't feel faster and the FPS looks the same.
-;    (Then again, I need to disable the sampling to have a true test...)
-
-;Have it print the stats over time
-
-
-;One big problem is that I don't know what I should be expecting from this engine.  Is 20 FPS with 250 entities good or bad?
-;  What would happen with unity?
-;  What would happen with 2htdp/universe?
-
-;Or another angle:
-;  How many math operations per second should Racket be able to do?  How much overhead from garbage?  How much from memory allocations?
-;  How many is this engine doing?
-;  High level profiler might be able to give us that picture, btw.  So we can keep our estimations honest.
-
-
 Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
 
 Manipulating games programatically is quite easy.
 
 @codeblock{
-  (define-health health (amount))
-  (define e (entity (health 5 #:update (update-health-amount^ add1))))
+  (define-health health number?)
+
+  (define e (entity (health 5
+                            (+ (get-Health) 1))
   (define g (game e e e))
   (define g1 (tick g))
   (define g2 (tick g1))
@@ -44,17 +23,14 @@ Manipulating games programatically is quite easy.
   ;Note there's no renderer at this level.
 }
 
-That was relatively simple.  It's not even worth rendering -- though perhaps it could be a nice building block for a simulation.
+That was relatively simple.  Three entities that start at 5 health and gain health at a rate of 1 per tick.  
+It's not even worth rendering -- though perhaps it could be a nice building block for a simulation.
 
 However, when you import other stuff... 
 
 @codeblock{
 ;TODO: More interesting example.
 }
-
-Roadmap: In any even, the attempt is to make a purely functional core with certain runtime guarantees.  Will that be slow?  Probably.  So we'll try to provide ways of switching off the purity, at the expence of losing the guarantees.  We'll make the compromises as they come up, and try to make them optional.
-
-I think the potential for exploding a whole ecosystem of composable game parts will yeild really cool, innovative games, and bring game programming's difficulty down considerably.  If the games must be modest to make this a reality, so be it. :)
 
 @section{Basic Data Structures}
 
@@ -65,128 +41,102 @@ I think the potential for exploding a whole ecosystem of composable game parts w
 
 @defproc[(entity [component component?] ...)
          entity?]{
-  Constructor for a @racket[entity].  Takes nothing but a list of components.  Internally, though, entities have an id.  This id remains the same even as an entity is updated at runtime.  
+  Constructor for a @racket[entity].  Takes nothing but a list of components.
 }
 
-@defproc[(new-component #:update handler?)]{
-  A compononent with no fields, just an update handler.  Usually, you'll make your own components, which have fields that are named by you.  See @racket[define-component].
-}
+Other than games and entities, the other basic building block is the component.  But these are things that you define and create yourself.
 
-@defthing[handler? (-> game? entity? component? entity?)]{
-
-  Handlers are just functions with a particular type.  The semantics of the game engine are that, on a tick, each handler attached to each component is "ticked", which means it is given the last game state, and the current state of the entity, and components it is attached to.  The returned entity is the state of that entity in the next tick.
-
-  Handlers on the same entity "stack", though.  Here both counters are updating the same counter.  Not necessarily somthing you'd want to do, but illustrates the point: Each handler attached to a component on an entity may modify other components on that entity, and they do so in turn, and they each contribute changes to the entity for the next tick.
-
-  @codeblock{
-    (define-component counter (amount))
-    (define-component other-counter (amount))
-
-    (entity 
-      (counter       0 #:update (update:counter/amount^ add1))
-      (other-counter 0 #:update (update:counter/amount^ (curry + 5))))
-  }
-}
-
-@defform[(define-component name (fields ...))]{
-  Creates a new component type named @racket[name] and the given @racket[fields].  Creating a component causes a bunch of useful functions to bedefined for you.
+@defform[(define-component name contract)]{
+  Creates a new kind of component named @racket[name], whose values will always match the type described by the contract @racket[contract].  
+  Creating a component causes a bunch of useful functions to bedefined for you.
 
   The most obvious one is the constructor, which we shall show in context below.
 
-  A common usecase is that you'll want to bind a function that takes and returns something of your component type:
+@codeblock{
+  (define-component health number?)
 
-        @codeblock{
-          (define-component health (amount))
+  (define hero-health (health 100 
+                              (- (get-health) 1)))
 
-          ;We use update-health-amount, which was created for us.
-          ;This lets us define decrement-health in point-free form.
-          ;The function's type is health? -> health?
-          (define decrement-health (update:health/amount^ sub1))
-
-          ;Since the type of our update function is health? -> health?, we can use #:handler in our constructor
-          (define hero-health (health 100 #:update decrement-health))
-
-          ;Now it can be attached to an entity, and so on...
-          (define hero (entity hero-health))
-        } 
-
-
-  Much like using racket @racket[struct], you get getters and setters (which are immutable by default).  Getters look like @racket[COMPONENT-FIELD].  Setters look like @racket[set-COMPONENT-FIELD].   And you get a predicate @racket[COMPONENT?]. 
-
-  Here we'll use those to define a component and new functions on that component type.
-  
-  @codeblock{
-    (define-component counter (current max))
-
-    ;Takes and r
-    (define/contract (inc c)
-      (-> counter? counter?)
-      (set-counter-current 
-        (add1 (counter-current c))))
-
-    (define/contract (safe-inc c)
-      (-> counter? counter?)
-      (if (< (counter-current c)
-             (counter-max c))
-          (inc c)
-          c))
-  }
-
-  In addition to getters and setters, you also get functions that help you deal with your new component in the context of entities it might be attached to.  
-
+  ;Now it can be attached to an entity, which can be added to a game, and so on...
+  (define hero (entity hero-health))
 } 
- 
 
-@defproc[(update:COMPONENT/FIELD [c component?] [f any/c]) component?]{
-  If @racket[f] is a function, applys @racket[f] to the @racket[FIELD] field of @racket[c].  Otherwise, sets @racket[FIELD] to that value. 
+  A component constructor (like @racket[health]) above takes two arguments.  One is an initial value, the other is a description of how that value changes over time.
 
-  When the game is run under @racket[(mutable! ...)], the update is destructive.  By default, a copy of the component is returned, with the new field updated according to @racket[f], which may either be the new value for @racket[FIELD], or it may be a function to apply to that field.
+  Above, the initial value of health is @racket[100]; the description of change is @racket[(- (get-health) 1)].  Together, these describe a health component whose value decreases with each tick.
 
-  (If your field IS a function and you want to apply a function to it, you'll have to grab it out, apply your higher order function, and the pack it back in with the above.  In practice, this never comes up for me.) 
-}
+  It also introduces one of the other things you get for free with @racket[define-component], which is a getter: @racket[get-health].  This getter, when used without arguments, gets the current health value of the entity to which the component is attached.
 
-@defproc[(update:COMPONENT/FIELD^ [f any/c]) handler?]{
-  Handler version the above.  For use when your component is attached to an entity.  
+  Note that this getter can be used from other components, too.  For example:
 
-  @codeblock{
-    (define-component health (amount))
-    (entity (health 5 #:update (update:health/amount^ sub1)))
-  }
+@codeblock{
+  (define-component health number?)
+  (define-component death  any/c)
 
-  Essentially, it's a delayed version of @racket[update:COMPONENT/FIELD] -- one that will be applied to whatever component's @racket[#:update] it is attached.
+  (define hero-health (health 100 
+                              (- (get-health) 1)))
+  (define hero-death (death (void)
+                            (when (zero? (get-health))
+                              (despawn))))
 
-  Or, if it is not attached to a @racket[health] component, it will apply to the health component on the same entity.
+  (define hero (entity hero-health
+                       hero-death))
+} 
 
-  The following is equivalent to the above.
+  Here the @racket[death] component uses @racket[(get-health)] to check when the @racket[health] component has reached 0.  These getters are the primary way of getting data to flow between components.  (What happens if there are two @racket[health] components on the entity?  Don't do that; it's an error.  Components must have unique names.) 
 
-  @codeblock{
-    (define-component health (amount))
-    (entity (health 5) 
-            (new-component #:update (update:health/amount^ sub1)))
-  }
+  A quick note, there's one case where you don't have to use a getter, and can take advantage of a shorter syntax.  The @racket[health] component could have been implemented as:
 
-}
+@codeblock{
+  (health 100 (lift sub1)) 
+} 
+
+Or, using the alias @racket[^], even shorter:
+
+@codeblock{
+  (health 100 (^ sub1)) 
+} 
+
+These mean, apply the given function to the value stored in the component.  
+But be careful, it's not this simple:
+
+@codeblock{
+  (health 100 sub1) 
+} 
+
+That is syntactically valid, but would mean that on every tick you want to replace the value in the component with the function reference @racket[sub1].  I'm not sure why you'd want to do that, but there are reasons you might want to store functions in components, so that ability is there.  Because that ability is there, you need to lift functions if you want to apply them, rather than store them.
+
+Note: there are two special values that, if stored in a component, have a special meaning in the runtime.
+
+One is @racket[spawn], which is a struct that stores an entity.  On any tick that this value appears in a component, the runtime will spawn that entiti.
+
+The other is @racket[despawn], which is a struct with no fields.  On any tick that this value appears in a component, the runtime will destroy the entiti to which that component is attached.
+} 
+
+Now that we've defined games, entities, and components, we can talk about the runtime model.  Note that you have access to all functions that advance the state of games, entities, and components.  
 
 
-@defproc[(get:COMPONENT [e entity?]) COMPONENT?]{
-  Returns the first @racket[COMPONENT?] on @racket[e].  Equivalent to:
-
-  @codeblock{
-    (get-component e COMPONENT?)
-  }
-}
-
-@defproc[(rule:COMPONENT/FIELD^ [pred predicate?]) rule?]{ }
-
+Do a meta example!!!
 
 
 @defproc[(tick [game game?])
          game?]{
   The returned game is the previous game, advanced one tick.
 
-  The simple runtime model is that the engine loops over every entity and every component in order, giving each component a chance to run its handlers.  Each component may have a component handler, an entity handler, and/or a game-hander attached.  These handlers run in the aforementioned order -- meaning that the game-handler takes precedience because it runs last.
+  It does this by ticking every component on every entity in the order that they are listed.  During the tick, if any @racket[spawn] or @racket[despawn] values are produced by components, the runtime will take the appropriate actions AFTER all of the components have been ticked.
 
   By default, the game is copied -- not mutated.  To remove this guarantee, run within @racket[(mutable! ...)].
+}
+
+@defproc[(tick-entity [entity entity?])]{
+  Ticks all of the components on an entity.  If any @racket[spawn] or @racket[despawn] values are produced, they have no effect.
+}
+
+@defproc[(tick-component [component component?])]{
+  Updates the value stored in the component by replacing it with the value in the component's update expression.  
+
+ If any @racket[spawn] or @racket[despawn] values are produced, they have no effect.
 }
 
 @defproc[(ticks [n number?]
@@ -214,10 +164,6 @@ When you are writing your game logic, you will mostly be defining components (or
   Returns a new entity where this is the case.  Does not change the original. 
 }
 
-@defproc[(add-component^ [component component?]) handler?]{
-  A handler that will add the given component to the entity to which it is attached. 
-}
-
 @defproc[(get-component [entity entity?]
                         [query? (or/c component? (-> component? boolean?))]) 
          (or/c #f component?)]{
@@ -237,11 +183,6 @@ When you are writing your game logic, you will mostly be defining components (or
   Either way, it will be updated according to @racket[new].  If @racket[new] is a component, that component will be swapped in (but @racket[old]'s id will remain).  If it is a function, that function will be called on @racket[old] to get the new component.
 }
 
-@defproc[(update-component^ [new-c (or/c component?
-                                         (-> component? component?))]) handler?]{
-  A handler that will replace or transform the component to which it is attached.
-}
-
 @defproc[(remove-component [entity entity?]
                            [old    (or/c component? (-> component? boolean?))])
          entity?]{
@@ -251,12 +192,6 @@ When you are writing your game logic, you will mostly be defining components (or
 
   The resulting entity no longer has @racket[old] in its list.
 }
-
-@defproc[(remove-component^ [query (or/c component?
-                                         (-> component? boolean?))]) handler?]{
-  A handler that will remove the component matching the query from the entity to which it is attached.
-e
-
 
 With entities, the CRUD model is similar.
 
@@ -285,7 +220,6 @@ With entities, the CRUD model is similar.
 
   Finds and updates an old entity. See @racket[update-componet]; this function has the same flexibility of types when it comes to @racket[old] and @racket[new].
 
-
 }
 
 
@@ -296,9 +230,6 @@ With entities, the CRUD model is similar.
 
   Finds and removes an entity described by @racket[old].
 }
-
-
-
 
 A useful function for constructing a function of the type @racket[(-> entity? boolean?)] is @racket[has-component].
 
@@ -313,79 +244,146 @@ Given the component query, returns an entity query that matches if the entity ha
         }
 }
 
+@section{Rendering}
 
-@section{Handlers}
+The rendering system takes a game and ticks it until the user terminates it. 
 
-Working with handlers is most of what you do as you develop in game-engine.  There are various combinators for building more sophisticated handlers from simpler ones.  And also just utilities for working with handlers in the first place.
+@defproc[(play! [game game?)]) game?]{
+  Pass in a game to rendering. 
 
-The nice thing about game-engine is that you can express your logic however you want, in whatever language you want.  As long as you can make a handler out of it, you can run it in game-engine, and compose your functionality with the rest of the handler ecosystem.
+  Any entities that have a @racket[position] component and a @racket[sprite]
+  component will be rendered.  See examples below.
 
-@defthing[handler? (-> game? entity? component? operation?)]{
-  Semantically, when the engine executes a @racket[handler?], it always does so with three things in its context: the pre-tick state of the component to which the handler is attached, the mid-tick state entity to which that component is attached, and the pre-tick game state of the game.
+  These components are provided by ____.
 
-  The idea behind these input values is that, during a tick: 1) entities don't get to see the changes that other entities are making to themselves or to each other, 2) but they do get to see the changes that they themselves are making to themselves.   It just seems fair, right?  I get full knowlege of what I'm doing to myself.  But no one else gets to know until we all do (at the end of the tick).  (When mutability is turned on this guarantee vanishes -- though if you've developed and tested with mutability off, then you shouldn't have anything to worry about.) 
-
-  The return type is an @racket[entity?] which expresses a change to @racket[e].  This will be the new value of @racket[e] as the tick continues on to the next component after @racket[c], or (if @racket[c] was the last component on @racket[e]) it will continue on to the next entity after @racket[e].  Or, if there are no more entities, the tick will be complete and the next tick will begin.
+  TODO: Add layer, rotation, scale, and coloration support...
 }
 
-@defproc[(compose-handlers [input handler?] ... ) handler?]{
-  Equivalent to what would happen if each of @racket[input] were on separate components on the same entity (modulo pathological cases where such functions behave weirdly when there are more components, or when they are attached to different components):
+@section{Examples}
 
-  @codeblock{
-    (entity (new-component #:update i1)
-            (new-component #:update i2)
-            (new-component #:update i3)
-            (new-component #:update i4)) 
-  }
+Sprites can be constructed with @racket[2htdp/image] objects.
 
-  Is equivalent to:
-
-
-  @codeblock{
-    (entity (new-component #:update (compose-handlers i1 i2 i3 i4)))
-  }
-
-  Except that any component-level changes will all be applied to the same component.  Any entity level changes are as before.
-}
-
-Note that handlers, because they can return an entire entity, can by definition update other components on the same entity.  Any component, in fact, can update any other component (not that it would be a good idea to make complicated updating semantics for your game logic).  Mainly, it just gives you the freedom to do either: 
+Here's a simple example that uses position, rotation, and scale.
+It also demonstrates a common pattern -- to use a counter whose data flows into various other components.
 
 @codeblock{
-  (define-component health (amount))
+(require 2htdp/image)
 
-  (define (entity (health 100 #:update (update:health/amount^ sub1)))) 
+(define green-star                                                       
+  (register-sprite (star 40 'solid 'green)))                             
+
+(define-component counter number?)                                       
+    
+(define e
+  (entity
+    (sprite green-star)
+
+    (counter 0
+             (^ add1))
+
+    (rotation 0
+              (remainder (get-counter) 360))
+
+    (size 1
+          (sin
+            (/ (get-counter) 100)))
+
+    (position (posn 0 200)
+              (struct-copy posn (get-position)
+                           [x (get-counter)]))))                         
+                                                                         
+(play! (game e))
 }
 
-Or:
+Here's an example with input.  The input data is not
+on the entity whose position is changing; however, it can access it through
+@racket[(get-current-input)], which fetches it from the @racket[input-manager],
+which you must put into the game if you want to get input data.
 
 @codeblock{
-  (define-component health (amount))
+(require 2htdp/image)
 
-  (define (entity (health 100)
-                  (new-component #:update (update:health/amount^ sub1)))) 
+;Doc this
+(define e
+  (entity 
+    (position (posn 200 200) 
+              (posn-add 
+                (get-position)
+		(as-posn (get-current-input))))
+
+    (sprite (register-sprite (circle 5 'solid 'green)))))
+
+(define g
+  (game input-manager e))
+
+(play! g)  
 }
 
-Handlers are portable at the entity level, provided that you have only one component of type @racket[health?].
+[TODO: Continue demonstrating features of input.
+  How does as-position work?  How to you bind other keys to things?
+  Mouse input?  ...]
+[Doing all this would complete the input part of the engine.]
 
-Another thing you can do with handlers is pass them to functions that return other handlers.
+[Also crutial and perhaps worth putting before input.
+  Animation...] <Candy>
 
-@codeblock{
-  (define-component health (amount))
-  (define reduce-health (update-health-amount sub1))
+[Physics...]
 
-  (define (entity (health 100 
-                          #:handler reduce-health ))) 
-}
+<Then I would start looking for ways to deploy this into dev>
 
-This entity will lose one health per tick (and there's nothing stopping it from going negative -- but that's not the point, right now).   But you can use the @racket[ticks] combinator to change that from the (by default) infinite handler to one that only happens once.
+@section{Maintenance Tasks}
 
-@codeblock{
-  (define-component health (amount))
-  (define reduce-health (update-health-amount sub1))
+;TODO: Immutability is a lie.  See comment in test/define-component.rkt
+;  Make a test that explicitly checks this property
+;  By the way, is mutability helping us much?  Maybe we should take it out if it's not...
 
-  (define (entity (health 100 
-                          #:handler (for-ticks 1 reduce-health)))) 
-}
+;TODO: Making render tests automated
+;(Screenshots??)
 
 
+@section{Feature Ideas}
+
+;Can we use components that store (and tick) other components as a way to implement "systems"?
+;Rendering two games at once.  A child game?  
+;Components within components.  Entities within components
+
+;Keep having ideas about using rosette or constraint based programming to do
+; * Procedural geneartion
+; * Generating entire games, sequences
+; * Flockin behavior
+
+;Or other meta stuff:
+; * A component containing a game and a behaviour that ticks it...
+; * Run subgames within a game...
+; * Procedurally create games at runtime, run them, do something with the result.
+; * "Bake" a game, by running it and observing its values.  Faster now as a sub-game...
+
+;For the paper we write about this engine:
+; * Game-oriented programming?
+; * A game-based programming "paradigmn"?
+
+@section{Performance}
+
+
+;ADD a section about performance. Raw notes below...
+;TODO: Make conway fast again.  Query optimizations.  Caching.
+;  I tried adding a lookup hash to entities, but I'm not seeing any speed improvement on the red/green poopers...
+;    Should remove if it's not helping
+;TODO: Roll a profiler (or build on top of Racket's now that we've simplified things again).
+;  Done.
+;  Testing it.  It seemed to blame Position for being slow, so I changed to an implementation of posn that it claims is faster.
+;    But... it doesn't feel faster and the FPS looks the same.
+;    (Then again, I need to disable the sampling to have a true test...)
+
+;Have it print the stats over time
+
+
+;One big problem is that I don't know what I should be expecting from this engine.  Is 20 FPS with 250 entities good or bad?
+;  What would happen with unity?
+;  What would happen with 2htdp/universe?
+
+;Or another angle:
+;  How many math operations per second should Racket be able to do?  How much overhead from garbage?  How much from memory allocations?
+;  How many is this engine doing?
+;  High level profiler might be able to give us that picture, btw.  So we can keep our estimations honest.
 
