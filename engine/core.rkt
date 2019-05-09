@@ -119,8 +119,8 @@
          has-component?
          is-component?
 
-         id
-         id?
+         (rename-out (eid id))
+         (rename-out (eid? id?))
 
          new-game-function-f
 
@@ -159,7 +159,8 @@
 (require posn)
 (require 2htdp/image)
 ;(require 2htdp/universe)
-(require "../components/animated-sprite.rkt")
+(require "../components/animated-sprite.rkt"
+         "./component-struct.rkt")
 
 
 (require threading)
@@ -177,7 +178,7 @@
               [mouse-input #:mutable]
               [mouse-prev-input #:mutable]
               [collisions #:mutable]
-              [separations #:mutable]) #:transparent)
+              [separations #:mutable]) #;#:transparent)
 
 ;For use in contracts
 
@@ -234,23 +235,29 @@
 
 (define (component-id c)
   ;There must be a better way than this...
-  (with-handlers ([exn:fail? (thunk* ;(displayln "This is probably bad.  Couldn't get a component id from that....")
+  #;(with-handlers ([exn:fail? (thunk* ;(displayln "This is probably bad.  Couldn't get a component id from that....")
                                      #f)])
       (string->number (string-replace
                        (second (string-split (~a c) " "))
-                       ")" ""))))
+                       ")" "")))
+  ; Here's the better way
+  (component-struct-cid c))
+        
 
 (define (component-eq? c1 c2)
-  (eq? (component-id c1)
-       (component-id c2)))
+  (if (and (component-struct? c1)
+           (component-struct? c2))
+      (eq? (component-id c1)
+           (component-id c2))
+      (equal? c1 c2)))
 
 (define (component? c)
-  (not (not
-        (and (struct? c)
-             (component-id c)))))
+  (component-struct? c)
+  )
 
 ;(define component-or-system?
 ;  (or/c component? (listof component?)))
+;(struct component-struct (id))
 
 (require (for-syntax racket))
 (define-syntax (component stx)
@@ -259,10 +266,12 @@
      (with-syntax [(construct-with-id (format-id #'name "new-~a" #'name))]
        #`(begin
            ;(provide (rename-out [construct-with-id name]))
-           (struct name (id field ...) things ... #:transparent)
+           (struct name component-struct (field ...) things ... #;#:transparent)
            (define (construct-with-id field ...)
              (name (next-component-id) field ...))
            ))]))
+
+
 
 ;HIDDEN
 
@@ -320,13 +329,13 @@
   (posn-y (get-posn e)))
 
 
-(struct id [id] #:transparent)
+(component eid (id))
 
 
 
-(struct entity [id components] #:transparent)
+(struct entity [id components] #;#:transparent)
 
-(struct entity-name (string) #:transparent)
+(struct entity-name (string) #;#:transparent)
 
 
 (define (entity-eq? e1 e2)
@@ -470,7 +479,7 @@
   (findf (λ(x) (string=? n (get-name x))) (game-entities g)))
 
 (define (get-id e)
-  (id-id (get-component e id?)))
+  (eid-id (get-component e eid?)))
 
 (define (entity-animation e)
   (findf animated-sprite? (entity-components e)))
@@ -626,7 +635,7 @@
 
 (define (basic-entity p s)
   (entity (next-entity-id)
-          (flatten (list (id #f)
+          (flatten (list (new-eid #f)
                          p
                          (image->bb (render (if (list? s)
                                                 (first s)
@@ -1090,7 +1099,7 @@
                   (map get-id (remove e (game-entities g) entity-eq?))))
       (begin
        ;(displayln (~a "Setting new id"))
-       (update-entity e id? (id (random 1000000))))
+       (update-entity e eid? (new-eid (random 1000000))))
       e))
 
 (define (uniqify-ids g)
@@ -1331,7 +1340,7 @@
 (provide (rename-out [make-physical-collider physical-collider])
          physical-collider?)
 
-(struct physical-collider (chipmunk force) #:transparent)
+(struct physical-collider (chipmunk force) #;#:transparent)
 
 
 (define (entity->chipmunk e)

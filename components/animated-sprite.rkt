@@ -155,6 +155,7 @@
 (require threading)
 (require (only-in racket/draw
                   the-color-database))
+(require "../engine/component-struct.rkt")
 
 ;Convenience methods for going from sheets to sprites
 
@@ -213,9 +214,8 @@
 
 
 ;Struct to encapsulate what an animation is
-(struct animated-sprite
+(struct animated-sprite component-struct
         (
-         id
          [o-frames #:mutable]        ;List of original images.  This should be fast-images???
          [frames  #:mutable]
          current-frame    ;Frame to show currently (integer)
