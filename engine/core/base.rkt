@@ -1,9 +1,5 @@
 #lang racket
 
-(provide add-c remove-c #;update-c 
-         add-e remove-e #;update-e 
-         update-f e-crud? c-crud?)
-
 (provide 
   game
   new-game
@@ -26,7 +22,6 @@
   entity=?
   copy-entity
 
-  new-component
   component
   copy-component
   component?
@@ -81,24 +76,6 @@
 (struct entity (id components changed? lookup) #:mutable  #:transparent)
 (struct game (entities) #:mutable #:transparent)
 
-(struct add-e    (e))
-;(struct update-e (e new-e))
-(struct remove-e (e))
-
-(struct add-c    (c))
-;(struct update-c (c new-c))
-(struct remove-c (c))
-
-(struct update-f (c-id f-id func))
-
-;Might not be necessary if operation? includes entity?
-(define c-crud? (or/c add-c? #;update-c? 
-                      remove-c?))
-
-(define e-crud? (or/c add-e? 
-                      remove-e?))
-(define f-crud? update-f?)
-
 
 (define (get-value c)
   (vector-ref c 5))
@@ -108,25 +85,10 @@
   (and (vector? c) 
        (eq? 'component (vector-ref c 0))))
 
-(define operation? entity?)
-
-(define handler? (-> game? entity? component? operation?))
-
-(define-syntax-rule (handler (g e c) body ...)
-  (lambda (g e c)
-    body ...))
-
-
-
-(define rule? (-> game? entity? component? boolean?))
-
-(define noop (lambda (g e c) e))
-
-;Commenting out this contract fixed a bug, but I don't know why... Be careful putting it back in.  However, it might be an easy bug to find once all the other contracts are back.  Tackle that next..
 (define/contract (component id handler handler-code)
   (maybe-contract
     (->  (or/c number? #f) 
-         (or/c handler? #f) 
+         any/c
          any/c
          component?))
   ;5 pre-fields before the user defined fields.
@@ -201,26 +163,6 @@
   (eq? (entity-id e1)
        (entity-id e2)))
 
-(define-syntax-rule (new-component #:update update)
-  (new-component-f #:update update
-                   #:update-code 'update))
-
-(define/contract (new-component-f #:update (update #f)
-                                  #:update-code (update-code #f)
-                                  )
-
-  (maybe-contract
-    (->* () 
-         (#:update (or/c handler? #f)
-          #:update-code any/c ) 
-         component?))
-
-  (component (next-id) 
-             update
-             #;
-             (vector update)
-             update-code))
-
 
 
 
@@ -261,12 +203,11 @@
   (game (map copy-entity es)))
 
 (define/contract (new-entity . cs)
-  (->* () #:rest (listof component?) entity?)
+                 (->* () #:rest (listof (or/c component?
+                                              list?)) entity?)
 
   (refresh-component-lookup
-    (entity (next-id) cs #f #f))
-  
-  )
+    (entity (next-id) (flatten cs) #f #f)))
 
 (define next-id (id-generator 0))
 

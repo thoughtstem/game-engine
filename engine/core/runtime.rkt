@@ -7,6 +7,7 @@
          debug
          ticks
          tick-component
+         tick-entity
 
          tick-list
 
@@ -230,8 +231,9 @@
   (h c))
 
 (define (tick-entity e)
-  (struct-copy entity e
-               [components
-                 (map tick-component (entity-components e)) ]))
+  (parameterize ([CURRENT-ENTITY e])
+    (struct-copy entity e
+                 [components
+                   (map tick-component (entity-components e)) ])))
 
 

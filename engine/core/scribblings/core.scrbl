@@ -325,9 +325,14 @@ which you must put into the game if you want to get input data.
 [Doing all this would complete the input part of the engine.]
 
 [Also crutial and perhaps worth putting before input.
-  Animation...] <Candy>
+  Animation...
+ Abstract animation into a system...  Document it.
+] 
 
-[Physics...]
+[Physics...
+  Fucking prototyped it!
+  Now just simplify racket-chipmunk stuff.  That needs some serious polishing.
+]
 
 <Then I would start looking for ways to deploy this into dev>
 

@@ -33,7 +33,9 @@
    (define new-cs
      (append 
        (entity-components e)
-       (list c)))
+       (if (list? c)
+         c
+         (list c))))
 
 
    (refresh-component-lookup
