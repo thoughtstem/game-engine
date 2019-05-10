@@ -48,7 +48,10 @@
          update-backpack-sprite
          backpack-changed?
          update-backpack
-         draw-backpack-bg)
+         draw-backpack-bg
+         in-game-by-id?
+         in-backpack-by-id?
+         )
 
 (struct item (entity amount))
 
@@ -312,4 +315,15 @@
             (update-backpack-sprite g _)
             ((go-to-pos-inside 'top-right) g _)))))
 
+(define (in-game-by-id? item-id)
+  (lambda (g e)
+    (define item-ids (map (curry get-storage-data "item-id")
+                          (filter (curry get-storage "item-id") (game-entities g))))
+    (if (member item-id item-ids) #t #f)))
 
+(define (in-backpack-by-id? item-id)
+  (lambda (g e)
+    (define item-ids (map (compose (curry get-storage-data "item-id")
+                                item-entity)
+                       (get-items (get-entity "player" g))))
+    (if (member item-id item-ids) #t #f)))

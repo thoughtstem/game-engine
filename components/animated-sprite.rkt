@@ -122,6 +122,12 @@
 
          get-rotation
          get-color
+
+         sprite-width    ; matches syntax of image-width
+         sprite-height   ; matches syntax of image-height
+
+         (rename-out (sprite-width get-sprite-width))  ;also providing these for getter consistency
+         (rename-out (sprite-height get-sprite-height))
          
          set-x-offset
          set-y-offset
@@ -135,6 +141,8 @@
          ;set-sprite-color
          ;set-sprite-angle
 
+         
+
          string-animated-sprite?
          image-animated-sprite?
 
@@ -147,6 +155,7 @@
 (require threading)
 (require (only-in racket/draw
                   the-color-database))
+(require "../engine/component-struct.rkt")
 
 ;Convenience methods for going from sheets to sprites
 
@@ -205,9 +214,8 @@
 
 
 ;Struct to encapsulate what an animation is
-(struct animated-sprite
+(struct animated-sprite component-struct
         (
-         id
          [o-frames #:mutable]        ;List of original images.  This should be fast-images???
          [frames  #:mutable]
          current-frame    ;Frame to show currently (integer)
@@ -506,11 +514,21 @@
   (-> animated-sprite? boolean?)
   (= (sub1 (animated-sprite-total-frames s)) (animated-sprite-current-frame s)))
 
+(define/contract (sprite-width s)
+  (-> animated-sprite? number?)
+  (* (get-x-scale s) (image-width (pick-frame s
+                                            (animated-sprite-current-frame s)))))
+
+(define/contract (sprite-height s)
+  (-> animated-sprite? number?)
+  (* (get-y-scale s) (image-height (pick-frame s
+                                             (animated-sprite-current-frame s)))))
+
 (define/contract (render s)
   (-> animated-sprite? image?)
   (scale/xy
-   (max 1 (animated-sprite-x-scale s)) ;Breaks on negatives...
-   (max 1 (animated-sprite-y-scale s)) ;Breaks on negatives...
+   (abs (animated-sprite-x-scale s)) ;Breaks on negatives...
+   (abs (animated-sprite-y-scale s)) ;Breaks on negatives...
    (freeze (pick-frame s
                        (animated-sprite-current-frame s)))
    ))

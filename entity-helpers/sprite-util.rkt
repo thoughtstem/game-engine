@@ -11,7 +11,7 @@
 (provide random-color)
 (provide random-tint)
 (provide spawn)
-(provide open-dialog
+(provide ;open-dialog
          hide
          show
          start-animation
@@ -33,7 +33,7 @@
 (require posn
          threading)
 
-(define (change-sprite sprite-or-func)
+#|(define (change-sprite sprite-or-func)
   (lambda (g e)
     (define sprite (if (procedure? sprite-or-func)
                        (sprite-or-func)
@@ -41,7 +41,16 @@
     (define new-bb (image->bb (render sprite)))
     (update-entity (update-entity e animated-sprite? sprite)
                    bb?
-                   new-bb)))
+                   new-bb)))|#
+
+(define (change-sprite sprite-func-or-list)
+  (lambda (g e)
+    (define sprites-list (flatten (if (procedure? sprite-func-or-list)
+                                           (sprite-func-or-list)
+                                           sprite-func-or-list)))
+    (~> e
+        (remove-components _ animated-sprite?)
+        (add-components _ (reverse sprites-list)))))
 
 (define (set-size amount)
   (lambda (g e)
@@ -156,13 +165,15 @@
     (define new-list (map (curry tint-img random-color) (vector->list frames)))
     (update-entity e animated-sprite? (struct-copy animated-sprite s [frames (list->vector new-list)]))))
 
-(define (spawn s #:relative? [relative? #t]) 
+(define (spawn s #:relative? [relative? #t] #:rule [rule (λ (g e) #t)]) 
   (lambda (g e)
-    (add-component e (spawn-once s #:relative? relative?))))
+    (if (rule g e)
+        (add-component e (spawn-once s #:relative? relative?))
+        e)))
 
-(define (open-dialog s) 
-  (lambda (g e)
-    (add-component e (spawn-dialog s))))
+;(define (open-dialog s) 
+;  (lambda (g e)
+;    (add-component e (spawn-dialog s))))
 
 (define (hide g e)
   (add-component (remove-component e hidden?) (hidden)))
@@ -236,12 +247,12 @@
 (define/contract (set-sprite-scale s as)
   (-> number? (or/c animated-sprite? image?) animated-sprite?)
   
-  (define current-x (if (animated-sprite? as)
+  #|(define current-x (if (animated-sprite? as)
                         (get-x-scale as)
                         1))
   (define current-y (if (animated-sprite? as)
                         (get-y-scale as)
-                        1))
+                        1))|#
   (if (animated-sprite? as)
       (scale-xy s as)
       (new-sprite as #:scale s)))

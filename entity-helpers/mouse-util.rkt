@@ -23,7 +23,8 @@
 
 (define (point-to-mouse g e)
   (define target-pos (get-mouse-pos g))
-  ((point-to-posn target-pos) g e)
+
+  ((point-to-posn target-pos) g e) 
   )
 
 (define (mouse-button-is-down? button)

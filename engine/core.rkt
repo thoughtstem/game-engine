@@ -3,7 +3,10 @@
 ;Stuff for start-game
 (provide physics-start
          uniqify-ids
-         initialize-game)
+         initialize-game
+         (rename-out (requested-width GAME-WIDTH)
+                     (requested-height GAME-HEIGHT)
+                     ))
 
 
 ;Stuff for rendering
@@ -116,8 +119,8 @@
          has-component?
          is-component?
 
-         id
-         id?
+         (rename-out (eid id))
+         (rename-out (eid? id?))
 
          new-game-function-f
 
@@ -148,7 +151,7 @@
          component?
          component-eq?
          component-id
-         component-or-system?
+         ;component-or-system?
          new-sprite
          ensure-sprite
          )
@@ -156,7 +159,8 @@
 (require posn)
 (require 2htdp/image)
 ;(require 2htdp/universe)
-(require "../components/animated-sprite.rkt")
+(require "../components/animated-sprite.rkt"
+         "./component-struct.rkt")
 
 
 (require threading)
@@ -231,23 +235,29 @@
 
 (define (component-id c)
   ;There must be a better way than this...
-  (with-handlers ([exn:fail? (thunk* ;(displayln "This is probably bad.  Couldn't get a component id from that....")
+  #;(with-handlers ([exn:fail? (thunk* ;(displayln "This is probably bad.  Couldn't get a component id from that....")
                                      #f)])
       (string->number (string-replace
                        (second (string-split (~a c) " "))
-                       ")" ""))))
+                       ")" "")))
+  ; Here's the better way
+  (component-struct-cid c))
+        
 
 (define (component-eq? c1 c2)
-  (eq? (component-id c1)
-       (component-id c2)))
+  (if (and (component-struct? c1)
+           (component-struct? c2))
+      (eq? (component-id c1)
+           (component-id c2))
+      (equal? c1 c2)))
 
 (define (component? c)
-  (not (not
-        (and (struct? c)
-             (component-id c)))))
+  (component-struct? c)
+  )
 
-(define component-or-system?
-  (or/c component? (listof component?)))
+;(define component-or-system?
+;  (or/c component? (listof component?)))
+;(struct component-struct (id))
 
 (require (for-syntax racket))
 (define-syntax (component stx)
@@ -256,10 +266,12 @@
      (with-syntax [(construct-with-id (format-id #'name "new-~a" #'name))]
        #`(begin
            ;(provide (rename-out [construct-with-id name]))
-           (struct name (id field ...) things ... #:transparent)
+           (struct name component-struct (field ...) things ... #;#:transparent)
            (define (construct-with-id field ...)
              (name (next-component-id) field ...))
            ))]))
+
+
 
 ;HIDDEN
 
@@ -317,7 +329,7 @@
   (posn-y (get-posn e)))
 
 
-(struct id [id] #:transparent)
+(component eid (id))
 
 
 
@@ -467,7 +479,7 @@
   (findf (λ(x) (string=? n (get-name x))) (game-entities g)))
 
 (define (get-id e)
-  (id-id (get-component e id?)))
+  (eid-id (get-component e eid?)))
 
 (define (entity-animation e)
   (findf animated-sprite? (entity-components e)))
@@ -623,7 +635,7 @@
 
 (define (basic-entity p s)
   (entity (next-entity-id)
-          (flatten (list (id #f)
+          (flatten (list (new-eid #f)
                          p
                          (image->bb (render (if (list? s)
                                                 (first s)
@@ -655,8 +667,11 @@
   (define sprite-or-sprites
     (cond
       [(animated-sprite? sprite-or-image-or-list) sprite-or-image-or-list]
-      [((listof sprite-or-image?) sprite-or-image-or-list) (reverse (map ensure-sprite sprite-or-image-or-list))]
+      [((listof sprite-or-image?) (flatten sprite-or-image-or-list))
+       (reverse (map ensure-sprite (flatten sprite-or-image-or-list)))]
       [(image? sprite-or-image-or-list) (new-sprite sprite-or-image-or-list)]
+      [(string? sprite-or-image-or-list) (new-sprite sprite-or-image-or-list)]
+      [((listof string?) sprite-or-image-or-list) (new-sprite sprite-or-image-or-list 10)] ; assume a list of string is meant to be an animation
       [else     (error "What was that?")]))
   (apply (curry add-components (basic-entity p sprite-or-sprites) )
          all-cs))
@@ -813,11 +828,14 @@
         ))
 
 
-(struct mouse-state (left right pos))
+(struct mouse-state (left right pos) #:mutable)
 
 (define (handle-mouse-xy larger-state mouse-posn)
-  ;(displayln (~a "Mouse: " x-pos " " y-pos))
   (define ms (game-mouse-input larger-state))
+
+  (set-mouse-state-pos! ms mouse-posn)
+
+  #;
   (set-game-mouse-input! larger-state (struct-copy mouse-state ms
                                                    [pos mouse-posn]))
   larger-state)
@@ -1081,7 +1099,7 @@
                   (map get-id (remove e (game-entities g) entity-eq?))))
       (begin
        ;(displayln (~a "Setting new id"))
-       (update-entity e id? (id (random 1000000))))
+       (update-entity e eid? (new-eid (random 1000000))))
       e))
 
 (define (uniqify-ids g)
@@ -1236,12 +1254,17 @@
 
 ; END ACTIVE
 
-(define W 640)
-(define H 480)
+(define W 480)
+(define requested-width (make-parameter #f))
+
+(define H 360)
+(define requested-height (make-parameter #f))
 
 (define (initialize-game entities)
-  (set! W (w (last entities)))
-  (set! H (h (last entities)))
+  (set! W (or (requested-width)
+              (w (last entities))))
+  (set! H (or (requested-height)
+              (h (last entities))))
 
   (game (flatten entities)
         '()
@@ -1317,7 +1340,7 @@
 (provide (rename-out [make-physical-collider physical-collider])
          physical-collider?)
 
-(struct physical-collider (chipmunk force) #:transparent)
+(struct physical-collider (chipmunk force) #;#:transparent)
 
 
 (define (entity->chipmunk e)
