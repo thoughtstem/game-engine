@@ -29,6 +29,7 @@
   component-update
   component=?
   component-done
+  component-name
   
   next-id
   mutable-state
@@ -80,6 +81,7 @@
 (define (get-value c)
   (vector-ref c 5))
 
+
 (define/contract (component? c)
   (-> any/c boolean?)
   (and (vector? c) 
@@ -126,11 +128,12 @@
       c) 
     (vector-copy c)))
 
-(define/contract (component-subtype c)
+(define/contract (component-name c)
   (maybe-contract
     (-> component? symbol?))
 
   (vector-ref c 1))
+
 
 (define/contract (component-done c)
   (-> component? component?)
@@ -199,8 +202,9 @@
 ;  Should the lists get converted to vectors?
 ;  Should this too be parameterizable?
 (define/contract (new-game . es)
-  (->* () #:rest (listof entity?) game?)
-  (game (map copy-entity es)))
+ (->* () #:rest (listof (or/c entity?
+                              list?)) game?)
+  (game (map copy-entity (flatten es))))
 
 (define/contract (new-entity . cs)
                  (->* () #:rest (listof (or/c component?

@@ -321,7 +321,29 @@ which you must put into the game if you want to get input data.
 (play! g)  
 }
 
-;TODO: Generalize into more specific examples: level swapping when some objective is complete, warping from one game to another via links, one game throws error / other catches it and continues, finally implement hotswap-dev         
+;TODO: Generalize into more specific examples: 
+
+level swapping when some objective is complete, [DONE: Stream of level games is cool.  Doc that after mining the demo for abstractions.]
+  Manager
+    -> Level
+    -> Level
+    -> Level
+   
+
+warping from one game to another via links, 
+  Is this different from a sequence (cycle) of levels?
+  Yeah
+  Manager
+    -> World
+       -> Next-World
+
+  Manager watches some component on the game,
+    When that component produces a game, the manager swaps to that new game.
+      (Back buffer, bread crumbs: Could capture the last game and provide a way to pop back to it.)
+ 
+
+implement hotswap-dev         
+  Extension idea: one game throws error / other catches it and continues, 
 
 ;How to implement level swap?  New zones?  "Link" between games?  Warps?
 ;  Game manager?
