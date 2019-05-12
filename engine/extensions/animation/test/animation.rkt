@@ -14,7 +14,9 @@
 (define e
   (entity
     (movement-system)
-    (animation-system elves-left elves-right elves-down)))
+    (animation-system 
+      #:direction-update (thunk* (as-posn (get-current-input))) 
+      elves-left elves-right elves-down)))
 
 (play! (game input-manager e))   
 

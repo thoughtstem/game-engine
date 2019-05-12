@@ -7,6 +7,8 @@
 
 @defmodule[game-engine/engine/core/main]
 
+Multi-lingual game programming.  Many languages, all entity/component systems beautifully composed
+
 Gives you a truly building-blocks approach to designing animations, simulations, and games.  Bottom up.  Easily create and share your own components, entities, games, partial games, game constructors, procedurally generated games, etc.  They're all just values and easily compose with one another.  
 
 Manipulating games programatically is quite easy.
@@ -319,11 +321,24 @@ which you must put into the game if you want to get input data.
 (play! g)  
 }
 
+;TODO: Generalize into more specific examples: level swapping when some objective is complete, warping from one game to another via links, one game throws error / other catches it and continues, finally implement hotswap-dev         
+
+;How to implement level swap?  New zones?  "Link" between games?  Warps?
+;  Game manager?
+;  Back buffer? 
+
+
+;TODO: Clean up math functions / delta time / etc.
+
+
+
 [
 TODO: Start an example game
   RPG game started.  Has character and background... AWESOME!
 
   Keep discipline.
+    Rule #0
+      Invest in gap reduction.  (TODO: Read Racket evaluation model, racket guide, continuation marks, exceptions, all the basics.)
     Rule #1
       Always: Feature / Ractor / Repeat.
     Rule #2
@@ -385,6 +400,12 @@ Meta:
 
 
 @section{Feature Ideas}
+
+[
+Moonshot:
+  Could we render game previews (various projections of the game?) embedded in a DrRacket snip? 
+  That sounds like a game changer... 
+]
 
 ;Can we use components that store (and tick) other components as a way to implement "systems"?
 ;Rendering two games at once.  A child game?  

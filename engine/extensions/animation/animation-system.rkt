@@ -14,13 +14,14 @@
 ;Cool.  What's the next abstraction step?
 (define (make-animation-system 
           #:counter-update (counter-update add1)
-          #:direction-update (direction-update (thunk* (as-posn (get-current-input))))
+          #:direction-update (direction-update 
+                               identity)
           left-frames right-frames down-frames) 
   (list
     (animation-system
       (entity 
         (counter 0 (^ counter-update))
-        (direction #f (^ direction-update))
+        (direction (posn 0 0) (^ direction-update))
 
         (facing 'left
                 (cond 

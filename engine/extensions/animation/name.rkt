@@ -7,4 +7,6 @@
 
 (define (has-name s)
   (lambda(e)
-    (eq? s (get-name e))))
+    (and
+      (has-component e 'name)
+      (eq? s (get-name e)))))

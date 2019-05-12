@@ -83,7 +83,16 @@
           (when h
             (define component-start-time (current-inexact-milliseconds))
 
-            (set! c (h c))
+            ;Can't decide which error output is more useful.  Should uncoment and fix so it combines both outputs, then we don't have to decide.  But I've been lazy and haven't fully learned Racket's exception model yet.
+            #;
+            (with-handlers ([exn:fail? (lambda (err)
+                                         ;Is this masking a better error message
+                                         (displayln err)
+                                         (pretty-print-component c)
+                                         (error "Error ticking component ") )])
+              (set! c (h c)))
+
+            (set! c (h c)) 
 
             (hash-set! (entity-lookup next-e)
                        (vector-ref c 1) ;Gross...  Gotta hide all the explicit vector nonsense

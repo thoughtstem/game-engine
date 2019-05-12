@@ -3,6 +3,7 @@
 (provide add-component
          add-components
 
+         get
          get-component
          get-components
          update-component
@@ -137,11 +138,9 @@
                     [components new-c])))) 
 
 
-#;
-(require memoize)
-
-(define #;/memo 
-  (get-component e query?)
+(define/contract (get-component e query?)
+  (maybe-contract
+    (-> entity? any/c any/c))
 
   (if (symbol? query?)
     (hash-ref (entity-lookup e) query? #f) 
@@ -182,6 +181,7 @@
   (define es (game-entities g))
   (define i  (get-entity-index g pred?-or-e))
   (if i (list-ref es i) #f))
+
 
 (define/contract (add-entity g e)
   (maybe-contract
@@ -244,10 +244,35 @@
     (struct-copy game g
                 [entities new-es])))
 
-(define (has-component e c?)
-  (if (symbol? c?)
-    (hash-ref (entity-lookup e) c? #f) 
-    (findf c? (entity-components e))))
+(define/contract (has-component e c?)
+  (maybe-contract
+    (-> entity? any/c boolean?))
+
+  (not (not
+         (if (symbol? c?)
+           (hash-ref (entity-lookup e) c? #f) 
+           (findf c? (entity-components e))))))
+
+(define (get entity-name component-name)
+  (define entity-with-name
+    (get-entity (CURRENT-GAME) 
+                (lambda (e)
+                  (and
+                    ;A bit hacky, since name is defined outside of core.  TODO: Should rope that component into core if it has special meaning here.
+                    (has-component e 'name)
+                    (eq? entity-name 
+                         (get-value (get-component e 'name)))))))
+
+  (when (not entity-with-name)
+    (pretty-print-game (CURRENT-GAME))
+    (error (~a "No entity with name " entity-name " and component name " component-name)))
+
+
+  (get-value
+    (get-component 
+      entity-with-name 
+      component-name)))
+
 
 
 

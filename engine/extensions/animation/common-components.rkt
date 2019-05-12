@@ -7,6 +7,7 @@
     "direction.rkt"
     "toggle.rkt"
     "sub-game.rkt"
+    "death.rkt"
     posn))
 
 (require "name.rkt"
@@ -14,4 +15,5 @@
          "direction.rkt"
          "toggle.rkt"
          "sub-game.rkt"
+         "death.rkt"
          posn)
