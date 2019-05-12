@@ -27,10 +27,20 @@
 
   set-insertion-queue!
   set-seen-sprite-ids! 
+
+  sheet->list
+
+  also-render
+  get-also-render
+
+  also-render
+  get-also-render
   )
 
 (require "../../core/main.rkt"
-         (only-in 2htdp/image image->color-list)posn)
+         "./common-components.rkt"
+         (only-in 2htdp/image bitmap/file image->color-list crop image-width image-height)
+         posn)
 
 (define-component position posn?)
 (define-component rotation number?)
@@ -59,6 +69,8 @@
 ;  there's no animation at this component's level.
 ;  It can be used to create animation systems with more complex
 ;  components.
+(define-component also-render game?)
+
 (define-component sprite symbol?)
 
 (define (sprite-id s)
@@ -74,24 +86,24 @@
   (member i seen-sprite-ids))
 
 
-(define #;/contract 
-  (image->id i)
-
-  #;
-  (-> image? symbol?)
-  ;I'm sure this is super slow.
-  ;We should figure out how to warn the user if the are unknowingly calling this at runtime (e.g. by constructing new sprites at runtime).
-  ;But as long as you declare all your sprite components before the game starts, there will be no overhead.
-  ;NOTE: This overhead happens ANY time you do (sprite ...) -- regardless of whether you pass in an image that has already been compiled.  Just the act of checking WHETHER that image has been compiled previously triggers this function.
-
+(define (image->id i)
   (string->symbol
     (~a "sprite-"
         (equal-hash-code (~a (image->color-list i))))))
 
+
 (define (register-sprite i)
-  (let ([id (image->id i)])
+  (let ([id 
+          (if (path? i)     
+            (string->symbol (~a "sprite-" i))
+            (image->id i))]
+        [final-image
+          (if (path? i)
+            (bitmap/file i) 
+            i)])
+
     (when (not (seen? id))
-      (set-insertion-queue! (cons (list id i) insertion-queue))
+      (set-insertion-queue! (cons (list id final-image) insertion-queue))
       (set-seen-sprite-ids! (cons id seen-sprite-ids)))
 
     id))
@@ -107,47 +119,22 @@
   (set! insertion-queue '()))
 
 
+(define (sheet->list i #:row (r 0))
+  (define ew (image-width i))
+  (define eh (image-height i))
 
+  (define rows 4)
+  (define cols 4)
 
-;Is this where we tie in the mode-lambda stuff??
-;When do things get added to the sprite database?
-;What queries will need to be made to it?
+  (define cw  (/ ew cols))
+  (define ch  (/ eh rows))
 
-(define sprite-db (list))
+  (define elf1 (register-sprite (crop (* cw 0) (* ch r) cw ch i)))
+  (define elf2 (register-sprite (crop (* cw 1) (* ch r) cw ch i)))
+  (define elf3 (register-sprite (crop (* cw 2) (* ch r) cw ch i)))
+  (define elf4 (register-sprite (crop (* cw 3) (* ch r) cw ch i)))
 
-;Can happen at runtime...
-(define (insert-sprite s)
-  42 ;Return id??
-  )
+  (define elves (list elf1 elf2 elf3 elf4))
 
-(define (get-id s)
-  
-  42)
-
-
-
-
-
-;Under this rendering semantics:
-;  Every entity that you want rendered should have
-;   1) one or more animated-sprite components, each of which will respond to a (render ...) call with a sprite id.  
-;   2) a position component 
-;   2) a size component
-;   3) [later?] a scale component
-;   4) [later?] a rotation component
-;   5) [later?] a layer component
-
-;On every tick, the rendering system will look at the collection of entities with animated sprites.  Let's call that es:
-
-; entities will be rendered as if sorted by layer, and then by order of animated sprites on the entity.  their position will be translated to screen coordinates according to some parameterizable scalar factor. 
-; the width and height of the draw area will be determined by the size of the game's bounding box on the first tick.  It should not change after that. 
-
-;As for sprites, I'd like to try to minimize memory usage.  One option is to make the user register all the sprite up front, then reference them by ids from then on.  We can throw them away after they go to the graphics card.
-
-;Buuut.  That feels onerous compared to letting the user lexically see what sprite will be attached to what entity..
-
-
-
-
-
+  elves)
 

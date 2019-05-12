@@ -245,5 +245,9 @@
                 [entities new-es])))
 
 (define (has-component e c?)
-  (findf c? (entity-components e)))
+  (if (symbol? c?)
+    (hash-ref (entity-lookup e) c? #f) 
+    (findf c? (entity-components e))))
+
+
 

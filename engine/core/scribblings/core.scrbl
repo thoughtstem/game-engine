@@ -319,6 +319,44 @@ which you must put into the game if you want to get input data.
 (play! g)  
 }
 
+[
+TODO: Start an example game
+  RPG game started.  Has character and background... AWESOME!
+
+  Keep discipline.
+    Rule #1
+      Always: Feature / Ractor / Repeat.
+    Rule #2
+      Files of screen height only.
+    Rule #3
+      Something about keeping unit tests and docs in lock step with development
+    Rule #4
+      Breaks for creative inspiration.  When?  How often?  Enternal question.
+      <At minimum before a costly cycle, take some time to decide if the cycle is necessary.  Step away from computer.>
+
+  Turn this into a legit algorithm and move to top-level 
+
+  What's the cleanup goal?
+    Have we built enough feature to know something new?
+      - If we know something new, document and test it.
+    Unit tests for the stuff I'm using in RPG
+      - Rendering
+      - Input 
+      - Helper components
+      - Systems: animation / movement 
+
+Meta:
+
+ The goal is to have a robust (documented) way of doing the following:
+ * Rendering
+ * Input
+ * Physics
+ * Animation  
+ * Other useful components, paradigms, idioms...
+
+ In part, we'll need to build some kind of side project to really be sure... And that will help keep things organized, plus provide a body of example code to help seed the community.   Start making an RPG example -- heading toward the planes or one of the TS-Langs. 
+]
+
 [TODO: Continue demonstrating features of input.
   How does as-position work?  How to you bind other keys to things?
   Mouse input?  ...]

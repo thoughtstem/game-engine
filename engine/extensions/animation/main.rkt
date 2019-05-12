@@ -6,12 +6,16 @@
     "animated-sprite.rkt"
     "renderer.rkt"
     "input.rkt"
-    "name.rkt"
-    posn))
+    "common-components.rkt"
+    "animation-system.rkt"
+    "movement-system.rkt"
+    ))
 
 (require "../../core/main.rkt"
          "animated-sprite.rkt"
          "renderer.rkt"
          "input.rkt"
-         "name.rkt"
-         posn)
+         "common-components.rkt"
+         "animation-system.rkt"
+         "movement-system.rkt"
+         )

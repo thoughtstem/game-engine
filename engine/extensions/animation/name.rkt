@@ -7,4 +7,4 @@
 
 (define (has-name s)
   (lambda(e)
-    (eq? 'input-manager (get-name e))))
+    (eq? s (get-name e))))

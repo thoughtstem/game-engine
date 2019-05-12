@@ -175,39 +175,35 @@
     (define s 
       (get-component e 'sprite))
 
+
     (when s 
       (define eid (entity-id e))
       (define sid (ml:sprite-idx csd (sprite-id s)))
 
       (define mls
-
-        ;TODO: Simplifying for now.  Come back and debug the sprite cache later.
         (ml:sprite #:layer 0
 	           #:m (real->double-flonum (get-size e 1))
 		   #:theta (real->double-flonum (get-rotation e 0))
-                   (real->double-flonum (x e))
-                   (real->double-flonum (y e))
-                   sid)
+                   (if (has-component e 'position)
+                     (real->double-flonum (x e))
+                     (real->double-flonum 0))
+                   (if (has-component e 'position)
+                     (real->double-flonum (y e))
+                     (real->double-flonum 0))
+                   sid))
 
-        #;
-        (if (and (hash-has-key? sprite-cache eid)
-                 (not (entity-changed? e)))
-          (begin
-            #;
-            (set! hits (add1 hits))
-
-            (hash-ref sprite-cache eid))
-          (let ([new-mls (ml:sprite #:layer 0
-                                    (real->double-flonum (x e))
-                                    (real->double-flonum (y e))
-                                    sid)])
-
-
-            new-mls)))
-
-      (hash-set! sprite-cache eid mls)
       (set! ret (cons mls ret))) 
-    )
+    
+
+    ;implementing also-render
+    (define a
+      (get-component e 'also-render))
+
+    ;implementing also-render
+    (when a
+     (set! ret (append (game->ml-sprite-list (get-value a)) ret))  
+
+      ))
 
 
   ret
