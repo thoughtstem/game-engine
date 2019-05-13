@@ -60,6 +60,7 @@
                    coord
                    (posn-add coord (posn 1 0)))))
 
+
     (tile-floor)))
 
 
