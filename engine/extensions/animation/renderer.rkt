@@ -19,7 +19,15 @@
 (provide buttons)
 
 (define buttons
-  '(#f #f))
+  (hash
+    #\a #f
+    #\d #f
+    #\w #f
+    #\s #f))
+
+#;
+(define buttons
+  '(#f #f #f #f))
 
 (struct game+render ;TODO: CHANGE THIS NAME
   ( state render-tick)
@@ -35,40 +43,33 @@
 
    (define (word-event w e)
      (cond
-       [(and (key-event? e)
-             (eq? (send e get-key-code) #\a)) 
-        (begin
-          (set! buttons
-            (list-set buttons
-                      0
-                      #t))
-          w) ]
 
        [(and (key-event? e)
-             (eq? (send e get-key-code) #\d)) 
+             (eq? 'press 
+                  (send e get-key-release-code))
+             )
+
         (begin
           (set! buttons
-            (list-set buttons
-                      1
+            (hash-set buttons
+                      (send e get-key-code)
                       #t))
-          w) ]
-       [(and (key-event? e)
-             (eq? (send e get-key-release-code) #\a)) 
-        (begin
-          (set! buttons
-            (list-set buttons
-                      0
-                      #f))
-          w) ]
+
+          w)]
 
        [(and (key-event? e)
-             (eq? (send e get-key-release-code) #\d)) 
+             (eq? 
+               'release
+               (send e get-key-code)))
+
         (begin
           (set! buttons
-            (list-set buttons
-                      1
+            (hash-set buttons
+                      (send e get-key-release-code)
                       #f))
-          w) ]
+
+          w)]
+
        [(or (eq? e 'close)
             (and (key-event? e)
                  (eq? (send e get-key-code) 'escape)))

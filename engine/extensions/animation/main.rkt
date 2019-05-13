@@ -10,6 +10,7 @@
     "animation-system.rkt"
     "movement-system.rkt"
     "observe-change.rkt"
+    "doors.rkt"
     "level-manager.rkt"))
 
 (require "../../core/main.rkt"
@@ -20,4 +21,5 @@
          "animation-system.rkt"
          "movement-system.rkt"
          "observe-change.rkt"
+         "doors.rkt"
          "level-manager.rkt")

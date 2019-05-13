@@ -1,15 +1,34 @@
 #lang racket
 
 (provide blue-circle-avatar
-         red-square-enemy)
+         red-square-enemy
+         door-open-close
+         ;Do we need to be providing these?
+         door-sprite-closed
+         door-sprite-open)
 
 (require "../main.rkt"
          2htdp/image)
 
-(define (blue-circle-avatar)
+
+(define door-sprite-closed
+  (register-sprite
+    (square 40 'solid 'brown)))
+
+(define door-sprite-open
+  (register-sprite
+    (square 40 'solid 'black)))
+
+(define door-open-close
+  (sprite door-sprite-closed
+          (if (near-avatar? 50)
+            door-sprite-open 
+            door-sprite-closed)))
+
+(define (blue-circle-avatar (p (posn 200 200)))
   (entity  
     (name 'avatar)
-    (position (posn 200 200)
+    (position p 
               (posn-add 
                 (get-position)
                 (as-posn (get-current-input))))

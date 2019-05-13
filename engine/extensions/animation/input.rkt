@@ -27,10 +27,17 @@
              (posn
                (cond 
                  [(and
-                    (first buttons)
-                    (second buttons))
+                    (hash-ref buttons #\a)
+                    (hash-ref buttons #\d))
                   0]
-                 [(first buttons) -1] 
-                 [(second buttons) 1]
+                 [(hash-ref buttons #\a) -1] 
+                 [(hash-ref buttons #\d) 1]
                  [else 0])
-               0)))))
+               (cond 
+                 [(and
+                    (hash-ref buttons #\w)
+                    (hash-ref buttons #\s))
+                  0]
+                 [(hash-ref buttons #\w) -1] 
+                 [(hash-ref buttons #\s) 1]
+                 [else 0]) )))))
