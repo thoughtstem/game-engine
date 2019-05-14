@@ -206,7 +206,9 @@
          row->sprite
          set-sprite-scale
          set-sprite-color
-         set-sprite-angle)
+         set-sprite-angle
+         set-sprite-x-offset
+         set-sprite-y-offset)
 
 ;Convenience methods for going from sheets to sprites
 
@@ -272,5 +274,21 @@
   (if (animated-sprite? as)
       (set-angle v as)
       (new-sprite as #:rotation v))
+  )
+
+(define/contract (set-sprite-x-offset v as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (set-x-offset v as)
+      (new-sprite as #:x-offset v))
+  )
+
+(define/contract (set-sprite-y-offset v as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (set-y-offset v as)
+      (new-sprite as #:y-offset v))
   )
 
