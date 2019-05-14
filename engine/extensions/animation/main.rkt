@@ -11,7 +11,8 @@
     "movement-system.rkt"
     "observe-change.rkt"
     "doors.rkt"
-    "level-manager.rkt"))
+    "level-manager.rkt"
+    ))
 
 (require "../../core/main.rkt"
          "animated-sprite.rkt"
@@ -22,4 +23,5 @@
          "movement-system.rkt"
          "observe-change.rkt"
          "doors.rkt"
-         "level-manager.rkt")
+         "level-manager.rkt"
+         )
