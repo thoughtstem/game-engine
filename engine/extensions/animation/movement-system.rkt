@@ -4,14 +4,13 @@
                       movement-system]) )
 
 (require "../../core/main.rkt"
-         "./input.rkt"
          "./animated-sprite.rkt"
          "./common-components.rkt")
 
 (define-component movement-system entity?)
 
 (define (make-movement-system 
-          #:direction-update (direction-update (thunk* (as-posn (get-current-input)))))
+          #:direction-update (direction-update identity))
   (list 
     (movement-system
       (entity

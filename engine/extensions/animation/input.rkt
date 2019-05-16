@@ -3,7 +3,8 @@
 (provide input-manager
          get-current-input  
          get-input
-         as-posn)
+         as-posn
+         get-input-direction)
 
 (require "../../core/main.rkt")
 
@@ -11,6 +12,9 @@
          "./name.rkt")
 
 (define-component input posn?)
+
+(define (get-input-direction)
+  (as-posn (get-current-input)))
 
 (define (as-posn i)
   i)
