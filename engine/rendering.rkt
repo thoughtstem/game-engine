@@ -570,6 +570,7 @@
 (define (string-animated-sprite->ml:sprite e as layer)
   (define tf-scale (text-frame-scale (render-text-frame as)))
   (define tf-font (text-frame-font (render-text-frame as)))
+  (define tf-font-size (get-font-size (render-text-frame as)))
     
   (define debug-text-renderer
     (font-renderer
@@ -588,7 +589,7 @@
                                   (animated-sprite-x-offset as)))
                               (real->double-flonum
                                (+ (y e)
-                                  -10
+                                  (- (* tf-font-size .75)) ;-10
                                   (animated-sprite-y-offset as)))
                               #:mx (real->double-flonum (* (animated-sprite-x-scale as) tf-scale))
                               #:my (real->double-flonum (* (animated-sprite-y-scale as) tf-scale)))))
