@@ -14,11 +14,10 @@
                (get 'avatar 'position))))
 
 
-(define (door p s to)
+(define (door #:to to . cs)
   (entity
     (name 'door)
-    (position p)
-    s ;sprite
+    cs
     (sub-game #f
               (if (near-avatar? 25)
                 (to)  

@@ -33,28 +33,28 @@
       (avatar-position old-coord coord))
 
     (door 
-      (posn 200 0)
+      (position (posn 200 0))
       door-open-close
       (lambda () (tile 
                    coord
                    (posn-add coord (posn 0 1)))))
 
     (door 
-      (posn 200 400)
+      (position (posn 200 400))
       door-open-close
       (lambda () (tile 
                    coord
                    (posn-add coord (posn 0 -1)))))
 
     (door 
-      (posn 400 200)
+      (position (posn 400 200))
       door-open-close
       (lambda () (tile 
                    coord
                    (posn-add coord (posn -1 0)))))
 
     (door 
-      (posn 0 200)
+      (position (posn 0 200))
       door-open-close
       (lambda () (tile 
                    coord

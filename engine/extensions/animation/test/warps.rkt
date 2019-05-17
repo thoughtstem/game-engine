@@ -26,7 +26,7 @@
     input-manager
     (blue-circle-avatar (posn 200 50))
     (door 
-      (posn 200 10)
+      (position (posn 200 10))
       door-open-close
       indoors)
     outdoor-floor))
@@ -36,7 +36,7 @@
     input-manager
     (blue-circle-avatar (posn 200 350))
     (door 
-      (posn 200 390)
+      (position (posn 200 390))
       door-open-close
       outdoors)
     indoor-floor))
