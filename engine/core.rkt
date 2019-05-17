@@ -241,7 +241,9 @@
                        (second (string-split (~a c) " "))
                        ")" "")))
   ; Here's the better way
-  (component-struct-cid c))
+  (and (component-struct? c)
+       (component-struct-cid c))
+  )
         
 
 (define (component-eq? c1 c2)

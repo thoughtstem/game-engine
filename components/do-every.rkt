@@ -4,12 +4,15 @@
 (require posn)
 
 (provide (rename-out (make-do-every do-every)
+
                      (do-every      struct-do-every)
                      (do-every-rule struct-do-every-rule)
                      (do-every-func struct-do-every-func)
                      (do-every-speed struct-do-every-speed)
+
                      )
-         (except-out (struct-out do-every) do-every))
+         (except-out (struct-out do-every) do-every)
+         set-do-every-speed)
 
 (component do-every (accum speed rule func))
 
@@ -34,6 +37,9 @@
            ((do-every-rule c) g e))
       (update-entity ((do-every-func c) g e) (is-component? c) reset-do-every)
       (update-entity e                       (is-component? c) inc-do-every)))
+
+(define (set-do-every-speed c n)
+  (struct-copy do-every c [speed n]))
 
 (new-component do-every?
                update-do-every)

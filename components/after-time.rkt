@@ -5,7 +5,8 @@
 
 (provide (rename-out (make-after-time after-time))
          (except-out (struct-out after-time) after-time)
-         do-after-time)
+         do-after-time
+         set-after-time-delay)
 
 (component after-time (accum speed func))
 
@@ -19,6 +20,10 @@
 (define (after-time-ready? a)
   (>= (after-time-accum a)
       (after-time-speed a)))
+
+(define (set-after-time-delay a delay)
+  (struct-copy after-time a
+               [speed delay]))
 
 (define (update-after-time g e c)
   (if (after-time-ready? c)
