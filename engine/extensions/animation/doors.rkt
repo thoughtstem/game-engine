@@ -3,25 +3,22 @@
 (provide door door-manager near-avatar?)
 
 (require "../../core/main.rkt"
-         ;TODO: All of animated sprite for position???
          "./animated-sprite.rkt"
+         "./physics-system.rkt"
          "./common-components.rkt")
 
-;Abtract into doors.rkt
 (define (near-avatar? n)
   (> n 
      (distance (get-position)
                (get 'avatar 'position))))
 
-
-(define (door #:to to . cs)
+(define (door #:detect (condition? (thunk* (near-avatar? 25)))
+              #:to to . cs)
   (entity
     (name 'door)
     cs
     (sub-game #f
-              (if (near-avatar? 25)
-                (to)  
-                #f))))
+              (if (condition?) (to) #f))))
 
 (define-component door-destination game?)
 
@@ -35,8 +32,6 @@
 
 
 (define (door-manager start)
-  ;If one of the doors in the sub-game has a sub-game,
-  ;  replace this sub-game with that one...
   (entity
     (sub-game start
               (if (get-door-destination)
@@ -53,3 +48,5 @@
                            #f)))
     
     (also-render start (get-sub-game))))
+
+

@@ -14,6 +14,7 @@
          lux/chaos/gui/key)
 
 (require "../../core/main.rkt"
+         "./position-rotation-size.rkt" 
          "./animated-sprite.rkt")
 
 (provide buttons)

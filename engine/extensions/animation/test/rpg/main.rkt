@@ -4,21 +4,23 @@
          "./images.rkt"
          "./input.rkt"
          "./animations.rkt"
-         2htdp/image
-         )
+         2htdp/image)
 
-(define hero
+(define (hero)
   (entity
-    (name 'avatar) ;Not having this is a gotcha with door-manager.  Generalize.  At least pass in somehow.
+    (name 'avatar) 
     (position (posn 200 200))
+
+    ;TODO: Figure out how to abstract these magic numbers
+    ;Presumably this sets up the bb and location, but it should be kinematic or something?  The position in game should propagage to chipmunk land.
+    (physics-system 200 200 20 20)
+
     (hero-movement)
     (hero-animation)))
 
-(define world
+(define (world)
   (entity
     (position (posn 0 0))
-
-    ;TODO: Figure out traversal
     (sprite bg-sprite)))
 
 (define edge (register-sprite (rectangle 400 10 'solid 'red)))
@@ -28,37 +30,39 @@
   (game 
     input-manager 
     ;Seems to be moving slower as framerate slows.  Make movement fps independent.
-    hero
-
-    ;It's "detecting collision" in the top left corner, because it's using near-avatar, which is 25 units from 0,0
-    ; 
-    ;But really it should use the physics system.  Should we sort of roll our own first, for testing?
-    (door #:to rpg
-      (position (posn 0 0))
-      (sprite edge)
-      ;Rotation looks wrong, try fixing with hotswap?  And position seems off too.
-      (rotation 0))
+    (hero)
 
     (door #:to rpg
-      (position (posn 400 0))
-       ;Need to be able to rotate.  How to pass components into entity constructors like this? Maybe all should assume a #:rest components and use keywords for any special configs?  Then it matches entity really well.
-      (sprite edge)
-      (rotation (/ pi 4)))
+      ;(Note, it does seem like physics-system should get passed in.  A "door" might want to move around or be non-physcal or something.  The less we assume in these entities, the more flexibility.)
 
-    (door #:to rpg
-      (position (posn 400 400))
+      ;Presumably this sets up the bb and location.  I think they should be non-kinematic and static somehow.  And the position in chipmunk land should propagate to in-game.
+      (physics-system 200 0 400 10)
+      (position (posn 200 0))
       (sprite edge)
       (rotation 0))
 
     (door #:to rpg
-      (position (posn 0 400))
+      (physics-system 400 200 400 10)
+      (position (posn 400 200))
       (sprite edge)
-      (rotation (/ pi 4)))
-    world
-))
+      (rotation (/ pi 2)))
+
+    (door #:to rpg
+      (physics-system 200 400 400 10)
+      (position (posn 200 400))
+      (sprite edge)
+      (rotation 0))
+
+    (door #:to rpg
+      (physics-system 0 200 400 10)
+      (position (posn 0 200))
+      (sprite edge)
+      (rotation (/ pi 2)))
+    (world)))
 
 (play! 
   (game
+    physics-manager
     (door-manager (rpg))))
 
 

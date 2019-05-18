@@ -8,11 +8,11 @@
     "input.rkt"
     "common-components.rkt"
     "animation-system.rkt"
+    "physics-system.rkt"
     "movement-system.rkt"
     "observe-change.rkt"
     "doors.rkt"
-    "level-manager.rkt"
-    ))
+    "level-manager.rkt"))
 
 (require "../../core/main.rkt"
          "animated-sprite.rkt"
@@ -20,6 +20,7 @@
          "input.rkt"
          "common-components.rkt"
          "animation-system.rkt"
+         "physics-system.rkt"
          "movement-system.rkt"
          "observe-change.rkt"
          "doors.rkt"

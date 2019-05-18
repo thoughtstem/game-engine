@@ -6,24 +6,9 @@
   sprite-id
   get-sprite
   register-sprite
-  
-  x
-  y
-
-  position
-  get-position
-  position?
-
-  rotation
-  get-rotation
-
-  size
-  get-size
 
   get-queued-sprites
   flush-queued-sprites!
-  
-  move-to
 
   set-insertion-queue!
   set-seen-sprite-ids! 
@@ -31,46 +16,13 @@
   sheet->list
 
   also-render
-  get-also-render
-
-  also-render
-  get-also-render
-  )
+  get-also-render)
 
 (require "../../core/main.rkt"
          "./common-components.rkt"
-         (only-in 2htdp/image bitmap/file image->color-list crop image-width image-height)
-         posn)
+         (only-in 2htdp/image bitmap/file image->color-list crop image-width image-height))
 
-(define-component position posn?)
-(define-component rotation number?)
-(define-component size number?)                                         
-
-
-(define (x e)
-  (posn-x (get-position e)))
-
-(define (y e)
-  (posn-y (get-position e)))
-
-(define (move-to p e)
-
-  (define current-p 
-    (get-component e 'position))
-
-  (define new-p
-    (set-position current-p p))
-
-  (update-component e 
-                    current-p
-                    new-p))
-
-;A component that wraps a single sprite id
-;  there's no animation at this component's level.
-;  It can be used to create animation systems with more complex
-;  components.
 (define-component also-render game?)
-
 (define-component sprite symbol?)
 
 (define (sprite-id s)

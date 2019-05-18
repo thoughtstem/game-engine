@@ -1,5 +1,4 @@
-#lang racket
-
+#lang racket 
 (provide (rename-out [make-animation-system
                       animation-system]) 
          get-animation-system)

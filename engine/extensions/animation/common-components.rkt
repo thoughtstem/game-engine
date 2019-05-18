@@ -8,6 +8,7 @@
     "toggle.rkt"
     "sub-game.rkt"
     "death.rkt"
+    "position-rotation-size.rkt"
     posn))
 
 (require "name.rkt"
@@ -16,4 +17,5 @@
          "toggle.rkt"
          "sub-game.rkt"
          "death.rkt"
+         "position-rotation-size.rkt"
          posn)
