@@ -53,35 +53,49 @@
 	(position #f (chipmunk-posn)) 
 	(rotation #f (chipmunk-rotation))) 
 
-      (update-entity-with-space))))
+      (update-physics-system))))
 
 
-(define (update-entity-with-space)
+(define (update-physics-system)
   (define ps (get-physics-system))
 
-  ;TODO: Abstract this shadow business
+  ;We want to tick the physics system,
+  ;but first we make sure certain things are properly
+  ;initialized from the parent -- space, position, rotation, etc.
 
   (define with-space 
-    (if (not (get-physics-world ps))
-      (set-physics-world ps 
-                         (get 'physics-manager 'physics-world))
-      ps))
+    (init-child-from-parent 
+      ps 
+      get-physics-world 
+      set-physics-world
+      (get 'physics-manager 'physics-world)))
 
   (define with-position
-    (if (not (get-position with-space))   
-      (set-position with-space (get-position)) 
-      with-space))
+    (init-child-from-parent 
+      with-space
+      get-position
+      set-position))
 
   (define with-rotation
-    (if (not (get-rotation with-position))   
-      (set-rotation with-position (get-rotation)) 
-      with-position))
+    (init-child-from-parent 
+      with-position
+      get-rotation
+      set-rotation))
 
+  (tick-entity with-rotation))
 
-  (define ret
-    (tick-entity with-rotation))
+;TODO: Move this out if it turns out to be a common pattern
+(define (init-child-from-parent child 
+                                getter 
+                                setter 
+                                (value getter))
 
-   ret)
+  (if (not (getter child))
+    (setter child (if (procedure? value)
+                    ;Usually just runs the getter with no args -- applies to the parent, which is the (CURRENT-ENTITY) 
+                    (value) 
+                    value))
+    child))
 
 
 (define (init-or-update-chipmunk w h m)
@@ -96,6 +110,10 @@
              #; 
              (not (origin? (get-velocity)))) 
       (begin
+        (chip:cpBodySetForce current
+                             (chip:cpv (posn-x (get-velocity))
+                                       (posn-y (get-velocity))))
+        #;
         (chip:cpBodySetVelocity current
                                 (chip:cpv (posn-x (get-velocity))
                                           (posn-y (get-velocity))))

@@ -37,7 +37,7 @@
 (define (rpg)
   (displayln "RPG start")
   (game 
-    (input-manager) ;TODO: Managers should be functions?
+    (input-manager) 
     (physics-manager)
     (time-manager)
 
@@ -76,13 +76,6 @@
       (rotation (/ pi 2)))
 
     (world)))
-
-
-#;
-(debug
-  (play!
-    (game
-      (door-manager (rpg)))))
 
 (play! 
   (game
