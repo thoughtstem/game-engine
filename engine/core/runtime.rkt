@@ -77,7 +77,6 @@
               [ci (in-naturals)])
           (debug:component-tick-begin c)
 
-
           (define h (component-update c))
 
           (when h
@@ -237,7 +236,7 @@
 
 (define (tick-component c)
   (define h (component-update c)) 
-  (h c))
+  (if h (h c) c))
 
 (define (tick-entity e)
   (parameterize ([CURRENT-ENTITY e])
