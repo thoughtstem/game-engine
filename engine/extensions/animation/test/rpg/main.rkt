@@ -12,7 +12,7 @@
     (name 'avatar) 
 
     (position (posn 200 200)
-              ;TODO: Mushy collisions.  Maybe don't set velocity every tick.  See chipmunk docs.
+              ;TODO: Drifting (spaceship physics).  Make it cap out when max-velocity is reached.  Set velocity to 0 when no input?
               (get-physics-position))
 
     (rotation 0
@@ -20,7 +20,11 @@
 
     (physics-system 20 20
                     #:mass 1
-                    #:update 
+                    #:velocities 
+                    (thunk* (if (origin? (as-posn (get-current-input)))
+                              (posn 0 0)
+                              #f)) 
+                    #:forces 
                     (thunk* (posn-scale (* 25
                                            (get-delta-time)) 
                                         (as-posn (get-current-input)))))

@@ -1,5 +1,4 @@
-#lang racket
-
+#lang racket 
 (provide 
   get-physics-position
   get-physics-rotation
@@ -16,13 +15,9 @@
 
 (require "../../core/main.rkt" 
          "./common-components.rkt"
-         posn)
+         posn threading)
 
 (require (prefix-in chip: racket-chipmunk))
-
-(define-component physics-system entity?)
-(define-component chipmunk any/c)
-(define-component velocity posn?)
 
 ;Groups and category masks can make things faster by filtering out collisions before they occur.
 ;  Are these on bodies or shapes, btw?
@@ -35,7 +30,19 @@
 ;  Returns something equivalent to a body
 ;  Collision handlers are on shapes, so this would involve checking collisions across all child shapes and storing that information somewhere in the returned entity.
 ;  To start with, can pretend there is only one child shape.  Get it working, then expand to multiple...
-(define (make-physics-system #:update (update (const #f)) 
+
+
+(define-component physics-system entity?)
+(define-component chipmunk any/c)
+
+(define-component desired-force posn?)
+(define-component desired-velocity posn?)
+(define-component force posn?)
+
+(define-component velocity posn?)
+
+(define (make-physics-system #:forces (forces (const #f)) 
+                             #:velocities (velocities (const #f))  
                              #:mass (mass 1)
                              w h)
 
@@ -44,11 +51,15 @@
       (entity 
         (physics-world #f) 
 
-        (velocity #f (update))
+        (desired-force #f    (forces))
+        (desired-velocity #f (velocities))
 
 	(chipmunk
 	  #f
 	  (init-or-update-chipmunk w h mass))
+
+	(force #f    (chipmunk-force)) 
+	(velocity #f (chipmunk-velocity)) 
 
 	(position #f (chipmunk-posn)) 
 	(rotation #f (chipmunk-rotation))) 
@@ -101,24 +112,40 @@
 (define (init-or-update-chipmunk w h m)
   (define current (get-chipmunk)) 
 
+  (define (too-big v)
+    (define length
+      (sqrt (sqr (posn-x v))
+            (sqr (posn-y v))))
+
+    (> length 5))
+
   (if (not current)
     (init-chipmunk w h m) 
 
-    (if (and (get-velocity)
+    (~> current
+        copy-in-desired-force
+        copy-in-desired-velocity)
 
-             ;For testing whether collisions are broken or just mushy
-             #; 
-             (not (origin? (get-velocity)))) 
+    ))
+
+(define (copy-in-desired-force c)
+  (if (get-desired-force) 
       (begin
-        (chip:cpBodySetForce current
-                             (chip:cpv (posn-x (get-velocity))
-                                       (posn-y (get-velocity))))
-        #;
-        (chip:cpBodySetVelocity current
-                                (chip:cpv (posn-x (get-velocity))
-                                          (posn-y (get-velocity))))
-        current)
-      current) ))
+        (chip:cpBodySetForce c
+                             (chip:cpv (posn-x (get-desired-force))
+                                       (posn-y (get-desired-force))))
+        c)
+      c))
+
+(define (copy-in-desired-velocity c)
+  (if (get-desired-velocity) 
+    (begin
+      (chip:cpBodySetVelocity c
+                              (chip:cpv (posn-x (get-desired-velocity))
+                                        (posn-y (get-desired-velocity))))
+      c)
+    c))
+
   
 (define (init-chipmunk w h m)
   (displayln "Making a chipmunk, which isn't doing much atm")
@@ -163,6 +190,32 @@
 (define (chipmunk-y c)
   (define p (chip:cpBodyGetPosition c))
   (chip:cpVect-y p))
+
+(define (chipmunk-vx c)
+  (define p (chip:cpBodyGetVelocity c))
+  (chip:cpVect-x p))
+
+(define (chipmunk-vy c)
+  (define p (chip:cpBodyGetVelocity c))
+  (chip:cpVect-y p))
+
+(define (chipmunk-fx c)
+  (define p (chip:cpBodyGetForce c))
+  (chip:cpVect-x p))
+
+(define (chipmunk-fy c)
+  (define p (chip:cpBodyGetForce c))
+  (chip:cpVect-y p))
+
+(define (chipmunk-force (c (get-chipmunk)))
+  (posn
+    (chipmunk-fx c)
+    (chipmunk-fy c)))
+
+(define (chipmunk-velocity (c (get-chipmunk)))
+  (posn
+    (chipmunk-vx c)
+    (chipmunk-vy c)))
 
 (define (chipmunk-posn (c (get-chipmunk)))
   (posn
