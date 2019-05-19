@@ -1,11 +1,17 @@
 #lang racket
 
-(provide (rename-out [make-movement-system
+(provide get-movement-system
+         (rename-out [make-movement-system
                       movement-system]) )
 
 (require "../../core/main.rkt"
          "./animated-sprite.rkt"
          "./common-components.rkt")
+
+;TODO: Doc
+; Add this component, then use it to control your position:
+; (position (posn 0 0) 
+;              (get-position (get-movement-system)) 
 
 (define-component movement-system entity?)
 
@@ -21,6 +27,5 @@
                     (get-direction))))
       (^ tick-entity))
      
-    (position (posn 0 0) 
-              (get-position (get-movement-system)))))
+    ))
 

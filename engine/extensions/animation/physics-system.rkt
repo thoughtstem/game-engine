@@ -2,6 +2,7 @@
 
 (provide 
   get-physics-position
+  get-physics-rotation
   physics-manager
   (rename-out [make-physics-system physics-system]))
 
@@ -24,10 +25,9 @@
 (define-component velocity posn?)
 
 ;Groups and category masks can make things faster by filtering out collisions before they occur.
+;  Are these on bodies or shapes, btw?
 
 ;For shapes: cpShapeSetUserData, A user definable data pointer. If you set this to point at the game object the shapes is for, then you can access your game object from Chipmunk callbacks.
-
-
 
 ;There are two ways to set up a dynamic body. The easiest option is to create a body with a mass and moment of 0, and set the mass or density of each collision shape added to the body. Chipmunk will automatically calculate the mass, moment of inertia, and center of gravity for you. This is probably preferred in most cases.
 
@@ -37,60 +37,64 @@
 ;  To start with, can pretend there is only one child shape.  Get it working, then expand to multiple...
 (define (make-physics-system #:update (update (const #f)) 
                              #:mass (mass 1)
-                             x y w h)
-
-  ;TODO: How do we pass the space into the chipmunk for init?
+                             w h)
 
   (list
     (physics-system 
       (entity 
-        (physics-world #f) ;Shadow pattern
+        (physics-world #f) 
 
         (velocity #f (update))
 
 	(chipmunk
 	  #f
-	  (init-or-update-chipmunk x y w h mass))
+	  (init-or-update-chipmunk w h mass))
 
+	(position #f (chipmunk-posn)) 
+	(rotation #f (chipmunk-rotation))) 
 
-        ;Rotation?
-	(position (posn x y)
-		  (chipmunk-posn))) 
-
-      (update-entity-with-space)
-      
-      #;
-      (^ tick-entity))))
+      (update-entity-with-space))))
 
 
 (define (update-entity-with-space)
   (define ps (get-physics-system))
 
-  (define main-w 
-    (physics-world (get 'physics-manager 'physics-world)))
-  ;Do we really need to shove in a whole new physics world on every tick?  We just want a pointer to the space.  And we only need to shove that in once.
-  (define with-space (set-physics-world ps main-w))
+  ;TODO: Abstract this shadow business
+
+  (define with-space 
+    (if (not (get-physics-world ps))
+      (set-physics-world ps 
+                         (get 'physics-manager 'physics-world))
+      ps))
+
+  (define with-position
+    (if (not (get-position with-space))   
+      (set-position with-space (get-position)) 
+      with-space))
+
+  (define with-rotation
+    (if (not (get-rotation with-position))   
+      (set-rotation with-position (get-rotation)) 
+      with-position))
+
 
   (define ret
-    ;TODO: tick-entity breaking because handlers are false.  Also it wasn't doing the debugger correctly -- sad.  We should refactor runtime so they share the same path.
-    (tick-entity
-      ;Pipe in the physics-world (thus scoping the physics per game?), and tick the entity
-      with-space))
+    (tick-entity with-rotation))
 
    ret)
 
 
-(define (init-or-update-chipmunk x y w h m)
+(define (init-or-update-chipmunk w h m)
   (define current (get-chipmunk)) 
 
   (if (not current)
-    (init-chipmunk x y w h m) 
+    (init-chipmunk w h m) 
 
     (if (and (get-velocity)
 
-             ;Just for testing...
-             (not (and (zero? (posn-x (get-velocity)))
-                       (zero? (posn-y (get-velocity))))))
+             ;For testing whether collisions are broken or just mushy
+             #; 
+             (not (origin? (get-velocity)))) 
       (begin
         (chip:cpBodySetVelocity current
                                 (chip:cpv (posn-x (get-velocity))
@@ -98,8 +102,11 @@
         current)
       current) ))
   
-(define (init-chipmunk x y w h m)
+(define (init-chipmunk w h m)
   (displayln "Making a chipmunk, which isn't doing much atm")
+
+  (define p (get-position))
+  (match-define (posn x y) p)
 
   (define space
     (get 'physics-manager 'physics-world))
@@ -122,6 +129,11 @@
   (chip:cpBodySetPosition body 
 			  (chip:cpv x y))
 
+  (define r (get-rotation))
+  
+  (when r
+    (chip:cpBodySetAngle body (real->double-flonum r)))
+
   body)
 
                                                      
@@ -139,6 +151,9 @@
     (chipmunk-x c)
     (chipmunk-y c)))
 
+(define (chipmunk-rotation (c (get-chipmunk)))
+  (chip:cpBodyGetAngle c))
+
 (define (get-physics-position)
   (define p 
      (get-physics-system))
@@ -149,6 +164,17 @@
   (if c 
       (chipmunk-posn c)
       (get-position)))
+
+(define (get-physics-rotation)
+  (define p 
+     (get-physics-system))
+
+  (define c
+    (get-chipmunk p))
+
+  (if c 
+      (chipmunk-rotation c)
+      (get-rotation)))
 
 
 (define-component physics-world any/c)

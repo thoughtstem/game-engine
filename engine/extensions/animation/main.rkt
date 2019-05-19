@@ -12,6 +12,7 @@
     "movement-system.rkt"
     "observe-change.rkt"
     "doors.rkt"
+    "time.rkt"
     "level-manager.rkt"))
 
 (require "../../core/main.rkt"
@@ -24,5 +25,6 @@
          "movement-system.rkt"
          "observe-change.rkt"
          "doors.rkt"
+         "time.rkt"
          "level-manager.rkt"
          )

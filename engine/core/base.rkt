@@ -9,6 +9,7 @@
   copy-game
 
   entity
+  check-for-duplicate-components 
   entity-lookup
   lookup-hash
   refresh-component-lookup
@@ -210,10 +211,34 @@
                  (->* () #:rest (listof (or/c component?
                                               list?)) entity?)
 
+
   (refresh-component-lookup
-    (entity (next-id) (flatten cs) #f #f)))
+    (check-for-duplicate-components
+      (entity (next-id) (flatten cs) #f #f))))
+
+
+(define (check-for-duplicate-components e)
+  (define cs (entity-components e))
+
+  (when (duplicate-names? cs)
+    (displayln cs)
+    ;TODO: Make it tell you which component?
+    (error "You shouldn't have more than one component with the same name."))
+  
+  e)
+
 
 (define next-id (id-generator 0))
+
+
+(define (duplicate-names? cs)
+  (define names 
+    (map component-name (flatten cs)))
+
+  (not (= (length (remove-duplicates names))
+          (length names))))
+
+
 
 
 

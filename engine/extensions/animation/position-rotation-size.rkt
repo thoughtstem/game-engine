@@ -5,10 +5,12 @@
   y
 
   position
+  set-position
   get-position
   position?
 
   rotation
+  set-rotation
   get-rotation
 
   size

@@ -40,12 +40,13 @@
 
 
    (refresh-component-lookup
-     (if (mutable-state)
-       (begin
-         (set-entity-components! e new-cs)
-         e)
-       (struct-copy entity e
-                    [components new-cs])))
+     (check-for-duplicate-components
+       (if (mutable-state)
+         (begin
+           (set-entity-components! e new-cs)
+           e)
+         (struct-copy entity e
+                      [components new-cs]))))
    
    ) 
 
