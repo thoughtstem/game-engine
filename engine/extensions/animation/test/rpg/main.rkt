@@ -7,6 +7,70 @@
 
 (define-component speed number?)
 
+;TODO: Try to detect collisions?  Print something in physics system on collide...
+
+;TODO: Clean out stuff in this file
+
+(define (bigger-than n v)
+  (define length
+    (sqrt (+ (sqr (posn-x v))
+             (sqr (posn-y v)))))
+
+  (> length n))
+
+(define (clamp n b t)
+  (min
+    (max n b)
+    t))
+
+
+(define (opposite-signs a b)
+  (cond
+    [(and (negative? a) (positive? b)) #t]
+    [(and (positive? a) (negative? b)) #t]
+    [else #f]))
+
+(define (x-thruster)
+  (define p (as-posn (get-current-input)))
+  (define x-dir (posn-x p))
+
+  (define vx (if (not (get-velocity)) 
+               0
+               (posn-x (get-velocity))))
+
+  (define maxv 200)
+
+  (cond 
+    [(and (not (= 0 x-dir)) ;Want to move
+          (<= (abs vx) maxv))      ;Not going too fast..
+      (* 100 (get-delta-time) x-dir)]
+
+    [(= 0 x-dir) (- (* 10 vx))]
+    [(opposite-signs vx x-dir) (- (* 10 vx))]
+    [else 0]))
+
+(define (y-thruster)
+  (define p (as-posn (get-current-input)))
+  (define y-dir (posn-y p))
+
+  (define vy (if (not (get-velocity)) 
+               0
+               (posn-y (get-velocity))))
+
+  (define maxv 200)
+
+  (cond 
+    [(and (not (= 0 y-dir)) ;Want to move
+          (<= (abs vy) maxv))      ;Not going too fast..
+      (* 100 (get-delta-time) y-dir)]
+
+    [(= 0 y-dir) (- (* 10 vy))]
+    [(opposite-signs vy y-dir) (- (* 10 vy))]
+    [else 0]
+    
+    ))
+
+
 (define (hero)
   (entity
     (name 'avatar) 
@@ -20,14 +84,12 @@
 
     (physics-system 20 20
                     #:mass 1
-                    #:velocities 
-                    (thunk* (if (origin? (as-posn (get-current-input)))
-                              (posn 0 0)
-                              #f)) 
+
                     #:forces 
-                    (thunk* (posn-scale (* 25
-                                           (get-delta-time)) 
-                                        (as-posn (get-current-input)))))
+                    (thunk* 
+                      (posn
+                        (x-thruster) 
+                        (y-thruster))))
 
     (hero-animation)))
 

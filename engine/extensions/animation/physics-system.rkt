@@ -2,6 +2,7 @@
 (provide 
   get-physics-position
   get-physics-rotation
+  get-velocity
   physics-manager
   (rename-out [make-physics-system physics-system]))
 
@@ -112,12 +113,6 @@
 (define (init-or-update-chipmunk w h m)
   (define current (get-chipmunk)) 
 
-  (define (too-big v)
-    (define length
-      (sqrt (sqr (posn-x v))
-            (sqr (posn-y v))))
-
-    (> length 5))
 
   (if (not current)
     (init-chipmunk w h m) 
