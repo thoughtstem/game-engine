@@ -10,7 +10,7 @@
 
 (hotswap g
   (game 
-    input-manager
+    (input-manager)
     (red-square-enemy)
     (red-square-enemy)
     (blue-circle-avatar (posn 100 200))))

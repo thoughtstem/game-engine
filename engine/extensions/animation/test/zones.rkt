@@ -28,7 +28,7 @@
 ;   Could you have proved that property of your system in another language?
 (define (tile old-coord coord)
   (game
-    input-manager
+    (input-manager)
     (blue-circle-avatar 
       (avatar-position old-coord coord))
 

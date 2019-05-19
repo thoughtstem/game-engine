@@ -23,7 +23,7 @@
 
 (define (outdoors)
   (game
-    input-manager
+    (input-manager)
     (blue-circle-avatar (posn 200 50))
     (door 
       (position (posn 200 10))

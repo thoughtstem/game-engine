@@ -23,7 +23,7 @@
   (get-input (get-entity (CURRENT-GAME)
                          (has-name 'input-manager))))
 
-(define input-manager
+(define (input-manager)
   (entity
     (name 'input-manager)
     (input #f 

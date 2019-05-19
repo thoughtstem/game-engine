@@ -8,7 +8,7 @@
      (define level-number (remainder i n))
      
      (game 
-       input-manager
+       (input-manager)
        (blue-circle-avatar)
        (for/list ([j (in-range level-number)])
          (red-square-enemy)))))

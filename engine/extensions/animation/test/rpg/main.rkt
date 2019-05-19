@@ -37,15 +37,9 @@
 (define (rpg)
   (displayln "RPG start")
   (game 
-    input-manager ;TODO: Managers should be functions?
-
+    (input-manager) ;TODO: Managers should be functions?
     (physics-manager)
-
     (time-manager)
-
-    ;TODO: Jittering with framerate, multiply by delta time??
-    ;Make a time-manager ....
-
 
     (hero)
 

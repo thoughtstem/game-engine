@@ -15,6 +15,6 @@
 
 
 (define g
-  (game input-manager e))
+  (game (input-manager) e))
 
 (play! g)  
