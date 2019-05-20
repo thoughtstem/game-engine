@@ -6,24 +6,19 @@
   physics-manager
   (rename-out [make-physics-system physics-system]))
 
-;TODO: Useful hook for "triggers":  A boolean value if this shape is a sensor or not. Sensors only call collision callbacks, and never generate real collisions.
-;
-;
-
-;Do we need collision callbacks, or should each shape/body entity just call into chipmunk to see what it's colliding with on the current frame.
-;  Probably does help, though.
-;  There are some cool queries, but we don't want to be doing them every tick.
-
 (require "../../core/main.rkt" 
          "./common-components.rkt"
          posn threading)
 
 (require (prefix-in chip: racket-chipmunk))
 
-;Groups and category masks can make things faster by filtering out collisions before they occur.
-;  Are these on bodies or shapes, btw?
+;For shapes and bodies:A user definable data pointer. If you set this to point at the game object the shapes is for, then you can access your game object from Chipmunk callbacks.
 
-;For shapes: cpShapeSetUserData, A user definable data pointer. If you set this to point at the game object the shapes is for, then you can access your game object from Chipmunk callbacks.
+;TODO: Access the default collision handler, hook into begin.  Whenever begin happens, look at the colliding bodies.  Access their datapointers, which will be references to entity objects.   Set something in a component on those entity objects to make them aware of who they are colliding with.  
+;   Ooor, scrape off its name and put that somewhere in the physics-manager, which would keep track of the current collisions
+
+
+
 
 ;There are two ways to set up a dynamic body. The easiest option is to create a body with a mass and moment of 0, and set the mass or density of each collision shape added to the body. Chipmunk will automatically calculate the mass, moment of inertia, and center of gravity for you. This is probably preferred in most cases.
 
