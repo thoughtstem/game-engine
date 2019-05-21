@@ -114,9 +114,7 @@
 
     (~> current
         copy-in-desired-force
-        copy-in-desired-velocity)
-
-    ))
+        copy-in-desired-velocity)))
 
 (define (copy-in-desired-force c)
   (if (get-desired-force) 
@@ -138,7 +136,7 @@
 
   
 (define (init-chipmunk w h m)
-  (displayln "Making a chipmunk, which isn't doing much atm")
+  (displayln "Making a chipmunk")
 
   (define p (get-position))
   (match-define (posn x y) p)
@@ -240,8 +238,21 @@
 
 (define-component physics-world any/c)
 
+;Note, this seems like it leaks memory whenever a game links into a new game with a physics-manager.  Its our job to protect against that stuff, so we need to provide safer abstractions.
 (define (physics-manager)
   (define space (chip:cpSpaceNew))
+
+  (define handler (chip:cpSpaceAddDefaultCollisionHandler space))
+
+  (define (callback arbiter space data)
+    (displayln "Collision detected!")
+    1)
+
+  ;TODO: Not sure why the begin callback never got called...
+  ;but this is working.  Can expand on that to store information about this frame's collisions. 
+  (chip:set-cpCollisionHandler-cpCollisionPreSolveFunc! 
+    handler 
+    callback)
 
   (entity
     (name 'physics-manager)

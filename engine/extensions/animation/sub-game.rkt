@@ -2,6 +2,6 @@
 
 (require "../../core/main.rkt")
 
-(provide sub-game get-sub-game)
+(provide sub-game? sub-game get-sub-game)
 
 (define-component sub-game game?)
