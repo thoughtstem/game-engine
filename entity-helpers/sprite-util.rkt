@@ -80,13 +80,24 @@
                    [y-offset (* yo amount)]))
 
     (define new-sprites (map scale-a-sprite original-sprites))
+
+    (define (update-revert dur)
+      (if dur
+          (λ (c)
+            (set-after-time-delay c dur))
+          #f))
     
-    (~> e
-        (remove-components _ animated-sprite?)
-        (add-components _ new-sprites)
-        (add-components _ (if d
-                              (after-time d revert-back)
-                              #f)))))
+    (if (get-component e after-time?)
+        (~> e
+            (remove-components _ animated-sprite?)
+            (add-components _ new-sprites)
+            (update-entity _ after-time? (update-revert d)))
+        (~> e
+            (remove-components _ animated-sprite?)
+            (add-components _ new-sprites)
+            (add-components _ (if d (after-time d revert-back) #f)))
+        )
+    ))
 
 (define (rotate-sprite amount #:for [d #f])
   (lambda (g e)
@@ -106,12 +117,23 @@
 
     (define new-sprites (map rotate-a-sprite original-sprites))
     
-    (~> e
-        (remove-components _ animated-sprite?)
-        (add-components _ new-sprites)
-        (add-components _ (if d
-                              (after-time d revert-back)
-                              #f)))))
+    (define (update-revert dur)
+      (if dur
+          (λ (c)
+            (set-after-time-delay c dur))
+          #f))
+    
+    (if (get-component e after-time?)
+        (~> e
+            (remove-components _ animated-sprite?)
+            (add-components _ new-sprites)
+            (update-entity _ after-time? (update-revert d)))
+        (~> e
+            (remove-components _ animated-sprite?)
+            (add-components _ new-sprites)
+            (add-components _ (if d (after-time d revert-back) #f)))
+        )
+    ))
 
 (define (random-dec min max)
   (define new-min (exact-round (* min 100)))

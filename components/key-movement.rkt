@@ -58,17 +58,29 @@
 (define (set-speed-to n #:for [d #f])
   (lambda (g e)
     (define original (get-component e key-movement?))
+    
     (define (revert-speed g e)
       (update-entity e key-movement? original))
+    
     (define increase (lambda (k)
                        (struct-copy key-movement k
                                     [speed  n])))
-    (~> e
-        (update-entity _ key-movement? increase)
-        (add-components _ (if d
-                              (after-time d revert-speed)
-                              #f)))
-            ))
+    (define (update-revert dur)
+      (if dur
+          (λ (c)
+            (set-after-time-delay c dur))
+          #f))
+    
+    ;if there is an after-time, update it or remove it, else add it or add #f
+    (if (get-component e after-time?)
+        (~> e
+            (update-entity _ key-movement? increase)
+            (update-entity _ after-time? (update-revert d)))
+        (~> e
+            (update-entity _ key-movement? increase)
+            (add-components _ (if d (after-time d revert-speed) #f)))
+        )
+    ))
 
 (define (change-speed-by n #:for [d #f])
   (lambda (g e)
@@ -78,12 +90,22 @@
     (define increase (lambda (k)
                        (struct-copy key-movement k
                                     [speed (+ (key-movement-speed k) n)])))
-    (~> e
-        (update-entity _ key-movement? increase)
-        (add-components _ (if d
-                              (after-time d revert-speed)
-                              #f)))
-            ))
+    (define (update-revert dur)
+      (if dur
+          (λ (c)
+            (set-after-time-delay c dur))
+          #f))
+    
+    ;if there is an after-time, update it or remove it, else add it or add #f
+    (if (get-component e after-time?)
+        (~> e
+            (update-entity _ key-movement? increase)
+            (update-entity _ after-time? (update-revert d)))
+        (~> e
+            (update-entity _ key-movement? increase)
+            (add-components _ (if d (after-time d revert-speed) #f)))
+        )
+    ))
 
 (define (multiply-speed-by n #:for [d #f])
   (lambda (g e)
@@ -93,12 +115,22 @@
     (define increase (lambda (k)
                        (struct-copy key-movement k
                                     [speed (* (key-movement-speed k) n)])))
-    (~> e
-        (update-entity _ key-movement? increase)
-        (add-components _ (if d
-                              (after-time d revert-speed)
-                              #f)))
-            ))
+    (define (update-revert dur)
+      (if dur
+          (λ (c)
+            (set-after-time-delay c dur))
+          #f))
+    
+    ;if there is an after-time, update it or remove it, else add it or add #f
+    (if (get-component e after-time?)
+        (~> e
+            (update-entity _ key-movement? increase)
+            (update-entity _ after-time? (update-revert d)))
+        (~> e
+            (update-entity _ key-movement? increase)
+            (add-components _ (if d (after-time d revert-speed) #f)))
+        )
+    ))
 
 (define (get-speed e)
   (key-movement-speed (get-component e key-movement?)))
