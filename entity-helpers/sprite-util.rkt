@@ -92,7 +92,7 @@
           #f))
     
     (if (get-component e (and/c after-time?
-                               not-after-time-die?))
+                                not-after-time-die?))
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
