@@ -28,6 +28,7 @@
 (require "../components/spawn-dialog.rkt")
 (require "./rgb-hsb.rkt")
 (require "../components/after-time.rkt")
+(require "../component-util.rkt")
 ;(require "../ai.rkt")
 
 (require posn
@@ -84,11 +85,14 @@
                    [y-offset (* yo amount)]))
 
     (define new-sprites (map scale-a-sprite original-sprites))
-
+    
     (define (update-revert dur)
+      (define old-func (after-time-func (get-component e (and/c after-time?
+                                                                not-after-time-die?))))
       (if dur
           (λ (c)
-            (set-after-time-delay c dur))
+            (after-time dur (do-many revert-back
+                                     old-func)))
           #f))
     
     (if (get-component e (and/c after-time?
@@ -96,6 +100,8 @@
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
+            
+            ;this will break any non power up after-time component
             (update-entity _ (and/c after-time?
                                 not-after-time-die?) (update-revert d)))
         (~> e
@@ -125,9 +131,12 @@
     (define new-sprites (map rotate-a-sprite original-sprites))
     
     (define (update-revert dur)
+      (define old-func (after-time-func (get-component e (and/c after-time?
+                                                                not-after-time-die?))))
       (if dur
           (λ (c)
-            (set-after-time-delay c dur))
+            (after-time dur (do-many revert-back
+                                     old-func)))
           #f))
     
     (if (get-component e (and/c after-time?
@@ -135,6 +144,8 @@
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
+            
+            ;this will break any non power up after-time component
             (update-entity _ (and/c after-time?
                                     not-after-time-die?) (update-revert d)))
         (~> e

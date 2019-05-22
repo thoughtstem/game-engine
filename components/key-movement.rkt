@@ -2,6 +2,7 @@
 
 (require "../game-entities.rkt")
 (require "./after-time.rkt")
+(require "../component-util.rkt")
 (require posn
          threading)
 
@@ -66,9 +67,11 @@
                        (struct-copy key-movement k
                                     [speed  n])))
     (define (update-revert dur)
-      (if dur
+      (define old-func (after-time-func (get-component e after-time?)))
+      (if dur    ;if it has a duration, assume it's a stackable power-up type
           (λ (c)
-            (set-after-time-delay c dur))
+            (after-time dur (do-many revert-speed
+                                     old-func)))
           #f))
     
     ;if there is an after-time, update it or remove it, else add it or add #f
@@ -91,9 +94,11 @@
                        (struct-copy key-movement k
                                     [speed (+ (key-movement-speed k) n)])))
     (define (update-revert dur)
-      (if dur
+      (define old-func (after-time-func (get-component e after-time?)))
+      (if dur    ;if it has a duration, assume it's a stackable power-up type
           (λ (c)
-            (set-after-time-delay c dur))
+            (after-time dur (do-many revert-speed
+                                     old-func)))
           #f))
     
     ;if there is an after-time, update it or remove it, else add it or add #f
@@ -116,9 +121,11 @@
                        (struct-copy key-movement k
                                     [speed (* (key-movement-speed k) n)])))
     (define (update-revert dur)
-      (if dur
+      (define old-func (after-time-func (get-component e after-time?)))
+      (if dur    ;if it has a duration, assume it's a stackable power-up type
           (λ (c)
-            (set-after-time-delay c dur))
+            (after-time dur (do-many revert-speed
+                                     old-func)))
           #f))
     
     ;if there is an after-time, update it or remove it, else add it or add #f
