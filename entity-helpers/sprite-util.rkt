@@ -96,7 +96,8 @@
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
-            (update-entity _ after-time? (update-revert d)))
+            (update-entity _ (and/c after-time?
+                                not-after-time-die?) (update-revert d)))
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
@@ -129,11 +130,13 @@
             (set-after-time-delay c dur))
           #f))
     
-    (if (get-component e after-time?)
+    (if (get-component e (and/c after-time?
+                                not-after-time-die?))
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
-            (update-entity _ after-time? (update-revert d)))
+            (update-entity _ (and/c after-time?
+                                    not-after-time-die?) (update-revert d)))
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
