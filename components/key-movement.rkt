@@ -78,7 +78,7 @@
             (update-entity _ after-time? (update-revert d)))
         (~> e
             (update-entity _ key-movement? increase)
-            (add-components _ (if d (after-time d revert-speed) #f)))
+            (add-components _ (if d (after-time d revert-speed) '())))
         )
     ))
 
@@ -103,7 +103,7 @@
             (update-entity _ after-time? (update-revert d)))
         (~> e
             (update-entity _ key-movement? increase)
-            (add-components _ (if d (after-time d revert-speed) #f)))
+            (add-components _ (if d (after-time d revert-speed) '())))
         )
     ))
 
@@ -128,7 +128,7 @@
             (update-entity _ after-time? (update-revert d)))
         (~> e
             (update-entity _ key-movement? increase)
-            (add-components _ (if d (after-time d revert-speed) #f)))
+            (add-components _ (if d (after-time d revert-speed) '())))
         )
     ))
 

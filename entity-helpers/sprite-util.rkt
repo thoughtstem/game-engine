@@ -57,6 +57,10 @@
     (update-entity e animated-sprite?
                    (curry set-scale-xy amount))))
 
+(define (not-after-time-die? c)
+  (not (eq? (after-time-func c) die)))
+  
+
 (define (scale-sprite amount #:for [d #f])
   (lambda (g e)
     (define all-sprites (get-components e animated-sprite?))
@@ -87,7 +91,8 @@
             (set-after-time-delay c dur))
           #f))
     
-    (if (get-component e after-time?)
+    (if (get-component e (and/c after-time?
+                               not-after-time-die?))
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
@@ -95,7 +100,8 @@
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
-            (add-components _ (if d (after-time d revert-back) #f)))
+            (add-components _ (if d (after-time d revert-back) '()))
+            )
         )
     ))
 
@@ -131,7 +137,7 @@
         (~> e
             (remove-components _ animated-sprite?)
             (add-components _ new-sprites)
-            (add-components _ (if d (after-time d revert-back) #f)))
+            (add-components _ (if d (after-time d revert-back) '())))
         )
     ))
 
