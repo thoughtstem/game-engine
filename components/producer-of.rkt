@@ -287,13 +287,9 @@
                                                                                                    not-tops?
                                                                                                    not-ui?)))
                                           )
-                            (if (= build-time 0)
-                                (spawn to-clone)
-                                (spawn progress-counter))
+                            (spawn progress-counter)
                             )
-                    (if (= build-time 0)
-                        #f
-                        (observe-change build-ready? (spawn-if-ready to-clone))))
+                    (observe-change build-ready? (spawn-if-ready to-clone)))
           ))
 
 (define (crafting? name)
