@@ -16,6 +16,7 @@
 (define loose-component?
   (or/c component? observe-change? #f))
 
-(define component-or-system?
-  (or/c loose-component? (listof loose-component?)))
+(define (component-or-system? c-or-list)
+  ((or/c loose-component? (listof loose-component?))
+   (flatten c-or-list)))
 
