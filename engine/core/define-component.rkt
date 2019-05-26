@@ -33,9 +33,13 @@
 
                               (define (COMPONENT=? v (e #f))
                                 (if e
-                                  (equal? v (get-COMPONENT e))    
+                                  (and
+                                    (has-component e 'COMPONENT)
+                                    (equal? v (get-COMPONENT e)))    
                                   (lambda (e)
-                                    (COMPONENT=? v e))))
+                                    (and
+                                      (has-component e 'COMPONENT)
+                                      (COMPONENT=? v e)))))
 
                               (define (get-COMPONENT (c #f) (fail (void)))
 
