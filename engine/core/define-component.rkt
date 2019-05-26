@@ -18,6 +18,7 @@
     [(_ COMPONENT KIND?)
      (with-syntax [(new-COMPONENT (format-id #'COMPONENT "new-~a" #'COMPONENT))
                    (COMPONENT? (format-id #'COMPONENT "~a?" #'COMPONENT)) 
+                   (COMPONENT=? (format-id #'COMPONENT "~a=?" #'COMPONENT)) 
                    (get-COMPONENT (format-id #'COMPONENT "get-~a" #'COMPONENT)) 
                    (set-COMPONENT (format-id #'COMPONENT "set-~a" #'COMPONENT)) 
                    ]
@@ -29,6 +30,12 @@
                               (define 
                                 (new-COMPONENT id handler handler-code FIELD)
                                 (vector 'component 'COMPONENT id handler handler-code FIELD))
+
+                              (define (COMPONENT=? v (e #f))
+                                (if e
+                                  (equal? v (get-COMPONENT e))    
+                                  (lambda (e)
+                                    (COMPONENT=? v e))))
 
                               (define (get-COMPONENT (c #f) (fail (void)))
 

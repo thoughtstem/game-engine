@@ -20,6 +20,7 @@
   set-entity-changed?!
   entity-changed?
   entity-id
+  entity-id=?
   entity=?
   copy-entity
 
@@ -240,7 +241,8 @@
 
 
 
-
+(define (entity-id=? e i)
+  (= (entity-id e) i))
 
 
 

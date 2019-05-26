@@ -1,5 +1,8 @@
 #lang racket 
 (provide 
+  get-physics-colliding?
+  get-physics-colliding-with
+
   get-physics-position
   get-physics-rotation
   get-velocity
@@ -12,21 +15,14 @@
 
 (require (prefix-in chip: racket-chipmunk))
 
-;For shapes and bodies:A user definable data pointer. If you set this to point at the game object the shapes is for, then you can access your game object from Chipmunk callbacks.
+(require ffi/unsafe)
 
-;TODO: Access the default collision handler, hook into begin.  Whenever begin happens, look at the colliding bodies.  Access their datapointers, which will be references to entity objects.   Set something in a component on those entity objects to make them aware of who they are colliding with.  
-;   Ooor, scrape off its name and put that somewhere in the physics-manager, which would keep track of the current collisions
+(define (number->pointer n) 
+  (define ptr 
+    (malloc 'raw 2)) 
+  (ptr-set! ptr _uint n) 
 
-
-
-
-;There are two ways to set up a dynamic body. The easiest option is to create a body with a mass and moment of 0, and set the mass or density of each collision shape added to the body. Chipmunk will automatically calculate the mass, moment of inertia, and center of gravity for you. This is probably preferred in most cases.
-
-;Maybe should take a list of "shapes"
-;  Returns something equivalent to a body
-;  Collision handlers are on shapes, so this would involve checking collisions across all child shapes and storing that information somewhere in the returned entity.
-;  To start with, can pretend there is only one child shape.  Get it working, then expand to multiple...
-
+  ptr) 
 
 (define-component physics-system entity?)
 (define-component chipmunk any/c)
@@ -37,29 +33,47 @@
 
 (define-component velocity posn?)
 
+(define-component colliding-with list?)
+(define-component colliding? boolean?)
+
 (define (make-physics-system #:forces (forces (const #f)) 
                              #:velocities (velocities (const #f))  
                              #:mass (mass 1)
+                             #:static (static #f)
                              w h)
+  (define the-chipmunk-hook
+    (chipmunk
+      #f
+      (init-or-update-chipmunk w h mass static)))
 
-  (list
-    (physics-system 
-      (entity 
+  (define shadow-entity
+    (entity 
+        (name #f)
         (physics-world #f) 
 
         (desired-force #f    (forces))
         (desired-velocity #f (velocities))
 
-	(chipmunk
-	  #f
-	  (init-or-update-chipmunk w h mass))
+        the-chipmunk-hook	
+
+        (colliding-with '() 
+                        (map second
+                             (filter 
+                               (lambda (c)
+                                 (eq? (first c)
+                                      (entity-id (CURRENT-ENTITY)))) 
+                               (get 'physics-manager 'collisions))))
+
 
 	(force #f    (chipmunk-force)) 
 	(velocity #f (chipmunk-velocity)) 
 
 	(position #f (chipmunk-posn)) 
-	(rotation #f (chipmunk-rotation))) 
+	(rotation #f (chipmunk-rotation))))
 
+  (list
+    (physics-system 
+      shadow-entity 
       (update-physics-system))))
 
 
@@ -88,8 +102,14 @@
       with-position
       get-rotation
       set-rotation))
+  
+  (define with-name
+    (init-child-from-parent 
+      with-rotation
+      get-name
+      set-name))
 
-  (tick-entity with-rotation))
+  (tick-entity with-name))
 
 ;TODO: Move this out if it turns out to be a common pattern
 (define (init-child-from-parent child 
@@ -105,12 +125,12 @@
     child))
 
 
-(define (init-or-update-chipmunk w h m)
+(define (init-or-update-chipmunk w h m static?)
   (define current (get-chipmunk)) 
 
 
   (if (not current)
-    (init-chipmunk w h m) 
+    (init-chipmunk w h m static?) 
 
     (~> current
         copy-in-desired-force
@@ -135,14 +155,17 @@
     c))
 
   
-(define (init-chipmunk w h m)
+(define (init-chipmunk w h m static?)
   (displayln "Making a chipmunk")
 
   (define p (get-position))
   (match-define (posn x y) p)
 
   (define space
-    (get 'physics-manager 'physics-world))
+    (get-physics-world))
+
+
+
 
   (define mass (real->double-flonum m))
   (define moment (chip:cpMomentForBox mass 
@@ -151,13 +174,9 @@
 
   (define body 
     (chip:cpSpaceAddBody space 
-			 (chip:cpBodyNew mass moment)))
-
-  (define shape (chip:cpSpaceAddShape space 
-				      (chip:cpBoxShapeNew body
-							  (real->double-flonum w)
-							  (real->double-flonum h)
-							  (chip:cpv 0.0 0.0))))
+                         (if static?
+                           (chip:cpBodyNewStatic)
+                           (chip:cpBodyNew mass moment))))
 
   (chip:cpBodySetPosition body 
 			  (chip:cpv x y))
@@ -167,7 +186,21 @@
   (when r
     (chip:cpBodySetAngle body (real->double-flonum r)))
 
+
+  (define shape (chip:cpSpaceAddShape space 
+				      (chip:cpBoxShapeNew body
+							  (real->double-flonum w)
+							  (real->double-flonum h)
+							  (chip:cpv 0.0 0.0))))
+
+  (define e-id (entity-id (CURRENT-ENTITY)))
+
+  (define e-pointer (number->pointer e-id))
+
+  (chip:cpShapeSetUserData shape e-pointer)
+
   body)
+
 
                                                      
 
@@ -235,31 +268,100 @@
       (chipmunk-rotation c)
       (get-rotation)))
 
+(define (get-physics-colliding? . qs)
+
+  (define collision-ids (or (get-physics-colliding-with)
+                            '()))
+
+  (define (run-query q id)
+    (define e (get-entity (CURRENT-GAME)
+                          (curryr entity-id=? id)))
+    (q e))
+
+  (define (run-queries id)
+    (lambda (id)
+      (ormap
+        (curryr run-query id) 
+        qs)))
+
+
+  (not (empty?
+         (filter
+           run-queries
+           collision-ids))))
+
+(define (get-physics-colliding-with)
+  (define p (get-physics-system))
+  (define c (get-colliding-with p))
+
+  c)
+
 
 (define-component physics-world any/c)
+(define-component collisions  (listof number?))
+(define-component separations (listof number?))
 
 ;Note, this seems like it leaks memory whenever a game links into a new game with a physics-manager.  Its our job to protect against that stuff, so we need to provide safer abstractions.
+(define my-collisions  '())
+(define my-separations '())
 (define (physics-manager)
   (define space (chip:cpSpaceNew))
 
-  (define handler (chip:cpSpaceAddDefaultCollisionHandler space))
 
-  (define (callback arbiter space data)
-    (displayln "Collision detected!")
+  (define (collide-callback arbiter space data)
+    (let-values ([(s1 s2)  (chip:cpArbiterGetShapes arbiter)])
+      (define s1-id 
+        (ptr-ref
+          (chip:cpShapeGetUserData s1)
+          _uint))
+      (define s2-id 
+        (ptr-ref
+          (chip:cpShapeGetUserData s2)
+          _uint)) 
+
+      (set! my-collisions 
+        (cons (list s1-id s2-id) my-collisions)))
     1)
 
-  ;TODO: Not sure why the begin callback never got called...
-  ;but this is working.  Can expand on that to store information about this frame's collisions. 
+  (define (separate-callback arbiter space data)
+    (let-values ([(s1 s2)  (chip:cpArbiterGetShapes arbiter)])
+      (define s1-id 
+        (ptr-ref
+          (chip:cpShapeGetUserData s1)
+          _uint))
+      (define s2-id 
+        (ptr-ref
+          (chip:cpShapeGetUserData s2)
+          _uint))
+      
+      (set! my-separations 
+        (cons (list s1-id s2-id) my-separations)))
+    1)
+
+  (define handler (chip:cpSpaceAddDefaultCollisionHandler space))
+
   (chip:set-cpCollisionHandler-cpCollisionPreSolveFunc! 
     handler 
-    callback)
+    collide-callback)
+
+  (chip:set-cpCollisionHandler-cpCollisionSeparateFunc! 
+    handler 
+    separate-callback) 
 
   (entity
     (name 'physics-manager)
+    (collisions  '() (let ([ret my-collisions])
+                       (set! my-collisions '()) 
+                       ret))
+    (separations '() (let ([ret my-separations])
+                       (set! my-separations '()) 
+                       ret))
     (physics-world space
                    (begin
                      (chip:cpSpaceStep (get-physics-world) 
                                        (/ 1 120.0))
-                     space))))
+                     space))
+    
+    ))
 
 

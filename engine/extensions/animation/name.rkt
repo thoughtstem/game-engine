@@ -2,7 +2,7 @@
 
 (require "../../core/main.rkt")
 
-(provide name get-name has-name)
+(provide name=? name set-name get-name has-name)
 (define-component name symbol?)
 
 (define (has-name s)

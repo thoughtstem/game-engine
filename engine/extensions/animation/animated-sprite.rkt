@@ -17,7 +17,10 @@
 
   also-render?
   also-render
-  get-also-render)
+  get-also-render
+  
+  transparency
+  get-transparency)
 
 (require "../../core/main.rkt"
          "./common-components.rkt"
@@ -25,6 +28,7 @@
 
 (define-component also-render game?)
 (define-component sprite symbol?)
+(define-component transparency number?)
 
 (define (sprite-id s)
   (get-sprite s))

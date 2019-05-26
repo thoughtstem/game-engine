@@ -186,6 +186,7 @@
         (ml:sprite #:layer 0
 	           #:m (real->double-flonum (get-size e 1))
 		   #:theta (real->double-flonum (get-rotation e 0))
+                   #:a (real->double-flonum (get-transparency e 1)) 
                    (if (has-component e 'position)
                      (real->double-flonum (x e))
                      (real->double-flonum 0))
