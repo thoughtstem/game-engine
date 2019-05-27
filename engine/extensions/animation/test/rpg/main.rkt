@@ -18,7 +18,6 @@
 ;TODO: Avatar projectile -- just for more robust physics
 
 
-
 ;TODO: Continue building out the traversal mechanics.  Different world tiles.  
 ;  Infinite traversal?  Marching cubes?  Perlin noise?
 ;  These would all be fun to document in a tutorial
@@ -36,6 +35,9 @@
     ;TODO: Why isn't the sensor detecting the separation?
     ;For that matter, why does separate get called a million times when it's not a sensor.  THe docs seem to suggest begin and separate get called in "balanced pairs"
     ;Maybe a clue: It's not even calling begin anymore.  Somehow I must have broken something...
+    ;  Or maybe it never was, and I was using presolve instead...
+
+    ;Maybe I should be implementing ontop of pre/post solve, with some kind of query for whether they are still touching?   It just feels like it shouldn't be necessary.
     (entity 
       (position (posn 200 250)
                 (get-physics-position))
@@ -47,7 +49,8 @@
 
                       #:static #t
 
-                      ;#:sensor #t
+                      #:sensor #t
+
                       
                       )
 
@@ -55,8 +58,31 @@
               (if (get-physics-colliding? 
                     (name=? 'avatar)) 
                 temp-red 
-                temp-green))  
-      )
+                temp-green))  )
+
+    #;
+    (entity 
+      (position (posn 230 250)
+                (get-physics-position))
+
+      (rotation 0
+                (get-physics-rotation))
+
+      (physics-system 50 50 
+
+                      #:forces (const (posn -100 0))
+
+                      #:static #t
+
+                      #:sensor #t
+                      
+                      )
+
+      (sprite temp-green
+              (if (get-physics-colliding? 
+                    (name=? 'avatar)) 
+                temp-red 
+                temp-green))  )
 
     ;TODO: Why are the positions wrong when we do entity-grid?  Maybe the physics stuff is getting set up before the position componet is there?  But that shouldn't happen because it should wait until runtime to set itself up.
     #;

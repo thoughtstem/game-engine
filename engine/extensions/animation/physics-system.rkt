@@ -13,7 +13,7 @@
          "./common-components.rkt"
          posn threading)
 
-(require (prefix-in chip: racket-chipmunk))
+(require (prefix-in chip: racket-chipmunk/lang/chipmunk-ffi))
 
 (require ffi/unsafe)
 
@@ -41,11 +41,12 @@
                              #:mass (mass 1)
                              #:static (static #f)
                              #:sensor (sensor #f)
+                             #:type (type #f)
                              w h)
   (define the-chipmunk-hook
     (chipmunk
       #f
-      (init-or-update-chipmunk w h mass static sensor)))
+      (init-or-update-chipmunk w h mass static sensor type)))
 
   (define shadow-entity
     (entity 
@@ -128,12 +129,12 @@
     child))
 
 
-(define (init-or-update-chipmunk w h m static? sensor?)
+(define (init-or-update-chipmunk w h m static? sensor? type)
   (define current (get-chipmunk)) 
 
 
   (if (not current)
-    (init-chipmunk w h m static? sensor?) 
+    (init-chipmunk w h m static? sensor? type) 
 
     (~> current
         copy-in-desired-force
@@ -158,7 +159,7 @@
     c))
 
   
-(define (init-chipmunk w h m static? sensor?)
+(define (init-chipmunk w h m static? sensor? type)
   (displayln "Making a chipmunk")
 
   (define p (get-position))
@@ -166,8 +167,6 @@
 
   (define space
     (get-physics-world))
-
-
 
 
   (define mass (real->double-flonum m))
@@ -199,6 +198,9 @@
 
   (when sensor?
     (chip:cpShapeSetSensor shape 1))
+
+  (when type
+    (chip:cpShapeSetCollisionType shape type))
 
   (define e-id (entity-id (CURRENT-ENTITY)))
 
@@ -333,6 +335,7 @@
 
 (define my-collisions  '())
 (define my-separations '())
+
 (define (new-physics-space)
   (define space (chip:cpSpaceNew))
 
@@ -372,7 +375,7 @@
           _uint))
 
       (set! my-collisions
-        (filter
+        (filter-not
           (curry equal? (list s1-id s2-id))    
           my-collisions))
       
@@ -387,6 +390,8 @@
 
   (define (postsolve-callback arbiter space data)
     (displayln "Post solve")
+    (displayln (chip:cpArbiterIsFirstContact arbiter))
+    
     1)
 
   (define handler (chip:cpSpaceAddDefaultCollisionHandler space))
@@ -405,7 +410,6 @@
     handler 
     postsolve-callback)
 
-  #;
   (chip:set-cpCollisionHandler-cpCollisionSeparateFunc! 
     handler 
     separate-callback) 
