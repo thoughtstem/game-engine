@@ -40,11 +40,12 @@
                              #:velocities (velocities (const #f))  
                              #:mass (mass 1)
                              #:static (static #f)
+                             #:sensor (sensor #f)
                              w h)
   (define the-chipmunk-hook
     (chipmunk
       #f
-      (init-or-update-chipmunk w h mass static)))
+      (init-or-update-chipmunk w h mass static sensor)))
 
   (define shadow-entity
     (entity 
@@ -100,13 +101,15 @@
   (define with-rotation
     (init-child-from-parent 
       with-position
-      get-rotation
+      (lambda (e) 
+        (get-rotation e 0))
       set-rotation))
   
   (define with-name
     (init-child-from-parent 
       with-rotation
-      get-name
+      (lambda (e) 
+        (get-name e (name #f)))
       set-name))
 
   (tick-entity with-name))
@@ -120,17 +123,17 @@
   (if (not (getter child))
     (setter child (if (procedure? value)
                     ;Usually just runs the getter with no args -- applies to the parent, which is the (CURRENT-ENTITY) 
-                    (value) 
+                    (value (CURRENT-ENTITY)) 
                     value))
     child))
 
 
-(define (init-or-update-chipmunk w h m static?)
+(define (init-or-update-chipmunk w h m static? sensor?)
   (define current (get-chipmunk)) 
 
 
   (if (not current)
-    (init-chipmunk w h m static?) 
+    (init-chipmunk w h m static? sensor?) 
 
     (~> current
         copy-in-desired-force
@@ -155,7 +158,7 @@
     c))
 
   
-(define (init-chipmunk w h m static?)
+(define (init-chipmunk w h m static? sensor?)
   (displayln "Making a chipmunk")
 
   (define p (get-position))
@@ -181,6 +184,7 @@
   (chip:cpBodySetPosition body 
 			  (chip:cpv x y))
 
+
   (define r (get-rotation))
   
   (when r
@@ -192,6 +196,9 @@
 							  (real->double-flonum w)
 							  (real->double-flonum h)
 							  (chip:cpv 0.0 0.0))))
+
+  (when sensor?
+    (chip:cpShapeSetSensor shape 1))
 
   (define e-id (entity-id (CURRENT-ENTITY)))
 
@@ -302,14 +309,38 @@
 (define-component separations (listof number?))
 
 ;Note, this seems like it leaks memory whenever a game links into a new game with a physics-manager.  Its our job to protect against that stuff, so we need to provide safer abstractions.
+
+(define (physics-manager )
+
+  (define space (new-physics-space))
+
+  (entity
+    (name 'physics-manager)
+    (collisions  '() 
+                 my-collisions)
+
+    (separations '() 
+                 (let ([ret my-separations])
+                       (set! my-separations '()) 
+                       ret))
+    (physics-world space
+                   (begin
+                     (chip:cpSpaceStep (get-physics-world) 
+                                       (/ 1 120.0))
+                     space)) 
+    ))
+
+
 (define my-collisions  '())
 (define my-separations '())
-(define (physics-manager)
+(define (new-physics-space)
   (define space (chip:cpSpaceNew))
 
+  (define (begin-callback arbiter space data)
+    (displayln "Begin")
 
-  (define (collide-callback arbiter space data)
     (let-values ([(s1 s2)  (chip:cpArbiterGetShapes arbiter)])
+
       (define s1-id 
         (ptr-ref
           (chip:cpShapeGetUserData s1)
@@ -320,48 +351,66 @@
           _uint)) 
 
       (set! my-collisions 
-        (cons (list s1-id s2-id) my-collisions)))
+        (remove-duplicates
+          (cons (list s1-id s2-id) my-collisions))))
+
     1)
 
   (define (separate-callback arbiter space data)
+    (displayln "Separate")
+
     (let-values ([(s1 s2)  (chip:cpArbiterGetShapes arbiter)])
+
       (define s1-id 
         (ptr-ref
           (chip:cpShapeGetUserData s1)
           _uint))
+
       (define s2-id 
         (ptr-ref
           (chip:cpShapeGetUserData s2)
           _uint))
+
+      (set! my-collisions
+        (filter
+          (curry equal? (list s1-id s2-id))    
+          my-collisions))
       
       (set! my-separations 
         (cons (list s1-id s2-id) my-separations)))
+
+    1)
+
+  (define (presolve-callback arbiter space data)
+    (displayln "Pre solve")
+    1)
+
+  (define (postsolve-callback arbiter space data)
+    (displayln "Post solve")
     1)
 
   (define handler (chip:cpSpaceAddDefaultCollisionHandler space))
 
+  (chip:set-cpCollisionHandler-cpCollisionBeginFunc! 
+    handler 
+    begin-callback)
+
+  #;
   (chip:set-cpCollisionHandler-cpCollisionPreSolveFunc! 
     handler 
-    collide-callback)
+    presolve-callback)
 
+  #;
+  (chip:set-cpCollisionHandler-cpCollisionPostSolveFunc! 
+    handler 
+    postsolve-callback)
+
+  #;
   (chip:set-cpCollisionHandler-cpCollisionSeparateFunc! 
     handler 
     separate-callback) 
 
-  (entity
-    (name 'physics-manager)
-    (collisions  '() (let ([ret my-collisions])
-                       (set! my-collisions '()) 
-                       ret))
-    (separations '() (let ([ret my-separations])
-                       (set! my-separations '()) 
-                       ret))
-    (physics-world space
-                   (begin
-                     (chip:cpSpaceStep (get-physics-world) 
-                                       (/ 1 120.0))
-                     space))
-    
-    ))
+  space)
+
 
 

@@ -7,7 +7,8 @@
          "./world.rkt"
          2htdp/image)
 
-(define-component speed number?)
+;TODO: Figure out why begin/separate is weird in chipmunk
+; If we can get chipmunk working flawlessly, there's a TOOON of cool stuff we can do...  All sorts of games...
 
 ;TODO: Handle physics memory leaks in switching worlds.
 
@@ -16,9 +17,77 @@
 
 ;TODO: Avatar projectile -- just for more robust physics
 
+
+
 ;TODO: Continue building out the traversal mechanics.  Different world tiles.  
-;Infinite traversal?  Marching cubes?  Perlin noise?
-;These would all be fun to document in a tutorial
+;  Infinite traversal?  Marching cubes?  Perlin noise?
+;  These would all be fun to document in a tutorial
+;Current issue: Can't move beyond the initial background sprite -- black sea...
+
+;Can we do some fancy grids and marching squares here?
+
+(define temp-green (register-sprite (square 48 'solid 'green)))
+(define temp-red (register-sprite (square 48 'solid 'red)))
+
+
+(define (world bg-sprite)
+  (list
+
+    ;TODO: Why isn't the sensor detecting the separation?
+    ;For that matter, why does separate get called a million times when it's not a sensor.  THe docs seem to suggest begin and separate get called in "balanced pairs"
+    ;Maybe a clue: It's not even calling begin anymore.  Somehow I must have broken something...
+    (entity 
+      (position (posn 200 250)
+                (get-physics-position))
+
+      (rotation 0
+                (get-physics-rotation))
+
+      (physics-system 50 50 
+
+                      #:static #t
+
+                      ;#:sensor #t
+                      
+                      )
+
+      (sprite temp-green
+              (if (get-physics-colliding? 
+                    (name=? 'avatar)) 
+                temp-red 
+                temp-green))  
+      )
+
+    ;TODO: Why are the positions wrong when we do entity-grid?  Maybe the physics stuff is getting set up before the position componet is there?  But that shouldn't happen because it should wait until runtime to set itself up.
+    #;
+    (entity-grid 400 400 50
+                 (list 
+                   (physics-system 50 50
+                                   #:static #t
+                                   #:sensor #t
+                                   )
+                   (sprite temp-green
+                           (if (get-physics-colliding? 
+                                 (name=? 'avatar)) 
+                             temp-red 
+                             temp-green))))
+
+    (entity
+      (position (posn 0 0)
+                (posn-scale -400
+                            (get-tile-world-coord)))
+
+      ;TODO: Make animation helpers for this kind of thing.  But do we really want this effect in this game anyway?
+      (transparency 0.5
+                    (if (> (get-transparency) 0.99)
+                      1
+                      (+ 0.01 (get-transparency))))
+
+      ;Replace with an also-render subgame with many smaller tiles...
+      (sprite bg-sprite))
+
+    ))
+
 
 (define (hero start)
   (entity
@@ -61,7 +130,6 @@
   (update-entity g
                  (name=? 'avatar) 
                  (curryr set-position new-avatar-position)))
-
 
 (define (tile (avatar (hero (posn 200 200))))
   (displayln "RPG start")

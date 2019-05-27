@@ -1,28 +1,14 @@
 #lang racket
 
-(provide world world-edge-system get-tile-world-coord)
+(provide world-edge-system get-tile-world-coord)
 
 (require "../../main.rkt"
-         ;"./images.rkt"
          "./animations.rkt"
          2htdp/image)
 
-
-(define (world bg-sprite)
-  (entity
-    (position (posn 0 0))
-
-    ;TODO: Make animation helpers for this kind of thing.  But do we really want this effect in this game anyway?
-    (transparency 0.5
-                  (if (> (get-transparency) 0.99)
-                    1
-                    (+ 0.01 (get-transparency))))
-
-    (sprite bg-sprite)))
-
 (define-component world-coord posn?)
 
-(define (get-tile-world-coord g)
+(define (get-tile-world-coord (g (CURRENT-GAME)))
   (get-world-coord (get-entity g
                                (name=? 'world-coordinate))))
 
@@ -44,7 +30,6 @@
           #:to game-f
           #:transition (transition identity))
 
-  ;TODO: Abstract these magic size and position numbers into parameters
   (list
     (entity
       (name 'world-coordinate)
@@ -60,9 +45,11 @@
       #:detect (thunk* 
                  (get-physics-colliding?
                    (name=? 'avatar)))
-      (physics-system 400 10
-                      ;#:mass 1000000 ;TODO: Static?
+
+      ;TODO: Abstract these magic size and position numbers into parameters
+      (physics-system 400 10 
                       #:static #t
+                     ; #:sensor #t
                       )
       (position (posn 200 -10))
       (sprite edge)
@@ -78,9 +65,9 @@
       (thunk* 
         (get-physics-colliding?
           (name=? 'avatar)))
-      (physics-system 400 10
-                      ;#:mass 1000000 ;Static?
+      (physics-system 400 10 
                       #:static #t
+                      ;#:sensor #t
                       )
       (position (posn 410 200))
       (sprite edge)
@@ -96,9 +83,10 @@
       (thunk* 
         (get-physics-colliding?
           (name=? 'avatar)))
-      (physics-system 400 10
-                      ;#:mass 1000000 ;Static?
+      (physics-system 400 10 
                       #:static #t
+                     ; #:sensor #t
+                      
                       )
       (position (posn 200 410))
       (sprite edge)
@@ -114,9 +102,10 @@
       (thunk* 
         (get-physics-colliding?
           (name=? 'avatar)))
-      (physics-system 400 10
-                      ;#:mass 1000000 ;Static?
+      (physics-system 400 10 
                       #:static #t
+                     ; #:sensor #t
+                      
                       )
       (position (posn -10 200))
       (sprite edge)
