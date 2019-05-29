@@ -24,7 +24,7 @@
                                 (posn cell-size cell-size))
                     (posn (* c cell-size)
                           (* r cell-size))))
-        cs 
+        (cs) 
         )))
 
   es)

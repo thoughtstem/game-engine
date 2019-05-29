@@ -7,8 +7,6 @@
          "./world.rkt"
          2htdp/image)
 
-;START USING HOTSWAP
-
 ;TODO: Having 64 sensors seems to slow things down too much.  Can we optimize again?
 ;  On the bright side, it seems to be the physics system for sure.  Can probably refactor it.
 
@@ -44,6 +42,7 @@
                  (thunk
                    (list 
                      ;Okay, this is slowing things down when there are 84 entities -- which shouldn't be that bad.  Gotta optimize.
+                     #;
                      (physics-system 50 50
                                      #:static #t
                                      #:sensor #t)
@@ -129,7 +128,7 @@
 
 (require "../../hotswap.rkt")
 
-(hotswap me
+(no-hotswap me
     (game
       (door-manager 
         (tile))))
