@@ -11,9 +11,17 @@
 
 ;TODO: Having 64 sensors seems to slow things down too much.  Can we optimize again?
 ;  On the bright side, it seems to be the physics system for sure.  Can probably refactor it.
+;  Profiler tells me it's sub-games and physics-systems that are the biggest offenders in this system.
+;  Which sub-games?
+;     Hmmm.  I wonder if that's because things are nested under them...  There's a heirarchy here... need a better way of displaying performance data.  Some kind of tree map... Or divide things by the number of that type of component...
+;
+;  When I make everything in physics-system inert, it gets much faster -- but it still isn't at full.  I feel like 84 entities with 10 inert components shouldn't have that much of an effect...
+;      So two prongs:
+;        1) Can we speed up the tick in general?
+;        2) Can we speed up physics system?
 
-;TODO: Figure out why begin/separate is weird in chipmunk
-; If we can get chipmunk working flawlessly, there's a TOOON of cool stuff we can do...  All sorts of games...
+;  Bench:  30s-40s with inert components, 40s-50s if no update-physics-system, and 50s-60s if no grid entities
+
 
 ;TODO: Pick a random physics feature and implement it.  Like candy -- just having joint examples would be fucking sick.
 
@@ -129,11 +137,10 @@
 
 (require "../../hotswap.rkt")
 
-(hotswap me
+(play!
     (game
       (door-manager 
         (tile))))
-
 
 
 

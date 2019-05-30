@@ -82,21 +82,16 @@
           (when h
             (define component-start-time (current-inexact-milliseconds))
 
-            ;Can't decide which error output is more useful.  Should uncoment and fix so it combines both outputs, then we don't have to decide.  But I've been lazy and haven't fully learned Racket's exception model yet.
-            #;
-            (with-handlers ([exn:fail? (lambda (err)
-                                         ;Is this masking a better error message
-                                         (displayln err)
-                                         (pretty-print-component c)
-                                         (error "Error ticking component ") )])
-              (set! c (h c)))
-
             (set! c (h c)) 
 
             (hash-set! (entity-lookup next-e)
                        (vector-ref c 1) ;Gross...  Gotta hide all the explicit vector nonsense
                        c)
 
+
+            ;What is this for?  Do the tests pass without it?
+            ;If so, remove...
+            #;
             (when (not (mutable-state))
               (set-entity-components! next-e
                                       (list-set
@@ -195,8 +190,9 @@
 
 
 (define (display-performance-stats)
-  (displayln "Performance stats disabled")
   #;
+  (displayln "Performance stats disabled")
+
   (when component-times
     (define data (hash->list component-times))
 
@@ -219,7 +215,9 @@
       (apply + (map cdr data)))
 
     (define top
-      (take sorted 5))
+      (if (< (length sorted) 5)
+        sorted
+        (take sorted 5)))
 
 
     (pretty-print

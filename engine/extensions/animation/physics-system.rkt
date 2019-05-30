@@ -36,8 +36,8 @@
 (define-component colliding-with list?)
 (define-component colliding? boolean?)
 
-(define (make-physics-system #:forces (forces (const #f)) 
-                             #:velocities (velocities (const #f))  
+(define (make-physics-system #:forces (forces (const #f))
+                             #:velocities (velocities (const #f))
                              #:mass (mass 1)
                              #:static (static #f)
                              #:sensor (sensor #f)
@@ -46,6 +46,7 @@
   (define the-chipmunk-hook
     (chipmunk
       #f
+      #;
       (init-or-update-chipmunk w h mass static sensor type)))
 
   (define shadow-entity
@@ -53,12 +54,21 @@
         (name #f)
         (physics-world #f) 
 
-        (desired-force #f    (forces))
-        (desired-velocity #f (velocities))
+        (desired-force #f    
+                       #;
+                       (forces))
+
+        (desired-velocity #f 
+                          #;
+                          (velocities))
+
+        ;What is slowing things down in here?
 
         the-chipmunk-hook	
 
         (colliding-with '() 
+
+                        #;
                         (map second
                              (filter 
                                (lambda (c)
@@ -67,16 +77,28 @@
                                (get 'physics-manager 'collisions))))
 
 
-	(force #f    (chipmunk-force)) 
-	(velocity #f (chipmunk-velocity)) 
+	(force #f    
+               #;
+               (chipmunk-force)) 
 
-	(position #f (chipmunk-posn)) 
-	(rotation #f (chipmunk-rotation))))
+	(velocity #f 
+                  #;
+                  (chipmunk-velocity)) 
+
+	(position #f 
+                  #;
+                  (chipmunk-posn)) 
+
+	(rotation #f 
+                  #;
+                  (chipmunk-rotation))))
 
   (list
     (physics-system 
       shadow-entity 
+      ;Ultimately: this is slow.  WHat part?
       (update-physics-system))))
+
 
 
 (define (update-physics-system)

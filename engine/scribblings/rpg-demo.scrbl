@@ -4,6 +4,10 @@
 @require[@for-label[game-engine/engine/core
                     racket/base]]
 
+Interesting provable properties:
+* If the game ran without errors once, you can disable a component's behaviour without removing it, and the game should run without errors still.  Proof: The original game went through that state once. 
+* This allows any part of the system to be frozen, while other parts procede.  Nice for experimentation, debugging, etc.
+
 Tutorial time!
 Let's make an RPG game!
 
