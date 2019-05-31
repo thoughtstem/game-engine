@@ -32,7 +32,9 @@ Here's a full example:
   (sprite->entity (circle 20 "solid" "red")
                   #:name       "ship"
                   #:position   (posn 100 100)
-                  #:components (key-movement 5)))
+                  #:components
+                  (key-movement 5)
+                  (physical-collider)))
 
 
 (start-game (instructions WIDTH HEIGHT "Use arrow keys to move")
