@@ -12,6 +12,7 @@
          recompile!
          force-recompile!
          cleanup-renderer!
+         MONOSPACE-FONT-FACE
          )
 
 (require racket/match
@@ -413,8 +414,13 @@
 
 (struct font (size face family style weight ml:font renderer) #:transparent)
 
+(define MONOSPACE-FONT-FACE
+  (cond [(eq? (system-type 'os) 'windows) "Consolas" ]
+        [(eq? (system-type 'os) 'macosx)  "Menlo"]
+        [(eq? (system-type 'os) 'unix)    "DejaVu Sans Mono"]))
+  
 (define game-fonts
-  (list (font 13.0 "DejaVu Sans Mono"
+  (list (font 13.0 MONOSPACE-FONT-FACE
               'modern 'normal 'normal
               #f
               #f)))
