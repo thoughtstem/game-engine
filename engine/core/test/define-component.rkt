@@ -70,10 +70,6 @@
 
            (define g0 (game (e 3) (e 2) (e 1)))
 
-           #; ;State should be immutable, but this proves it isn't.  Uncomment and test will fail
-
-           (tick g0)
-
            (define g1 (tick g0)) 
            (define g2 (tick g1)) 
            (define g3 (tick g2)) 

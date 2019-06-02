@@ -82,23 +82,8 @@
           (when h
             (define component-start-time (current-inexact-milliseconds))
 
-            (set! c (h c)) 
-
-            (hash-set! (entity-lookup next-e)
-                       (vector-ref c 1) ;Gross...  Gotta hide all the explicit vector nonsense
-                       c)
-
-
-            ;What is this for?  Do the tests pass without it?
-            ;If so, remove...
-            #;
-            (when (not (mutable-state))
-              (set-entity-components! next-e
-                                      (list-set
-                                        (entity-components next-e)
-                                        ci
-                                        c))) 
-
+            (define new-c (h c))  
+            (update-component! e c new-c)
 
             (when (profiler-on)
               (hash-update!
@@ -109,7 +94,7 @@
                      (- (current-inexact-milliseconds) component-start-time)))
                 (- (current-inexact-milliseconds) component-start-time)))
 
-            (define v (get-value c)) 
+            (define v (get-value new-c)) 
 
             (when (despawn? v)
               (set! to-remove (cons next-e to-remove))
@@ -117,9 +102,12 @@
 
             (when (spawn? v)
               (set! to-spawn (cons (spawn-entity v) to-spawn))
-              (debug:added-to-spawn-queue to-spawn) )) 
+              (debug:added-to-spawn-queue to-spawn) )
+            
+            (debug:component-tick-end new-c)  
+            ) 
 
-          (debug:component-tick-end c)))
+          ))
     
 
 
@@ -238,8 +226,9 @@
 
 (define (tick-entity e)
   (parameterize ([CURRENT-ENTITY e])
-    (struct-copy entity e
-                 [components
-                   (map tick-component (entity-components e)) ])))
+    (for ([c (entity-components e)])
+      (tick-component c))
+
+    e))
 
 

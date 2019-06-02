@@ -129,6 +129,11 @@
    (λ () (fiat-lux 
             (game+render g render-tick))))) 
 
+(define (new-layer w h)
+  (ml:layer (real->double-flonum w)
+            (real->double-flonum h)))
+
+
 (define (get-mode-lambda-render-tick W H)
   (define W/2 (/ W 2))
   (define H/2 (/ H 2))
@@ -138,10 +143,13 @@
 
   (define csd (init-db))
 
-  (define layers (vector
-                   (ml:layer (real->double-flonum W/2)
-                             (real->double-flonum H/2))))
 
+(define layers (vector
+                   (new-layer W/2 H/2)
+                   (new-layer W/2 H/2)
+                   (new-layer W/2 H/2)
+                   (new-layer W/2 H/2)
+                   (new-layer W/2 H/2)))
 
   ;Set up our open gl render function with the current sprite database
   (define ml:render (gl:stage-draw/dc csd W H 8))
@@ -162,47 +170,36 @@
 
   render-game)
 
-(define sprite-cache
-  (make-hasheq))
-
 (require (prefix-in h: 2htdp/image))
 
 
 (define (game->ml-sprite-list g)
   (define ret '())
-  (define hits 0)
 
   (for ([e (game-entities g)])
-    (define cs (entity-components e))
-    (define s 
-      (get-component e 'sprite))
-
+    (define s (get-component e 'sprite))
 
     (when s 
       (define eid (entity-id e))
       (define sid (ml:sprite-idx csd (sprite-id s)))
 
+      (define p (get-position e (posn 0 0)))
+
       (define mls
-        (ml:sprite #:layer 0
-	           #:m (real->double-flonum (get-size e 1))
-		   #:theta (real->double-flonum (get-rotation e 0))
-                   #:a (real->double-flonum (get-transparency e 1)) 
-                   (if (has-component e 'position)
-                     (real->double-flonum (x e))
-                     (real->double-flonum 0))
-                   (if (has-component e 'position)
-                     (real->double-flonum (y e))
-                     (real->double-flonum 0))
+        (ml:sprite #:layer (call-if-proc (get-layer e 0))
+                   #:m (real->double-flonum (call-if-proc (get-size e 1)))
+                   #:theta (real->double-flonum (call-if-proc (get-rotation e 0)))
+                   #:a (real->double-flonum (call-if-proc (get-transparency e 1))) 
+                   (real->double-flonum (posn-x p))
+                   (real->double-flonum (posn-y p))
                    sid))
 
       (set! ret (cons mls ret))) 
     
 
-    ;implementing also-render
     (define a
       (get-component e 'also-render))
 
-    ;implementing also-render
     (when a
      (set! ret (append (game->ml-sprite-list (get-value a)) ret))  
 
@@ -213,6 +210,9 @@
   
 
   )
+
+(define (call-if-proc p)
+  (if (procedure? p) (p) p))
 
 
 (require 2htdp/image)

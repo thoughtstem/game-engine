@@ -27,6 +27,7 @@
                 (> modified prev-modified)))
 
          (define (hotswap-manager)
+           (define last #f)
            (level-manager 
              (for/stream ([i (in-naturals)])
                          (displayln "HOTSWAP")
@@ -38,10 +39,19 @@
                                           temp)
 
                          (set! prev-modified (file-or-directory-modify-seconds me))     
+                         (define ret 
+                           (with-handlers
+                             ([exn:fail? (lambda (e)
+                                           (displayln "Couldn't hotswap, due to error")
+                                           (displayln e)
+                                           last
+                                           )])
+                             (dynamic-require temp 'name))   )
 
-                         (define ret (dynamic-require temp 'name))
+                         (when ret
+                           (set! last ret)
+                           (pretty-print-game ret))
 
-                         (pretty-print-game ret)
 
                          ret)
              (thunk* (file-modified? me))))

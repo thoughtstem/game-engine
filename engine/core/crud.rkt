@@ -7,6 +7,7 @@
          get-component
          get-components
          update-component
+         update-component!
          remove-component
          
          ;Entity CRUD
@@ -38,16 +39,7 @@
          c
          (list c))))
 
-
-   (refresh-component-lookup
-     (check-for-duplicate-components
-       (if (mutable-state)
-         (begin
-           (set-entity-components! e new-cs)
-           e)
-         (struct-copy entity e
-                      [components new-cs]))))
-   
+   (set-entity-components! e new-cs)
    ) 
 
 (define (add-components e . cs)
@@ -91,18 +83,23 @@
   (define real-new-c 
     (action real-old-c))
 
-  (refresh-component-lookup
-    (if (equal? real-new-c real-old-c) 
-      e
-      (if (mutable-state)
-        (begin 
-          (set-entity-components! e (list-set cs i real-new-c))
+  (if (equal? real-new-c real-old-c) 
+    e
+    (begin 
+      ;Is the list-set here slow???
+      ; An entity's components should definitely be a vector (or a hash!), since we never add/remove at runtime.  Then the component list can just 
+      (set-entity-components! e (list-set cs i real-new-c))
+      (set-entity-changed?! e #t)
 
-          (set-entity-changed?! e #t)
+      e)
+    )
+  )
 
-          e)
-        (struct-copy entity e
-                     [components (list-set cs i real-new-c)])))))
+
+(define (update-component! e c-old c-new)
+  (hash-set! (entity-component-hash e)
+             (component-name c-old)
+             c-new))
 
 
 (define/contract (remove-component e c)
@@ -130,13 +127,7 @@
      (filter-not (curry component=? to-remove) 
                  (entity-components e)))
 
-   (refresh-component-lookup
-     (if (mutable-state)
-       (begin
-         (set-entity-components! e new-c) 
-         e) 
-       (struct-copy entity e
-                    [components new-c])))) 
+     (set-entity-components! e new-c))
 
 
 (define/contract (get-component e query?)
@@ -144,7 +135,7 @@
     (-> entity? any/c any/c))
 
   (if (symbol? query?)
-    (hash-ref (entity-lookup e) query? #f) 
+    (hash-ref (entity-component-hash e) query? #f) 
     (let ([real-query?
             (if (component? query?)
               (curry component=? query?)
@@ -251,7 +242,7 @@
 
   (not (not
          (if (symbol? c?)
-           (hash-ref (entity-lookup e) c? #f) 
+           (hash-ref (entity-component-hash e) c? #f) 
            (findf c? (entity-components e))))))
 
 (define (get entity-name component-name)

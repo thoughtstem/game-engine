@@ -9,10 +9,8 @@
   copy-game
 
   entity
+  entity-component-hash
   check-for-duplicate-components 
-  entity-lookup
-  lookup-hash
-  refresh-component-lookup
   new-entity
   entity?
   entity-components
@@ -76,9 +74,16 @@
     exp))
 
 ;Our basic struct types
-(struct entity (id components changed? lookup) #:mutable  #:transparent)
+(struct entity (id component-hash component-names changed? ) #:mutable  #:transparent)
 (struct game (entities) #:mutable #:transparent)
 
+(define (entity-components e)
+  (define names (entity-component-names e))  
+
+  (map 
+    (lambda (n)
+      (hash-ref (entity-component-hash e) n))  
+    names))
 
 (define (get-value c)
   (vector-ref c 5))
@@ -188,17 +193,6 @@
 
   (vector-copy c))
 
-(define (lookup-hash cs)
-  (make-hash
-    (map
-      (lambda (c)
-        (cons (vector-ref c 1) c)) 
-      cs)))
-
-(define (refresh-component-lookup e)
-  (struct-copy entity e
-               [lookup (lookup-hash
-                         (entity-components e))])) 
 
 ;Our basic constructors
 ;  Should the lists get converted to vectors?
@@ -209,13 +203,34 @@
   (game (map copy-entity (flatten es))))
 
 (define/contract (new-entity . cs)
-                 (->* () #:rest (listof (or/c component?
-                                              list?)) entity?)
+ (->* () #:rest (listof (or/c component?
+                              list?)) entity?)
 
+ (define flat-cs (flatten cs))
 
-  (refresh-component-lookup
-    (check-for-duplicate-components
-      (entity (next-id) (flatten cs) #f #f))))
+ (check-for-duplicate-components
+   (entity (next-id) 
+           (components->component-hash flat-cs)
+           (map component-name flat-cs)
+           #f))
+)
+
+(define (set-entity-components! e cs)
+ (check-for-duplicate-components
+   (entity (entity-id e) 
+           (components->component-hash (flatten cs))
+           (map component-name cs)
+           #f)))
+
+(define (components->component-hash cs)
+  (define ret (make-hasheq)) 
+
+  (for ([c cs])
+    (hash-set! ret 
+               (component-name c)
+               c))
+
+  ret)
 
 
 (define (check-for-duplicate-components e)

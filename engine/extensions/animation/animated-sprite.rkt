@@ -20,7 +20,13 @@
   get-also-render
   
   transparency
-  get-transparency)
+  transparency?
+  get-transparency
+
+  layer
+  get-layer
+  layer?
+  )
 
 (require "../../core/main.rkt"
          "./common-components.rkt"
@@ -28,6 +34,7 @@
 
 (define-component also-render game?)
 (define-component sprite symbol?)
+(define-component layer number?)
 (define-component transparency number?)
 
 (define (sprite-id s)
