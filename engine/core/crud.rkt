@@ -130,7 +130,13 @@
      (set-entity-components! e new-c))
 
 
-(define/contract (get-component e query?)
+(define 
+  ;Leaving the contract disabled for now.  Has a 10 FPS performance boost in bullet-cloud.rkt test.  (For some reason no-contracts! isn't giving the same boost...)
+
+  #;/contract 
+  (get-component e query?)
+
+  #;
   (maybe-contract
     (-> entity? any/c any/c))
 

@@ -198,7 +198,8 @@
         (ml:sprite-idx csd (sprite-id s)))
 
 
-      (define p (get-position e (posn 0 0)))
+      ;Note.  Where there are many entities (several hundred), all of these get-*s add up.  Consider looking for optimizations.  (However, it is also worth noting that rendering is usually not the first bottleneck.  Only after certain optimizations -- e.g. demos/bullet-cloud.rkt -- does rendering become the bottleneck)
+      (define p (call-if-proc (get-position e (posn 0 0))))
 
       (define mls
         (ml:sprite #:layer (call-if-proc (get-layer e 0))

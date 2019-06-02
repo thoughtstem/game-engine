@@ -1,17 +1,15 @@
 #lang racket
 
-(require "../main.rkt")
+(require "../extensions/main.rkt")
 
-(require "../../../core/test/conway.rkt"
-         2htdp/image)
+;On my low-end chromebook, I'm getting 20 FPS with 5 artificial life-forms, each of which spawns a "cloud" of ~50 other entities (250 total).  It could be sped up if things were organized differently (see bullet-cloud.rkt)
 
+(require 2htdp/image)
 
-(define-component counter number?)
-(define-component killer boolean?)
+(define bullet-sprite (register-sprite (circle 6 'solid 'green)))
 
-(define (bullet color) 
-  (define bullet-sprite
-    (register-sprite (circle 5 'solid color)))
+(define (bullet live-for) 
+  (define die-at (+ global-time live-for))
 
   (entity 
     (position (posn -1 -1) 
@@ -21,19 +19,13 @@
                 (get-position)))
 
     (sprite bullet-sprite)
-    (counter 0 
-             (^ add1))
-
-    (killer  #f 
-             (if (= 50 (get-counter))
-               (despawn)
-               #f))))
+    (death  #f 
+            (if (>= global-time die-at)
+              (despawn)
+              #f))))
 
 
-(define-component weapon  entity?)
 (define-component shooter boolean?)
-(define-component rotating-counter number?)
-(define-component direction number?)
 
 (define (on-edge)
   (define p (get-position))
@@ -52,14 +44,13 @@
 
 (define (e)
   (entity
-    (counter 0 (+ (get-counter) 1))
-
-    (rotating-counter 0 (remainder (get-counter) 100))
+    (counter 0 (remainder (+ (get-counter) 1)
+                          100))
 
     (direction (posn 0 0)
                (cond
                  [(on-edge) (bounce)]
-                 [(= 0 (get-rotating-counter)) 
+                 [(= 0 (get-counter)) 
                   (list-ref
                     (list
                       (posn -1 0) 
@@ -76,24 +67,27 @@
                 (get-direction)))
 
     (sprite (register-sprite (circle 20 'solid (make-color (random 255)
-                                                               (random 255) 
-                                                               (random 255)
-                                                               100))))
-
-
-
-    (weapon (bullet 'green))
+                                                           (random 255) 
+                                                           (random 255)
+                                                           100))))
 
     (shooter #f
-             (let ([current-bullet (get-weapon)])
-               (spawn 
-                 (move-to (get-position) current-bullet))))))
+             (spawn 
+               (move-to (get-position) 
+                        (bullet 50))))))
+
+(define global-time 0)
+(define-component global-time-update void?)
 
 (define g
-  (game (e)
-        (e) 
-        (e)
-        (e) 
-        (e)))
+  (game 
+    ;A "time manager"
+    (entity
+      (global-time-update (void) (set! global-time (add1 global-time))))
+    (e)
+    (e) 
+    (e)
+    (e) 
+    (e)))
 
 (play! g)  
