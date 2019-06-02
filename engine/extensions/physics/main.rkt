@@ -1,5 +1,7 @@
 #lang racket
 
-(provide (all-defined-out))
+(provide 
+  (all-from-out
+    "physics-system.rkt"))
 
 (require "physics-system.rkt")

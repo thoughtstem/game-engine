@@ -14,21 +14,19 @@
          lux/chaos/gui/key)
 
 (require "../../core/main.rkt"
-         "./position-rotation-size.rkt" 
+         "../common-components/main.rkt" 
          "./animated-sprite.rkt")
 
 (provide buttons)
 
+;TODO: This needs to get fleshed out better.  And probably needs to get handled in extensions/input/
+;  so that we can better separate rendering from input.
 (define buttons
   (hash
     #\a #f
     #\d #f
     #\w #f
     #\s #f))
-
-#;
-(define buttons
-  '(#f #f #f #f))
 
 (struct game+render ;TODO: CHANGE THIS NAME
   ( state render-tick)

@@ -227,7 +227,7 @@
 (define (tick-entity e)
   (parameterize ([CURRENT-ENTITY e])
     (for ([c (entity-components e)])
-      (tick-component c))
+      (update-component! e c (tick-component c)))
 
     e))
 

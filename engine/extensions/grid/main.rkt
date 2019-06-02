@@ -1,5 +1,7 @@
 #lang racket
 
-(provide (all-defined-out))
+(provide 
+  (all-from-out
+    "grid.rkt"))
 
 (require "grid.rkt")

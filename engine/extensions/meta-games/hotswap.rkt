@@ -2,8 +2,6 @@
 
 (provide hotswap no-hotswap)
 
-(require "main.rkt")
-
 (define-syntax (hotswap stx) 
   (syntax-case stx ()
     [(hotswap name exp)

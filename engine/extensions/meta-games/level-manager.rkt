@@ -3,9 +3,8 @@
 (provide level-manager)
 
 (require "../../core/main.rkt"
-         "../common-components/main.rkt"
-         "./observe-change.rkt"
-         )
+         "../rendering/animated-sprite.rkt"
+         "../common-components/main.rkt")
 
 (define-component level-stream stream?)
 (define-component sub-game-complete? boolean?)

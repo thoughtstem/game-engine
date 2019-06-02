@@ -1,7 +1,10 @@
 #lang racket
 
 (provide
-  (all-defined-out))
+  (all-from-out
+    "animated-sprite.rkt"
+    "renderer.rkt"
+    "animation-system.rkt" ))
 
 (require
   "animated-sprite.rkt"

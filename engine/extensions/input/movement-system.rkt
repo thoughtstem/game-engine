@@ -14,10 +14,11 @@
   (list 
     (movement-system
       (entity
-        (direction #f (^ direction-update))
+        (direction (posn 0 0) 
+                   (^ direction-update))
         (position (posn 200 200)
                   (posn-add 
                     (get-position)
                     (get-direction))))
-      (^ tick-entity))))
+      (^ tick-entity)) ))
 

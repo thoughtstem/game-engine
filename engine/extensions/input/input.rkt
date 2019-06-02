@@ -8,8 +8,9 @@
 
 (require "../../core/main.rkt")
 
-(require "./renderer.rkt"
-         "./name.rkt")
+(require 
+  "../rendering/renderer.rkt"
+  "../common-components/main.rkt")
 
 (define-component input posn?)
 
