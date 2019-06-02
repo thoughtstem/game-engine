@@ -22,6 +22,8 @@
 
 ;  Bench:  30s-40s with inert components, 40s-50s if no update-physics-system, and 50s-60s if no grid entities
 
+; See ../grid.rkt example as a benchmark.  
+
 
 ;TODO: Pick a random physics feature and implement it.  Like candy -- just having joint examples would be fucking sick.
 
@@ -31,7 +33,6 @@
 ;  (Stretch goal: physics and doors)
 
 ;TODO: Avatar projectile -- just for more robust physics
-
 
 
 
