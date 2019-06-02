@@ -5,13 +5,7 @@
                       movement-system]) )
 
 (require "../../core/main.rkt"
-         "./animated-sprite.rkt"
-         "./common-components.rkt")
-
-;TODO: Doc
-; Add this component, then use it to control your position:
-; (position (posn 0 0) 
-;              (get-position (get-movement-system)) 
+         "../common-components/main.rkt")
 
 (define-component movement-system entity?)
 
@@ -25,7 +19,5 @@
                   (posn-add 
                     (get-position)
                     (get-direction))))
-      (^ tick-entity))
-     
-    ))
+      (^ tick-entity))))
 

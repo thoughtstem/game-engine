@@ -30,7 +30,7 @@
   )
 
 (require "../../core/main.rkt"
-         "./common-components.rkt"
+         "../common-components/main.rkt"
          (only-in 2htdp/image bitmap/file image->color-list crop image-width image-height))
 
 (define-component also-render game?)

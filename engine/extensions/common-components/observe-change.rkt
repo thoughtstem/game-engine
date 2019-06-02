@@ -2,8 +2,7 @@
 
 (provide observe-change)
 
-(require "../../core/main.rkt"
-         "./common-components.rkt")
+(require "../../core/main.rkt")
 
 (define-syntax-rule (observe-change f)
   (observe-change-f (thunk* f)))

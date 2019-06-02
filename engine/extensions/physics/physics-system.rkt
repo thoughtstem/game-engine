@@ -10,7 +10,7 @@
   (rename-out [make-physics-system physics-system]))
 
 (require "../../core/main.rkt" 
-         "./common-components.rkt"
+         "../common-components/main.rkt"
          posn threading)
 
 (require (prefix-in chip: racket-chipmunk/lang/chipmunk-ffi))

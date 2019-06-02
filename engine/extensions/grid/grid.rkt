@@ -3,8 +3,7 @@
 (provide entity-grid)
 
 (require "../../core/main.rkt"
-         "./animated-sprite.rkt"
-         "./position-rotation-size.rkt"
+         "../common-components/main.rkt"
          2htdp/image)
 
 (define-component cell posn?)

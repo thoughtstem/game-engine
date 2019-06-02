@@ -4,9 +4,9 @@
          get-animation-system)
 
 (require "../../core/main.rkt"
-         "./input.rkt"
+         "../input/main.rkt"
          "./animated-sprite.rkt"
-         "./common-components.rkt")
+         "../common-components/main.rkt")
 
 (define-component animation-system entity?)
 

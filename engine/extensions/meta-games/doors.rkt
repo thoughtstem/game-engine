@@ -3,9 +3,7 @@
 (provide door door-manager near-avatar?)
 
 (require "../../core/main.rkt"
-         "./animated-sprite.rkt"
-         "./physics-system.rkt"
-         "./common-components.rkt")
+         "../common-components/main.rkt")
 
 (define (near-avatar? n)
   (> n 
