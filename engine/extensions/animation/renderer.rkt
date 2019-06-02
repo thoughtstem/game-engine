@@ -101,17 +101,20 @@
               #:height h))
 
 
-(define sd  (ml:make-sprite-db))
+(define recompiled #f)
 (define csd #f)
 
 (define (init-db)
+  (define sd  (ml:make-sprite-db))
   (define to-compile (get-queued-sprites))
 
   (for ([i to-compile])
     (add-sprite! sd (first i) (second i)))
 
+  #;
   (flush-queued-sprites!)
 
+  (set! recompiled #t)
   (set! csd (ml:compile-sprite-db sd))
   csd)
 
@@ -141,10 +144,7 @@
   ;Initialize the compiled sprite database
   ;Use the entities, plus their sprites, to determine the initial sprite database
 
-  (define csd (init-db))
-
-
-(define layers (vector
+  (define layers (vector
                    (new-layer W/2 H/2)
                    (new-layer W/2 H/2)
                    (new-layer W/2 H/2)
@@ -152,10 +152,19 @@
                    (new-layer W/2 H/2)))
 
   ;Set up our open gl render function with the current sprite database
-  (define ml:render (gl:stage-draw/dc csd W H 8))
 
+  (define ml:render #f)
+
+  (init-db) ;Initializes csd
 
   (define (render-game g)
+    (set! ml:render 
+      (if recompiled
+        (begin
+          (set! recompiled #f)
+          (gl:stage-draw/dc csd W H 8))
+        ml:render))
+
     ;Find uncompiled entities...
     ;Recompile the database if we added anything:
     (define dynamic-sprites 
@@ -181,7 +190,15 @@
 
     (when s 
       (define eid (entity-id e))
-      (define sid (ml:sprite-idx csd (sprite-id s)))
+
+      (when new-sprites-added 
+        (displayln "Recompiling sprite db")
+        (init-db) ;Try reinitializing the database, pulling from the sprite queue again
+        )
+
+      (define sid 
+        (ml:sprite-idx csd (sprite-id s)))
+
 
       (define p (get-position e (posn 0 0)))
 

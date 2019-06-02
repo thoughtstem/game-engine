@@ -6,6 +6,7 @@
   sprite-id
   get-sprite
   register-sprite
+  new-sprites-added
 
   get-queued-sprites
   flush-queued-sprites!
@@ -55,8 +56,10 @@
     (~a "sprite-"
         (equal-hash-code (~a (image->color-list i))))))
 
+(define new-sprites-added #f)
 
 (define (register-sprite i)
+  (set! new-sprites-added #t)
   (let ([id 
           (if (path? i)     
             (string->symbol (~a "sprite-" i))
@@ -78,7 +81,12 @@
 (define (set-seen-sprite-ids! l)
   (set! seen-sprite-ids l))
 
-(define (get-queued-sprites) insertion-queue)
+(define (get-queued-sprites) 
+  (set! new-sprites-added #f)
+  insertion-queue
+  
+  )
+
 (define (flush-queued-sprites!) 
   (set! insertion-queue '()))
 
