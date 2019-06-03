@@ -2,6 +2,10 @@
 
 (provide hotswap no-hotswap)
 
+(require "./level-manager.rkt")
+(require "../rendering/renderer.rkt")
+(require "../../core/main.rkt")
+
 (define-syntax (hotswap stx) 
   (syntax-case stx ()
     [(hotswap name exp)
@@ -29,6 +33,10 @@
            (level-manager 
              (for/stream ([i (in-naturals)])
                          (displayln "HOTSWAP")
+
+                         #;
+                         (map delete-file (get-all-da-files))
+
                          (define temp (make-temporary-file "hotswap~a.rkt" #f (apply build-path (drop-right (explode-path me) 1))))
 
                          (define this-s (file->string me))

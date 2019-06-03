@@ -1,19 +1,41 @@
 #lang racket
 
-(require "../main.rkt"
-         "./util.rkt"
-         "../hotswap.rkt"
+(require "../extensions/main.rkt"
+         "../extensions/meta-games/hotswap.rkt"
          2htdp/image)
 
-;Okay, now make it clean up the temp files, start using it
-;  Or switch to https://github.com/tonyg/racket-reloadable/tree/master#readme
+;TODO: Hotswap is broken due to the refactoring.  Fix it. 
+;  Make it not leave trash files while we're at it...
 
-(hotswap g
+(hotswap me
   (game 
-    (input-manager)
-    (red-square-enemy)
-    (red-square-enemy)
-    (blue-circle-avatar (posn 100 200))))
+    (entity
+      (counter 0 (add1 (get-counter)))
+      (size 0 (/ (get-counter) 1000))
+      (position (posn 200 200)
+                (posn (get-counter) 200))
+      (rotation 0  
+                (sin (/ (get-counter) 75)))
+      (sprite (register-sprite 
+                (above
+                  (square 20 'solid 'orange)      
+                  (star 40 'solid 'green)))))
+    (entity
+      (position (posn 100 200))
+      (counter 0 (add1 (get-counter)))
+      (rotation 0  (sin (/ (get-counter) 50)))
+      (sprite (register-sprite 
+                (above
+                  (circle 20 'solid 'orange)      
+                  (star 40 'solid 'green)))))
+    (entity
+      (position (posn 300 200))
+      (counter 0 (add1 (get-counter)))
+      (rotation 0  (sin (/ (get-counter) 100)))
+      (sprite (register-sprite 
+                (above
+                  (circle 20 'solid 'red)      
+                  (star 40 'solid 'blue)))))))
 
 
 
