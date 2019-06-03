@@ -1,6 +1,6 @@
 #lang racket 
 
-(require "../main.rkt"
+(require "../extensions/main.rkt"
          2htdp/image
          )
 
@@ -51,7 +51,9 @@
       
       )))
 
-(require "../hotswap.rkt")
+
+#;
+(require "../extensions/hotswap.rkt")
 
 (play!
   (game 
