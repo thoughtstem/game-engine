@@ -34,10 +34,19 @@
              (for/stream ([i (in-naturals)])
                          (displayln "HOTSWAP")
 
-                         #;
-                         (map delete-file (get-all-da-files))
+                         (define current-folder
+                           (apply build-path (drop-right (explode-path me) 1)))
 
-                         (define temp (make-temporary-file "hotswap~a.rkt" #f (apply build-path (drop-right (explode-path me) 1))))
+                         (find-files (lambda (arg)
+                                       (displayln arg)) 
+                                     current-folder) 
+                         #;
+                         (map delete-file 
+                              #;
+                              (fild-files ___ current-folder)
+                              )
+
+                         (define temp (make-temporary-file ".hotswap-temp~a.rkt" #f current-folder))
 
                          (define this-s (file->string me))
                          (display-to-file #:exists 'replace
