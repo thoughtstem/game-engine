@@ -42,7 +42,7 @@
       (also-render
         (game
           (entity-grid 400 400 50
-                       (thunk
+                       (thunk*
                          (list 
                            (sprite img)      
                            (size (thunk* my-transparency))

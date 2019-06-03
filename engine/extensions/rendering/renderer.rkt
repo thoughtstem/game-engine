@@ -195,7 +195,7 @@
         )
 
       (define sid 
-        (ml:sprite-idx csd (sprite-id s)))
+        (ml:sprite-idx csd (call-if-proc (sprite-id s))))
 
 
       ;Note.  Where there are many entities (several hundred), all of these get-*s add up.  Consider looking for optimizations.  (However, it is also worth noting that rendering is usually not the first bottleneck.  Only after certain optimizations -- e.g. demos/bullet-cloud.rkt -- does rendering become the bottleneck)

@@ -7,6 +7,7 @@
 	 beside
 	 width
 	 height
+         alive?
 	 conway-list->vector)
 
 
