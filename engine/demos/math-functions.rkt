@@ -4,6 +4,9 @@
          2htdp/image
          threading )
 
+
+;TODO: Clarify the intent here and make better examples
+
 ;TODO: Finally figure out delta time.  Be able to make FPS-stable animations.
 
 

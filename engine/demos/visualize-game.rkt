@@ -4,8 +4,7 @@
          "./util.rkt"
          2htdp/image) 
 
-;Highly experimental...
-;  Weird and broken.  It kinda tries to turn all of an entity's compents into entities that can be rendered -- thus making a visualization out of the structure of an entity.  It's a cool meta level to be at, which lets us create a lot of cogntive tools for visualizing the state of code at runtime.  Enables live programming and literally blurring the line between game and source code.  Your avatar can interact with both.
+;TODO: Make this actually work
 
 ;TODO: Better model for dealing with subgames.  Where do they render?  DO the render smaller?  What is a subgame?  Any component whose value is a game?  Or only the component sub-game?  
 ;TODO: Text sprites for rendering component name in the visualization
