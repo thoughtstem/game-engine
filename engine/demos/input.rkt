@@ -1,8 +1,8 @@
 #lang racket
 
-(require "../main.rkt")
+(require game-engine
+         2htdp/image)
 
-(require 2htdp/image)
 
 (define e
   (entity 

@@ -29,7 +29,7 @@
                 (> modified prev-modified)))
 
          (define (hotswap-manager)
-           (define last #f)
+           (define last-file #f)
            (level-manager 
              (for/stream ([i (in-naturals)])
                          (displayln "HOTSWAP")
@@ -37,14 +37,16 @@
                          (define current-folder
                            (apply build-path (drop-right (explode-path me) 1)))
 
-                         (find-files (lambda (arg)
-                                       (displayln arg)) 
-                                     current-folder) 
-                         #;
-                         (map delete-file 
-                              #;
-                              (fild-files ___ current-folder)
-                              )
+                         (define temp-files
+                           (find-files (lambda (arg)
+                                         (define file-name (last (explode-path arg)))  
+                                         (string-prefix? (~a file-name) ".hotswap-temp")) 
+                                       current-folder))
+
+                         ;Delete any old temp files.
+                         ;Yes the new one will get left around after the game exits.  That's fine, I think
+                         (for ([f temp-files]) 
+                           (delete-file f))
 
                          (define temp (make-temporary-file ".hotswap-temp~a.rkt" #f current-folder))
 
@@ -59,12 +61,12 @@
                              ([exn:fail? (lambda (e)
                                            (displayln "Couldn't hotswap, due to error")
                                            (displayln e)
-                                           last
+                                           last-file
                                            )])
                              (dynamic-require temp 'name))   )
 
                          (when ret
-                           (set! last ret)
+                           (set! last-file ret)
                            (pretty-print-game ret))
 
 

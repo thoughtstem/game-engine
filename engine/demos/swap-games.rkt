@@ -1,7 +1,9 @@
 #lang racket
 
-(require "../main.rkt"
+(require game-engine
          2htdp/image)
+
+;This is an illustration of a potentially useful design pattern -- uses a controller entity to toggle between two other entities with subgames -- effectively making a game manager that holds one game on pause while the other is executing.   Many more interesting abstractions can be built on top of this kind of pattern.
 
 (define bouncing-ball
   (entity

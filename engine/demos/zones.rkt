@@ -1,8 +1,10 @@
 #lang racket
 
-(require "../main.rkt"
+(require game-engine
          "./util.rkt"
          2htdp/image)
+
+;Another game swapping example.  It may not look visually interesting, but you could theoretically stitch together an infinite quilt of games with this abstraction.
 
 (define gray-floor
   (register-sprite
@@ -20,12 +22,6 @@
     [(posn 0 -1) (posn 200 350)] 
     [(posn 0 1) (posn 200 50)]))
 
-;Mother fucker, this is some cool recursive shit.
-;Need to write a pl paper about this.
-;   The player is literally embodied in the code.
-
-;Also, by simulating a pacman universe, is our code topologically equivalent to a donut?
-;   Could you have proved that property of your system in another language?
 (define (tile old-coord coord)
   (game
     (input-manager)
@@ -33,32 +29,36 @@
       (avatar-position old-coord coord))
 
     (door 
+      #:to
+      (thunk* (tile 
+                coord
+                (posn-add coord (posn 0 1))))
       (position (posn 200 0))
-      door-open-close
-      (lambda () (tile 
-                   coord
-                   (posn-add coord (posn 0 1)))))
+      door-open-close)
 
     (door 
+      #:to
+      (thunk* (tile 
+                coord
+                (posn-add coord (posn 0 -1))))
       (position (posn 200 400))
-      door-open-close
-      (lambda () (tile 
-                   coord
-                   (posn-add coord (posn 0 -1)))))
+      door-open-close)
 
     (door 
+      #:to
+      (thunk* (tile 
+                coord
+                (posn-add coord (posn -1 0))))
       (position (posn 400 200))
-      door-open-close
-      (lambda () (tile 
-                   coord
-                   (posn-add coord (posn -1 0)))))
+      door-open-close)
 
     (door 
+      #:to
+      (thunk* (tile 
+                coord
+                (posn-add coord (posn 1 0))))
       (position (posn 0 200))
-      door-open-close
-      (lambda () (tile 
-                   coord
-                   (posn-add coord (posn 1 0)))))
+      door-open-close)
 
 
     (tile-floor)))

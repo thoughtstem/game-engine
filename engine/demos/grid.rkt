@@ -1,8 +1,7 @@
 #lang racket 
 
-(require "../extensions/main.rkt"
-         2htdp/image
-         )
+(require game-engine
+         2htdp/image)
 
 ;Kind of a performance benchmark.  It's got 64*6=384 entities, all changing size,rotation, transparency with some independence.  I'm getting about 35 FPS on my Chromebook, which seems reasonable, I think.
 ;  It does make use of one optimization: Entities in a grid share memory that defines their rotation, transparency, etc.  They don't maintain this data separately.

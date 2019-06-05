@@ -59,7 +59,6 @@
 (define new-sprites-added #f)
 
 (define (register-sprite i)
-  (set! new-sprites-added #t)
   (let ([id 
           (if (path? i)     
             (string->symbol (~a "sprite-" i))
@@ -70,6 +69,8 @@
             i)])
 
     (when (not (seen? id))
+      (set! new-sprites-added #t)
+
       (set-insertion-queue! (cons (list id final-image) insertion-queue))
       (set-seen-sprite-ids! (cons id seen-sprite-ids)))
 

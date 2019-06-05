@@ -1,11 +1,10 @@
 #lang racket
 
-(require "../extensions/main.rkt")
+(require game-engine)
+(require game-engine/engine/core/test/conway-impl)
 
 (require threading
          (prefix-in h: 2htdp/image))
-
-(require "../core/test/conway-impl.rkt")
 
 ;Over a 1000 entities rendering a simple conway game.  Runs at 20+ FPS on my low-end CB.
 

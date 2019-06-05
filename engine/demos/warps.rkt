@@ -4,7 +4,7 @@
          "./util.rkt"
          2htdp/image)
 
-;Abstract this...
+;Simple demo of moving between two games via a door.
 
 (define outdoor-floor 
   (entity
@@ -26,25 +26,25 @@
     (input-manager)
     (blue-circle-avatar (posn 200 50))
     (door 
+      #:to indoors
       (position (posn 200 10))
-      door-open-close
-      indoors)
+      door-open-close)
     outdoor-floor))
 
 (define (indoors)
   (game
-    input-manager
+    (input-manager)
     (blue-circle-avatar (posn 200 350))
     (door 
+      #:to outdoors
       (position (posn 200 390))
-      door-open-close
-      outdoors)
+      door-open-close)
     indoor-floor))
 
 (play! 
   (game
     (door-manager
-      (outdoors))))
+      (indoors))))
 
 
 

@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../main.rkt"
+(require game-engine
          2htdp/image
          threading )
 
@@ -8,6 +8,7 @@
 
 
 (define elf (bitmap "./images/darkelf-sheet.png"))
+(define elves-up (sheet->list elf #:row 2))
 (define elves-right (sheet->list elf #:row 2))
 (define elves-left  (sheet->list elf #:row 1))
 (define elves-down  (sheet->list elf #:row 0))
@@ -106,7 +107,7 @@
 
     (animation-system 
       #:direction-update (const (posn 1 0))
-      elves-left elves-right elves-down)
+      elves-up elves-right elves-down elves-left)
 
     (time-then #f (current-inexact-milliseconds)))
   )

@@ -1,7 +1,10 @@
 #lang racket
 
-(require "../main.rkt"
+(require game-engine 
          "./util.rkt")
+
+;Enemies aren't very mean.  And they die pretty fast. 
+;This is for illustration purposes.
 
 (define (level-cycle n)
   (for/stream ([i (in-naturals)])

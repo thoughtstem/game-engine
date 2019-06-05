@@ -1,10 +1,10 @@
 #lang racket
 
-(require "../extensions/main.rkt")
 
-;On my low-end chromebook, I'm getting 20 FPS with 5 artificial life-forms, each of which spawns a "cloud" of ~50 other entities (250 total).  It could be sped up if things were organized differently (see bullet-cloud.rkt)
+;On my low-end chromebook, I'm getting 20 FPS with 5 artificial life-forms, each of which spawns a "cloud" of ~50 other entities (250 total).  It could be sped up if things were organized differently (see bullet-cloud.rkt).
 
-(require 2htdp/image)
+(require game-engine
+         2htdp/image)
 
 (define bullet-sprite (register-sprite (circle 6 'solid 'green)))
 

@@ -1,0 +1,6 @@
+Clean up demos:
+  math-functions.rkt
+  interpreter.rkt
+  visualize-game.rkt
+
+(could we do something with video?)

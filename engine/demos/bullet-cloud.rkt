@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../extensions/main.rkt"
+(require game-engine
          2htdp/image)
 
 ;I get 25 FPS with 1000 bullets on my low-end chromebook.  I think that's fine for now.

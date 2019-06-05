@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../main.rkt")
+(require game-engine)
 
 (require 2htdp/image)   
         
