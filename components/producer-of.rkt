@@ -54,13 +54,22 @@
 (define (producer #:on-drop [on-drop display-entity])
    (on-start (add-producer-of-self #:on-drop on-drop)))
 
+(define (maybe-store-physical-collider e)
+  (if (get-component e physical-collider?)
+      (~> e
+          (add-components _ (storage "physical-collider" (get-component e physical-collider?)))
+          (remove-component _ physical-collider?))
+      e))
+
 (define (start-movable-and-locked e on-drop show-info?)
   (~> e
         (update-entity _ posn? (posn 0 0))
         (add-components _
                         (movable #:carry-offset (posn 20 0) #:on-drop on-drop #:show-info? show-info?)
                         (lock-to "player" #:offset (posn 20 0)))
-        (remove-component _ physical-collider?)  ))
+        ;(remove-component _ physical-collider?)
+        (maybe-store-physical-collider _)
+        ))
 
 
 (define (display-counter #:prefix [prefix ""])

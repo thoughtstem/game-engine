@@ -78,6 +78,7 @@
 (require "../components/observe-change.rkt")
 (require "../components/animated-sprite.rkt")
 (require "../components/storage.rkt")
+(require "../components/lock-to.rkt")
 (require posn 2htdp/image)
 
 (define (drop-last-item)
@@ -156,12 +157,17 @@
                                                                             (play-sound backpack-sound))
                                                                    (do-many (display-items)
                                                                             (spawn #:relative? #f backpack-entity))))
-                (on-key drop-key #:rule backpack-not-empty? (if drop-sound
-                                                                (do-many (drop-last-item)
-                                                                         (open-backpack-if-closed)
-                                                                         (play-sound drop-sound))
-                                                                (do-many (drop-last-item)
-                                                                         (open-backpack-if-closed)))))
+                (on-key drop-key #:rule (and/r backpack-not-empty?
+                                               ; the line below prevents holding two crafted items in hand.
+                                               (not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? on-key?)
+                                                                                                        not-sky?
+                                                                                                        not-ui?))))
+                        (if drop-sound
+                            (do-many (drop-last-item)
+                                     (open-backpack-if-closed)
+                                     (play-sound drop-sound))
+                            (do-many (drop-last-item)
+                                     (open-backpack-if-closed)))))
           (if storable-item-list
               (map (curryr storable-item store-key) storable-item-list)
               (list (on-key store-key #:rule (and/r storable-items-nearby?

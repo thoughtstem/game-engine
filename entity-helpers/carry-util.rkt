@@ -20,6 +20,7 @@
          "../components/observe-change.rkt"
          "../components/spawn-once.rkt"
          "../components/counter.rkt"
+         "../components/storage.rkt"
          "../component-util.rkt"
          "../entity-helpers/render-util.rkt"
          posn
@@ -44,9 +45,20 @@
         (add-component (remove-component e physical-collider?)
                        (lock-to name #:offset offset)))))
 
+(define (maybe-add-physical-collider e)
+  (if (get-storage "physical-collider" e)
+      (~> e
+          (add-components _ (get-storage-data "physical-collider" e))
+          (remove-storage "physical-collider" _))
+      e))
+
 (define (remove-lock-to)
   (lambda (g e)
-    (add-component (remove-component e lock-to?) (physical-collider))))
+    ;(add-component (remove-component e lock-to?) (physical-collider))
+    (~> e
+        (remove-component _ lock-to?)
+        (maybe-add-physical-collider _))
+    ))
 
 (define (near-player? g e)
   (define player (entity-with-name "player" g))
