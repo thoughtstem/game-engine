@@ -210,6 +210,12 @@
       (procedure-or-entity)
       procedure-or-entity))
 
+(define (bg? e)
+  (eq? (get-name e) "bg"))
+
+(define not-bg?
+  (not/c bg?))
+
 (define (crafter-of to-carry
                     #:ingredients [i-list (list "ingredients")]
                     #:on-drop    [on-drop display-entity]
@@ -294,12 +300,14 @@
                                           (nearest-to-player? #:filter (and/c (has-component? (or/c on-key? storable?)) ;we only care about consumable or storable items?
                                                                               not-tops?
                                                                               not-sky?
-                                                                              not-ui?))
+                                                                              not-ui?
+                                                                              not-bg?))
                                           ; the line below prevents holding two crafted items in hand.
                                           (not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? (or/c on-key? storable?))
                                                                                                    ;not-tops?
                                                                                                    not-sky?
-                                                                                                   not-ui?)))
+                                                                                                   not-ui?
+                                                                                                   not-bg?)))
                                           )
                             (spawn progress-counter)
                             )
@@ -316,7 +324,8 @@
                                                                               (not/c (has-component? lock-to?))
                                                                               not-tops?
                                                                               not-sky?
-                                                                              not-ui?))
+                                                                              not-ui?
+                                                                              not-bg?))
                                           ; the line below prevents holding two crafted items in hand.
                                           ;(not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? (or/c on-key? storable?))
                                           ;                                                         ;not-tops?
@@ -343,12 +352,14 @@
                                                                               (not/c (has-component? lock-to?))
                                                                               not-tops?
                                                                               not-sky?
-                                                                              not-ui?))
+                                                                              not-ui?
+                                                                              not-bg?))
                                           ; the line below prevents holding two crafted items in hand.
                                           (other-entity-locked-to? "player" #:filter (and/c (has-component? (or/c on-key? storable?)) 
                                                                                                    ;not-tops?
                                                                                                    not-sky?
-                                                                                                   not-ui?))
+                                                                                                   not-ui?
+                                                                                                   not-bg?))
                                           )
                             (spawn (game-toast-entity "Please put down that item first!"))
                             )
@@ -365,7 +376,8 @@
                                                                               (not/c (has-component? lock-to?))
                                                                               not-tops?
                                                                               not-sky?
-                                                                              not-ui?))
+                                                                              not-ui?
+                                                                              not-bg?))
                                           ; the line below prevents holding two crafted items in hand.
                                           ;(not/r (other-entity-locked-to? "player" #:filter (and/c (has-component? (or/c on-key? storable?))
                                           ;                                                         ;not-tops?
