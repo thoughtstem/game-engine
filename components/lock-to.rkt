@@ -5,8 +5,8 @@
 
 (provide (except-out (struct-out lock-to) lock-to)
          (rename-out (make-lock-to lock-to))
-         lock-to-name
-         lock-to?
+         ;lock-to-name
+         ;lock-to?
          other-entity-locked-to?)
 
 (component lock-to (name offset))
