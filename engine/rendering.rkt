@@ -371,7 +371,9 @@
     (remember-image! image))
 
   (and (not (empty? uncompiled-images))
+       #;
        (displayln "Recompile! Because:")
+       #;
        (displayln (map fast-image-data uncompiled-images))
        (set! compiled-images (append compiled-images uncompiled-images))
        (set! should-recompile? #t)))
@@ -405,7 +407,9 @@
                 fonts))
 
   (and (not (empty? uncompiled-fonts))
+       #;
        (displayln "Registering New Fonts:")
+       #;
        (displayln (~a (remove-duplicates (map object->font uncompiled-fonts))))
        (set! game-fonts (append game-fonts (remove-duplicates (map object->font uncompiled-fonts))))
        (set! should-recompile? #t)
