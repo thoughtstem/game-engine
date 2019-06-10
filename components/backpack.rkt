@@ -15,6 +15,7 @@
 (require "./sound-stream.rkt")
 (require "./on-key.rkt")
 (require "./storage.rkt")
+(require "./lock-to.rkt")
 (require "../component-util.rkt")
 
 (require 2htdp/image
@@ -116,6 +117,21 @@
     (define item-entity (get-entity name g))
     ((add-item item-entity) g e)))
 
+(define (maybe-add-physical-collider e)
+  (if (get-storage "physical-collider" e)
+      (~> e
+          (add-components _ (get-storage-data "physical-collider" e))
+          (remove-storage "physical-collider" _))
+      e))
+
+(define (remove-lock-to-player e)
+  (define (lock-to-player-component? c)
+    (and (lock-to? c)
+         (eq? (lock-to-name c) "player")))
+  (~> e
+      (remove-components _ lock-to-player-component?)
+      (maybe-add-physical-collider _)))
+
 (define (store-nearby-item [name #f] #:auto-select? [auto-select? #f])
   (lambda (g e)
     (define (not-disabled-and-storable? ent)
@@ -132,7 +148,7 @@
         e
         (~> e
             ((set-storage-named "Selected Weapon" (get-name (first nearby-ents))) g _)
-            ((add-item (first nearby-ents)) g _)))
+            ((add-item (remove-lock-to-player (first nearby-ents))) g _)))
         ))
 
 

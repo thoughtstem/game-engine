@@ -28,6 +28,7 @@
 (require "../components/spawn-dialog.rkt")
 (require "./rgb-hsb.rkt")
 (require "../components/after-time.rkt")
+(require "../component-util.rkt")
 ;(require "../ai.rkt")
 
 (require posn
@@ -57,6 +58,10 @@
     (update-entity e animated-sprite?
                    (curry set-scale-xy amount))))
 
+(define (not-after-time-die? c)
+  (not (eq? (after-time-func c) die)))
+  
+
 (define (scale-sprite amount #:for [d #f])
   (lambda (g e)
     (define all-sprites (get-components e animated-sprite?))
@@ -81,12 +86,31 @@
 
     (define new-sprites (map scale-a-sprite original-sprites))
     
-    (~> e
-        (remove-components _ animated-sprite?)
-        (add-components _ new-sprites)
-        (add-components _ (if d
-                              (after-time d revert-back)
-                              #f)))))
+    (define (update-revert dur)
+      (define old-func (after-time-func (get-component e (and/c after-time?
+                                                                not-after-time-die?))))
+      (if dur
+          (λ (c)
+            (after-time dur (do-many revert-back
+                                     old-func)))
+          #f))
+    
+    (if (get-component e (and/c after-time?
+                                not-after-time-die?))
+        (~> e
+            (remove-components _ animated-sprite?)
+            (add-components _ new-sprites)
+            
+            ;this will break any non power up after-time component
+            (update-entity _ (and/c after-time?
+                                not-after-time-die?) (update-revert d)))
+        (~> e
+            (remove-components _ animated-sprite?)
+            (add-components _ new-sprites)
+            (add-components _ (if d (after-time d revert-back) '()))
+            )
+        )
+    ))
 
 (define (rotate-sprite amount #:for [d #f])
   (lambda (g e)
@@ -106,12 +130,30 @@
 
     (define new-sprites (map rotate-a-sprite original-sprites))
     
-    (~> e
-        (remove-components _ animated-sprite?)
-        (add-components _ new-sprites)
-        (add-components _ (if d
-                              (after-time d revert-back)
-                              #f)))))
+    (define (update-revert dur)
+      (define old-func (after-time-func (get-component e (and/c after-time?
+                                                                not-after-time-die?))))
+      (if dur
+          (λ (c)
+            (after-time dur (do-many revert-back
+                                     old-func)))
+          #f))
+    
+    (if (get-component e (and/c after-time?
+                                not-after-time-die?))
+        (~> e
+            (remove-components _ animated-sprite?)
+            (add-components _ new-sprites)
+            
+            ;this will break any non power up after-time component
+            (update-entity _ (and/c after-time?
+                                    not-after-time-die?) (update-revert d)))
+        (~> e
+            (remove-components _ animated-sprite?)
+            (add-components _ new-sprites)
+            (add-components _ (if d (after-time d revert-back) '())))
+        )
+    ))
 
 (define (random-dec min max)
   (define new-min (exact-round (* min 100)))
@@ -206,7 +248,9 @@
          row->sprite
          set-sprite-scale
          set-sprite-color
-         set-sprite-angle)
+         set-sprite-angle
+         set-sprite-x-offset
+         set-sprite-y-offset)
 
 ;Convenience methods for going from sheets to sprites
 
@@ -272,5 +316,21 @@
   (if (animated-sprite? as)
       (set-angle v as)
       (new-sprite as #:rotation v))
+  )
+
+(define/contract (set-sprite-x-offset v as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (set-x-offset v as)
+      (new-sprite as #:x-offset v))
+  )
+
+(define/contract (set-sprite-y-offset v as)
+  (-> number? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (set-y-offset v as)
+      (new-sprite as #:y-offset v))
   )
 

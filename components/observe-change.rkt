@@ -8,12 +8,12 @@
          ;"../component-util.rkt"
          posn)
 
-(struct observe-change (rule last-val previous-entity on-change)) ;DON'T MAKE THIS TRANSPARENT FOR SOME REASON
+(component observe-change (rule last-val previous-entity on-change)) ;DON'T MAKE THIS TRANSPARENT FOR SOME REASON
 
 
 
 (define (make-observe-change rule on-change)
-  (observe-change rule (void) (void) on-change))
+  (new-observe-change rule (void) (void) on-change))
 
 
 #;(observe-change carried?

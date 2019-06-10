@@ -136,6 +136,7 @@
          set-scale-xy
          set-text
          set-font
+         get-font-size
          
          ;set-sprite-scale
          ;set-sprite-color
@@ -208,6 +209,11 @@
 (define (set-text-frame-color c tf)
   (struct-copy text-frame tf
                [color c]))
+
+(define (get-font-size tf)
+  (if (text-frame-font tf)
+      (send (text-frame-font tf) get-size)
+      13))
 
 
 (struct fast-image (data [id #:mutable]) #:transparent)
@@ -562,7 +568,7 @@
 
 (define (text-frame->image thing)
   (text (text-frame-string thing)
-        (exact-round (* 13 (text-frame-scale thing)))
+        (exact-round (* (get-font-size thing) (text-frame-scale thing)))
         (if (text-frame-color thing)
             (text-frame-color thing)
             'white)))

@@ -14,8 +14,7 @@
 
 ;TODO: Add other simple structs to this list or convert all simple structs
 (define loose-component?
-  (or/c component? observe-change? #f))
+  (or/c component? #f))
 
-(define component-or-system?
-  (or/c loose-component? (listof loose-component?)))
-
+(define (component-or-system? c-or-list)
+  ((or/c loose-component? (listof loose-component?)) (flatten c-or-list)))

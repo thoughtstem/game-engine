@@ -12,6 +12,7 @@
          recompile!
          force-recompile!
          cleanup-renderer!
+         MONOSPACE-FONT-FACE
          )
 
 (require racket/match
@@ -370,7 +371,9 @@
     (remember-image! image))
 
   (and (not (empty? uncompiled-images))
+       #;
        (displayln "Recompile! Because:")
+       #;
        (displayln (map fast-image-data uncompiled-images))
        (set! compiled-images (append compiled-images uncompiled-images))
        (set! should-recompile? #t)))
@@ -404,7 +407,9 @@
                 fonts))
 
   (and (not (empty? uncompiled-fonts))
+       #;
        (displayln "Registering New Fonts:")
+       #;
        (displayln (~a (remove-duplicates (map object->font uncompiled-fonts))))
        (set! game-fonts (append game-fonts (remove-duplicates (map object->font uncompiled-fonts))))
        (set! should-recompile? #t)
@@ -413,8 +418,13 @@
 
 (struct font (size face family style weight ml:font renderer) #:transparent)
 
+(define MONOSPACE-FONT-FACE
+  (cond [(eq? (system-type 'os) 'windows) "Consolas" ]
+        [(eq? (system-type 'os) 'macosx)  "Menlo"]
+        [(eq? (system-type 'os) 'unix)    "DejaVu Sans Mono"]))
+  
 (define game-fonts
-  (list (font 13.0 "DejaVu Sans Mono"
+  (list (font 13.0 MONOSPACE-FONT-FACE
               'modern 'normal 'normal
               #f
               #f)))
@@ -570,6 +580,7 @@
 (define (string-animated-sprite->ml:sprite e as layer)
   (define tf-scale (text-frame-scale (render-text-frame as)))
   (define tf-font (text-frame-font (render-text-frame as)))
+  (define tf-font-size (get-font-size (render-text-frame as)))
     
   (define debug-text-renderer
     (font-renderer
@@ -588,7 +599,7 @@
                                   (animated-sprite-x-offset as)))
                               (real->double-flonum
                                (+ (y e)
-                                  -10
+                                  (- (* tf-font-size .75)) ;-10
                                   (animated-sprite-y-offset as)))
                               #:mx (real->double-flonum (* (animated-sprite-x-scale as) tf-scale))
                               #:my (real->double-flonum (* (animated-sprite-y-scale as) tf-scale)))))

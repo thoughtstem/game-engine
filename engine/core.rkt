@@ -241,7 +241,9 @@
                        (second (string-split (~a c) " "))
                        ")" "")))
   ; Here's the better way
-  (component-struct-cid c))
+  (and (component-struct? c)
+       (component-struct-cid c))
+  )
         
 
 (define (component-eq? c1 c2)
@@ -619,7 +621,7 @@
        (phys:destroy-chipmunk (physical-collider-chipmunk (get-component e physical-collider?)))))
 
 (define (add-components e . cs)
-  (define flattened (flatten cs))
+  (define flattened (filter identity (flatten cs)))
   (if (empty? flattened)
       e
       (apply (curry add-components (add-component e (first flattened)))
