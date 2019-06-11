@@ -62,14 +62,14 @@
                   #:components (hidden)
                                (layer "ui")
                                
-                               ;(direction 270)
-                               ;(physical-collider)
-                               ;(speed spd)
-                               (on-start (do-many ;(random-direction 240 300)
-                                                  ;(random-speed (sub1 spd) (add1 spd))
+                               (direction 270)
+                               (physical-collider)
+                               (speed spd)
+                               (on-start (do-many (random-direction 240 300)
+                                                  (random-speed (sub1 spd) (add1 spd))
                                                   show))
-                               ;(every-tick (do-many (move)
-                               ;                     (scale-sprite 1.03)))
+                               (every-tick (do-many (move)
+                                                    (scale-sprite 1.03)))
                                (after-time dur die)))
 
 (define (toast-system message #:color [color "yellow"]
@@ -148,12 +148,13 @@
 (define (game-toast-entity message #:color    [color "yellow"]
                                    #:position [pos 'bottom]
                                    #:duration [dur 100]
-                                   #:speed    [spd 0.8])
+                                   #:speed    [spd 0.8]
+                                   #:scale    [scale 1.0])
   (define color-symbol (if (string? color)
                            (string->symbol color)
                            color))
-  (sprite->entity (list (new-sprite message #:color color-symbol)
-                        (new-sprite message #:x-offset -1 #:y-offset 1 #:color 'black))
+  (sprite->entity (list (new-sprite message #:color color-symbol #:scale scale)
+                        (new-sprite message #:x-offset -1 #:y-offset 1 #:color 'black #:scale scale))
                   #:name       "player toast"
                   #:position   (posn 0 0)
                   #:components (hidden)
