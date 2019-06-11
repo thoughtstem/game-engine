@@ -141,8 +141,9 @@
          ;set-sprite-scale
          ;set-sprite-color
          ;set-sprite-angle
-
          
+         change-x-offset
+         change-y-offset
 
          string-animated-sprite?
          image-animated-sprite?
@@ -662,5 +663,21 @@
 (define (get-image-id i)
   (equal-hash-code (~a (image->color-list i))))
 
+(define/contract (change-x-offset v as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  ;(set-animated-sprite-x-offset! as v)
+  ;as
+  (struct-copy animated-sprite as
+               [x-offset (+ (get-x-offset as) v)])
+  )
 
+(define/contract (change-y-offset v as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  ;(set-animated-sprite-y-offset! as v)
+  ;as
+  (struct-copy animated-sprite as
+               [y-offset (+ (get-y-offset as) v)])
+  )
 
