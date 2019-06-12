@@ -96,9 +96,16 @@
     (map (λ(x) (particle-sprite)) (range amount)))
 
   (define starting-directions
-    (map (λ(x) (random (first dir) (second dir))) (range amount)))
-  
+    (map (λ(x) 0) (range amount)))
+
   (define particle-id (random 10000))
+
+  (define (set-starting-directions g e)
+    (define p-storage (get-storage-data (~a "particle-" particle-id) e))
+    (define new-random-directions
+      (map (λ(x) (random (first dir) (second dir))) (range amount)))
+    (displayln (~a "New Random Directions: " new-random-directions))
+    (set-storage (~a "particle-" particle-id) e (list (first p-storage) (second p-storage) new-random-directions)))
 
   (define (do-particle-fx g e)
     (define particle-sprites (first (get-storage-data (~a "particle-" particle-id) e)))
@@ -129,6 +136,7 @@
                   #:position (posn 0 0)
                   #:name "particle-system"
                   #:components (storage (~a "particle-" particle-id) (list particle-sprites particle-fx-component starting-directions))
+                               (on-start set-starting-directions)
                                particle-fx-component
                                ;(after-time ttl remove-particle-system) ;No need to remove system for now, just kill the entity
                                (after-time ttl die)                     ;Todo: add particle sprites over time?
