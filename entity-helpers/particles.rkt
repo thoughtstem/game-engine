@@ -18,7 +18,8 @@
          posn
          threading)
 
-(provide custom-particles
+(provide ;custom-particles
+         (rename-out (custom-particle-system custom-particles))
          particle-system)
 
 (define green-star (star 5 'solid 'black))
@@ -38,7 +39,6 @@
       (define new-c (first (shuffle (list 'red 'orange 'yellow 'green 'blue 'indigo 'violet))))
       (update-entity e animated-sprite? (struct-copy animated-sprite as
                                                      [color new-c]))))
-  
   (define particle 
     (sprite->entity sprite
                     #:position (posn 0 0)
@@ -77,6 +77,63 @@
                                        (spawn-on-current-tile particle)
                                        (spawn-on-current-tile particle)))
                   (after-time sttl die)))
+
+(define (custom-particle-system
+         #:sprite [sprite green-star]
+         #:amount-of-particles [amount 10]
+         #:speed  [spd 5]
+         #:scale-each-tick [scale-each-tick 1.01]
+         #:direction-min-max [dir '(0 360)]
+         #:particle-time-to-live [ttl 25]
+         #:system-time-to-live [sttl 35])  ; do we really need spawning over time?
+
+  (precompile! sprite)
+  
+  (define (particle-sprite)
+    (set-sprite-color (first (shuffle (list 'red 'orange 'yellow 'green 'blue 'indigo 'violet))) sprite))
+
+  (define particle-sprites
+    (map (λ(x) (particle-sprite)) (range amount)))
+
+  (define starting-directions
+    (map (λ(x) (random (first dir) (second dir))) (range amount)))
+  
+  (define particle-id (random 10000))
+
+  (define (do-particle-fx g e)
+    (define particle-sprites (first (get-storage-data (~a "particle-" particle-id) e)))
+    (define starting-directions (third (get-storage-data (~a "particle-" particle-id) e)))
+    (define current-particle-sprites (get-components e (apply or/c (map (curry component-eq?) particle-sprites))))
+    ;random color, scale sprite, changes direction by -15 to 15, and move
+    (define new-particle-sprites (map (λ (s d)
+                                        (~> s
+                                            (move-sprite #:direction (+ d (random -45 46)) #:speed spd)
+                                            (set-sprite-color (first (shuffle (list 'red 'orange 'yellow 'green 'blue 'indigo 'violet)))
+                                                              _)
+                                            (scale-xy scale-each-tick _)))
+                                      current-particle-sprites starting-directions))
+    (~> e
+        (remove-components _ (apply or/c (map (curry component-eq?) current-particle-sprites)))
+        (add-components _ new-particle-sprites)))
+
+  (define particle-fx-component (every-tick do-particle-fx))
+  
+  ;(define (remove-particle-system g e)
+  ;  (define particle-components (get-storage-data (~a "particle-" particle-id) e))
+  ;  (~> e
+  ;      (remove-components _ (apply or/c (map (curry component-eq?) (first particle-components))))
+  ;      (remove-components _ (curry component-eq? (second particle-components)))
+  ;      (remove-storage (~a "particle-" particle-id) _)))
+    
+  (sprite->entity particle-sprites
+                  #:position (posn 0 0)
+                  #:name "particle-system"
+                  #:components (storage (~a "particle-" particle-id) (list particle-sprites particle-fx-component starting-directions))
+                               particle-fx-component
+                               ;(after-time ttl remove-particle-system) ;No need to remove system for now, just kill the entity
+                               (after-time ttl die)                     ;Todo: add particle sprites over time?
+                               )
+  )
 
 (define (particle-system #:sprite (sprite green-star)
                          #:speed  (s 5)
