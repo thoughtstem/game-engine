@@ -78,6 +78,8 @@
                                        (spawn-on-current-tile particle)))
                   (after-time sttl die)))
 
+; Returns a single entity with multiple particle sprites that shoot outwards randomly
+; Todo: add option to create sprites over time.
 (define (custom-particle-system
          #:sprite [sprite green-star]
          #:amount-of-particles [amount 10]
@@ -104,7 +106,7 @@
     (define p-storage (get-storage-data (~a "particle-" particle-id) e))
     (define new-random-directions
       (map (λ(x) (random (first dir) (second dir))) (range amount)))
-    (displayln (~a "New Random Directions: " new-random-directions))
+    ;(displayln (~a "New Random Directions: " new-random-directions))
     (set-storage (~a "particle-" particle-id) e (list (first p-storage) (second p-storage) new-random-directions)))
 
   (define (do-particle-fx g e)
@@ -143,6 +145,9 @@
                                )
   )
 
+; This is only used for hit particles at the moment
+; Creates 5 particles with random x and y offsets which change randomly every tick.
+; Returns a system of components
 (define (particle-system #:sprite (sprite green-star)
                          #:speed  (s 5)
                          #:scale-each-tick (scale-each-tick 1.01)
