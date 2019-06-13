@@ -1,40 +1,26 @@
 #lang racket
 
-(provide time-manager
+(provide delta-time-entity
          get-delta-time)
 
 (require "../../core/main.rkt")
 
-(require "./name.rkt")
+(define-component time-then number?)
+(define-component delta-time number?)
 
-(define-component time number?)
-(define-component last-time number?)
-
-(define (get-delta-time)
-  (define t (get 'time-manager 'time))
-  (define last-t (get 'time-manager 'last-time))
-
-  (if (and t last-t)
-    (- t last-t)
-    0))
-
-(define (time-manager)
+(define (delta-time-entity . cs)
   (entity
-    (name 'time-manager)
-    
-    (last-time
-      #f
-      (if (get-time) (get-time) #f))
+    (delta-time 0
+                (/
+                  (if (get-time-then) 
+                    (- (current-inexact-milliseconds)  
+                       (get-time-then))
+                    0)
+                  1000)) 
 
-    (time
-      #f
-      (current-inexact-milliseconds))))
+    cs
 
-
-
-
-
-
+    (time-then #f (current-inexact-milliseconds))))
 
 
 

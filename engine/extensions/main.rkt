@@ -3,6 +3,7 @@
 (provide
   (all-from-out
     "../core/main.rkt"
+    "math.rkt"
     "common-components/main.rkt"
     "grid/main.rkt"
     "physics/main.rkt"
@@ -14,6 +15,7 @@
 
 (require
   "../core/main.rkt"
+  "math.rkt"
   "common-components/main.rkt"
   "grid/main.rkt"
   "physics/main.rkt"
