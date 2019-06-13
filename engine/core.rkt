@@ -464,7 +464,8 @@
   ;(~> e
   ;    (remove-components _ animated-sprite?)
   ;    (add-components _ ticked-sprites))
-  (update-entity e (is-component? c) next-frame)
+  ;(update-entity e (is-component? c) next-frame)
+  (update-entity e (curry component-eq? c) next-frame)
   )
 
 (new-component animated-sprite?
