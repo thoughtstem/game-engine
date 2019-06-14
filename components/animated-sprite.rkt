@@ -137,6 +137,8 @@
          set-text
          set-font
          get-font-size
+
+         set-animate?
          
          ;set-sprite-scale
          ;set-sprite-color
@@ -395,6 +397,11 @@
   ;as
   (struct-copy animated-sprite as
                [rotation (* 1.0 (degrees->radians v))])
+  )
+
+(define (set-animate? v as)
+  (struct-copy animated-sprite as
+               [animate? v])
   )
 
 ; === SPRITE MODIFIERS ===

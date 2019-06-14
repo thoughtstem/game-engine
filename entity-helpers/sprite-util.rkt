@@ -15,7 +15,10 @@
          hide
          show
          start-animation
-         stop-animation)
+         stop-animation
+         stop-all-animations
+         start-first-animation
+         stop-first-animation)
 
 (provide (all-from-out "./rgb-hsb.rkt"))
 
@@ -242,6 +245,36 @@
                                 [current-frame 0]
                                 [ticks 0]
                                 [animate? #f]))))
+
+(define (start-first-animation)
+  (lambda (g e)
+    ;(displayln (~a (get-name e) ": STARTING ANIMATION"))
+    (define as (first (get-components e animated-sprite?)))
+    (update-entity e
+                   animated-sprite?
+                   (struct-copy animated-sprite as
+                                [animate? #t]))))
+
+(define (stop-first-animation)
+  (lambda (g e)
+    ;(displayln (~a (get-name e) ": STOPPING ANIMATION"))
+    (define as (first (get-components e animated-sprite?)))
+    (update-entity e
+                   animated-sprite?
+                   (struct-copy animated-sprite as
+                                [current-frame 0]
+                                [ticks 0]
+                                [animate? #f]))))
+
+(define (stop-all-animations)
+  (lambda (g e)
+    ;(displayln (~a (get-name e) ": STOPPING ANIMATION"))
+    (define all-sprites (get-components e animated-sprite?))
+    (define new-sprites (map (curry set-animate? #f) all-sprites))
+    (~> e
+        (remove-components _ animated-sprite?)
+        (add-components _ new-sprites))))
+        
 
 ; === MOVED FROM ANIMATED-SPRITE ===
 (provide sheet->sprite

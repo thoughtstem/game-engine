@@ -89,7 +89,7 @@
                                     #:color 'black))
   (define random-x (random -2 3))
   (define random-y (random (sub1 (- spd)) (+ 2 (- spd))))
-  (define toast-id (random 10000))
+  (define toast-id (random 1000000))
 
   (define (do-toast-fx g e)
     (define toast-sprites (get-storage-data (~a "toast-" toast-id) e))

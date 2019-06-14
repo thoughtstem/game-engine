@@ -100,7 +100,7 @@
   (define starting-directions
     (map (λ(x) 0) (range amount)))
 
-  (define particle-id (random 10000))
+  (define particle-id (random 1000000))
 
   (define (set-starting-directions g e)
     (define p-storage (get-storage-data (~a "particle-" particle-id) e))
@@ -172,7 +172,7 @@
   ;(define random-x (random -5 6))
   ;(define random-y (random -5 6))
   
-  (define particle-id (random 10000))
+  (define particle-id (random 1000000))
 
   (define (do-particle-fx g e)
     (define particle-sprites (first (get-storage-data (~a "particle-" particle-id) e)))
