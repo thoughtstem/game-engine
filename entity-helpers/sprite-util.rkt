@@ -115,6 +115,8 @@
         )
     ))
 
+; This doesn't need a #:for feature
+; Commenting out revert with #f because it breaks removal of particles on player death
 (define (rotate-sprite amount #:for [d #f])
   (lambda (g e)
     (define all-sprites (get-components e animated-sprite?))
@@ -140,7 +142,7 @@
           (λ (c)
             (after-time dur (do-many revert-back
                                      old-func)))
-          #f))
+          (λ (c) c))) ;if dur is #f, leave the component alone!
     
     (if (get-component e (and/c after-time?
                                 not-after-time-die?))
@@ -156,6 +158,7 @@
             (add-components _ new-sprites)
             (add-components _ (if d (after-time d revert-back) '())))
         )
+    
     ))
 
 (define (random-dec min max)
