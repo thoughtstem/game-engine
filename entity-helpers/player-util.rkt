@@ -27,6 +27,7 @@
 (require "../entity-helpers/dialog-util.rkt")
 (require "../entity-helpers/mouse-util.rkt")
 
+
 (define (start-stop-animation g e1 e2)
   (if (moving? g e2)
       ((start-animation) g e2)
