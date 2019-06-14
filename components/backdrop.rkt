@@ -324,7 +324,10 @@
 
   (define backdrop-animated-sprite
     (set-scale-xy scale
-                  (sheet->sprite (apply beside (backdrop-tiles (first b)))
+                  (sheet->sprite (if (and (= rows 1)
+                                          (= cols 1))
+                                     (first (backdrop-tiles (first b)))
+                                     (apply beside (backdrop-tiles (first b))))
                                  #:rows 1
                                  #:columns    (* rows cols)
                                  #:row-number 1

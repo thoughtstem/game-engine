@@ -2,6 +2,7 @@
 
 (provide bordered-box-sprite
          toast-entity
+         toast-system
          ;player-toast-entity ;must remove provides from base langauges first
          game-toast-entity)
 
@@ -13,12 +14,14 @@
          "../components/on-start.rkt"
          "../components/every-tick.rkt"
          "../components/after-time.rkt"
+         "../components/storage.rkt"
          "../ai.rkt"
          "./sprite-util.rkt"
          "./movement-util.rkt")
 
 (require 2htdp/image
-         posn)
+         posn
+         threading)
 
 (define (bordered-box-sprite w h #:outer-border-color [outer-border-color 'black]
                                  #:border-color       [border-color 'white]
@@ -47,19 +50,20 @@
 
 (define (toast-entity message #:color [color "yellow"]
                               #:position [p (posn 0 -20)]
-                              #:duration [dur 25]
+                              #:duration [dur 15]
                               #:speed    [spd 3])
   (define color-symbol (if (string? color)
                            (string->symbol color)
                            color))
-  (sprite->entity (new-sprite message #:x-offset -1 #:y-offset 1 #:color 'black)
+  (sprite->entity (list (new-sprite message #:color color-symbol)
+                        (new-sprite message #:x-offset -1 #:y-offset 1 #:color 'black))
                   #:name       "player toast"
                   #:position   p
                   #:components (hidden)
                                (layer "ui")
-                               (new-sprite message #:color color-symbol)
+                               
                                (direction 270)
-                               ;(physical-collider)
+                               (physical-collider)
                                (speed spd)
                                (on-start (do-many (random-direction 240 300)
                                                   (random-speed (sub1 spd) (add1 spd))
@@ -67,6 +71,58 @@
                                (every-tick (do-many (move)
                                                     (scale-sprite 1.03)))
                                (after-time dur die)))
+
+(define (toast-system message #:color [color "yellow"]
+                              #:position [p (posn 0 -20)]
+                              #:duration [dur 15]
+                              #:speed    [spd 3])
+  (define color-symbol (if (string? color)
+                           (string->symbol color)
+                           color))
+  (define main-sprite (new-sprite message
+                                  #:x-offset (posn-x p)
+                                  #:y-offset (posn-y p)
+                                  #:color color-symbol))
+  (define shadow-sprite (new-sprite message
+                                    #:x-offset (+ (posn-x p) -1)
+                                    #:y-offset (+ (posn-y p)  1)
+                                    #:color 'black))
+  (define random-x (random -2 3))
+  (define random-y (random (sub1 (- spd)) (+ 2 (- spd))))
+  (define toast-id (random 10000))
+
+  (define (do-toast-fx g e)
+    (define toast-sprites (get-storage-data (~a "toast-" toast-id) e))
+    (define current-main-sprite (get-component e (curry component-eq? (first toast-sprites))))
+    (define current-shadow-sprite (get-component e (curry component-eq? (second toast-sprites))))
+    ;change x, y, and scale
+    (define new-main-sprite (~> current-main-sprite
+                                (change-x-offset random-x _)
+                                (change-y-offset random-y _)
+                                (scale-xy 1.03 _)))
+    (define new-shadow-sprite (~> current-shadow-sprite
+                                  (set-x-offset (+ (get-x-offset new-main-sprite) -1) _)
+                                  (set-y-offset (+ (get-y-offset new-main-sprite) 1) _)
+                                  (scale-xy 1.03 _)))
+    (~> e
+        (update-entity _ (curry component-eq? current-main-sprite) new-main-sprite)
+        (update-entity _ (curry component-eq? current-shadow-sprite) new-shadow-sprite)))
+
+  (define toast-fx-component (every-tick do-toast-fx))
+  
+  (define (remove-toast g e)
+    (define toast-components (get-storage-data (~a "toast-" toast-id) e))
+    (~> e
+        (remove-components _ (or/c (curry component-eq? (first  toast-components))
+                                   (curry component-eq? (second toast-components))
+                                   (curry component-eq? (third  toast-components))))
+        (remove-storage (~a "toast-" toast-id) _)))
+    
+  (list shadow-sprite 
+        main-sprite
+        (storage (~a "toast-" toast-id) (list main-sprite shadow-sprite toast-fx-component))
+        toast-fx-component
+        (after-time dur remove-toast)))
 
 (define (player-toast-entity message #:color [color "yellow"])
   (define color-symbol (if (string? color)
@@ -92,12 +148,13 @@
 (define (game-toast-entity message #:color    [color "yellow"]
                                    #:position [pos 'bottom]
                                    #:duration [dur 100]
-                                   #:speed    [spd 0.8])
+                                   #:speed    [spd 0.8]
+                                   #:scale    [scale 1.0])
   (define color-symbol (if (string? color)
                            (string->symbol color)
                            color))
-  (sprite->entity (list (new-sprite message #:color color-symbol)
-                        (new-sprite message #:x-offset -1 #:y-offset 1 #:color 'black))
+  (sprite->entity (list (new-sprite message #:color color-symbol #:scale scale)
+                        (new-sprite message #:x-offset -1 #:y-offset 1 #:color 'black #:scale scale))
                   #:name       "player toast"
                   #:position   (posn 0 0)
                   #:components (hidden)

@@ -173,7 +173,10 @@
          (rename-out [make-state state])
          (rename-out [make-transition transition])
          (rename-out [make-state-machine state-machine])
-         entity-add-machine)
+         entity-add-machine
+
+         move-sprite
+         )
 
 (require posn)
 (require "./game-entities.rkt")
@@ -345,6 +348,15 @@
     (define y-vel (* (sin (degrees->radians d)) s))
     (update-entity e posn? (posn (+ current-pos-x x-vel)
                                  (+ current-pos-y y-vel)))))
+
+(define (move-sprite as #:direction [d 0] #:speed [s 0])
+  (define current-pos-x (get-x-offset as))
+  (define current-pos-y (get-y-offset as))
+  (define x-vel (* (cos (degrees->radians d)) s))
+  (define y-vel (* (sin (degrees->radians d)) s))
+  (~> as
+      (set-x-offset (+ current-pos-x x-vel) _)
+      (set-y-offset (+ current-pos-y y-vel) _)))
 
 (define (spin #:speed s)
   (lambda (g e)

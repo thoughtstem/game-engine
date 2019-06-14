@@ -121,7 +121,9 @@
 
     ;Recompile the database if we added anything:
     (thread (thunk
-             (and (recompile!)
+             (and (with-handlers ([exn:fail?
+                                   (lambda(e) #f)])
+                    (recompile!))
                   (set! ml:render (gl:stage-draw/dc csd W H 8)))))
     
 
