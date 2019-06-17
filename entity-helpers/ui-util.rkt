@@ -90,11 +90,11 @@
   (define random-x (random -2 3))
   (define random-y (random (sub1 (- spd)) (+ 2 (- spd))))
   (define toast-id (random 1000000))
+  (define tid-list (map component-id (list main-sprite shadow-sprite)))
 
   (define (do-toast-fx g e)
-    (define toast-sprites (get-storage-data (~a "toast-" toast-id) e))
-    (define current-main-sprite (get-component e (curry component-eq? (first toast-sprites))))
-    (define current-shadow-sprite (get-component e (curry component-eq? (second toast-sprites))))
+    (define current-main-sprite   (get-component e (λ(c) (eq? (component-id c) (first tid-list)))))
+    (define current-shadow-sprite (get-component e (λ(c) (eq? (component-id c) (second tid-list)))))
     ;change x, y, and scale
     (define new-main-sprite (~> current-main-sprite
                                 (change-x-offset random-x _)
@@ -111,18 +111,20 @@
   (define toast-fx-component (every-tick do-toast-fx))
   
   (define (remove-toast g e)
-    (define toast-components (get-storage-data (~a "toast-" toast-id) e))
     (~> e
-        (remove-components _ (or/c (curry component-eq? (first  toast-components))
-                                   (curry component-eq? (second toast-components))
-                                   (curry component-eq? (third  toast-components))))
+        (remove-components _ (or/c (λ(c) (eq? (component-id c) (first tid-list)))
+                                   (λ(c) (eq? (component-id c) (second tid-list)))
+                                   (curry component-eq? toast-fx-component)))
         (remove-storage (~a "toast-" toast-id) _)))
-    
+
+  (define toast-remove-component (after-time dur remove-toast))
+  
   (list shadow-sprite 
         main-sprite
-        (storage (~a "toast-" toast-id) (list main-sprite shadow-sprite toast-fx-component))
+        (storage (~a "toast-" toast-id) (list main-sprite shadow-sprite toast-remove-component))
         toast-fx-component
-        (after-time dur remove-toast)))
+        toast-remove-component))
+
 
 (define (player-toast-entity message #:color [color "yellow"])
   (define color-symbol (if (string? color)
@@ -135,7 +137,6 @@
                                (layer "ui")
                                (new-sprite message #:color color-symbol)
                                (direction 270)
-                               ;(physical-collider)
                                (speed 3)
                                (on-start (do-many (go-to-entity "player" #:offset (posn 0 -20))
                                                   (random-direction 240 300)
@@ -160,7 +161,6 @@
                   #:components (hidden)
                                (layer "ui")
                                (direction 270)
-                               ;(physical-collider)
                                (speed spd)
                                (on-start (do-many (cond [(eq? pos 'bottom) (go-to-pos 'bottom-center #:offset -32)]
                                                         [(eq? pos 'top)    (go-to-pos 'top-center    #:offset  32)]

@@ -65,15 +65,21 @@
   (not (eq? (after-time-func c) die)))
   
 
+;if there is a duration, assume it's a power-up and filter out TOASTS AND PARTICLES!
+;DON'T USE THIS TO SCALE TOASTS OR PARTCILES! Use scale-xy instead
 (define (scale-sprite amount #:for [d #f])
   (lambda (g e)
-    (define all-sprites (get-components e animated-sprite?))
+    (define all-sprites (get-components e (and/c animated-sprite?
+                                                 (not-toast-sprite? e)
+                                                 (not-particle-sprite? e))))
     (define original-sprites (map (λ (as) (struct-copy animated-sprite as)) all-sprites))
     
     (define (revert-back g e)
       (~> e
-          (remove-components _ animated-sprite?)
-          (add-components _ original-sprites))
+                 (remove-components _ (and/c animated-sprite?
+                                             (λ (c)
+                                               (member c original-sprites component-eq?)))) ;This removes new sprites since original!
+                 (add-components _ original-sprites)) ;This adds toasts even when they should have been removed!
       )
 
     (define (scale-a-sprite as)
@@ -91,7 +97,10 @@
     
     (define (update-revert dur)
       (define old-func (after-time-func (get-component e (and/c after-time?
-                                                                not-after-time-die?))))
+                                                                not-after-time-die?
+                                                                (not-particle-remove? e)
+                                                                (not-toast-remove? e)
+                                                                ))))
       (if dur
           (λ (c)
             (after-time dur (do-many revert-back
@@ -99,32 +108,47 @@
           #f))
     
     (if (get-component e (and/c after-time?
-                                not-after-time-die?))
+                                not-after-time-die?
+                                (not-particle-remove? e)
+                                (not-toast-remove? e)))
         (~> e
-            (remove-components _ animated-sprite?)
-            (add-components _ new-sprites)
+                   (remove-components _ (and/c animated-sprite?
+                                               (not-toast-sprite? e)
+                                               (not-particle-sprite? e)))
+                   (add-components _ new-sprites)
             
-            ;this will break any non power up after-time component
-            (update-entity _ (and/c after-time?
-                                not-after-time-die?) (update-revert d)))
+                   ;this will break any non power up after-time component
+                   (update-entity _ (and/c after-time?
+                                           not-after-time-die?
+                                           (not-particle-remove? e)
+                                           (not-toast-remove? e)) (update-revert d)))
         (~> e
-            (remove-components _ animated-sprite?)
+            (remove-components _ (and/c animated-sprite?
+                                        (not-toast-sprite? e)
+                                        (not-particle-sprite? e)))
             (add-components _ new-sprites)
             (add-components _ (if d (after-time d revert-back) '()))
             )
         )
     ))
 
-; This doesn't need a #:for feature
+; This doesn't need a #:for feature unless we really want
+; a power up that rotates you for some duration.
 ; Commenting out revert with #f because it breaks removal of particles on player death
+; It's probably better to not use this handler internally.
+; Use set-sprite-angle or change-sprite-angle-by instead
 (define (rotate-sprite amount #:for [d #f])
   (lambda (g e)
-    (define all-sprites (get-components e animated-sprite?))
+    (define all-sprites (get-components e (and/c animated-sprite?
+                                                 (not-toast-sprite? e)
+                                                 (not-particle-sprite? e))))
     (define original-sprites (map (λ (as) (struct-copy animated-sprite as)) all-sprites))
     
     (define (revert-back g e)
       (~> e
-          (remove-components _ animated-sprite?)
+          (remove-components _ (and/c animated-sprite?
+                                      (λ (c)
+                                        (member c original-sprites component-eq?))))
           (add-components _ original-sprites))
       )
 
@@ -137,7 +161,10 @@
     
     (define (update-revert dur)
       (define old-func (after-time-func (get-component e (and/c after-time?
-                                                                not-after-time-die?))))
+                                                                not-after-time-die?
+                                                                (not-particle-remove? e)
+                                                                (not-toast-remove? e)
+                                                                ))))
       (if dur
           (λ (c)
             (after-time dur (do-many revert-back
@@ -145,16 +172,24 @@
           (λ (c) c))) ;if dur is #f, leave the component alone!
     
     (if (get-component e (and/c after-time?
-                                not-after-time-die?))
+                                not-after-time-die?
+                                (not-particle-remove? e)
+                                (not-toast-remove? e)))
         (~> e
-            (remove-components _ animated-sprite?)
+            (remove-components _ (and/c animated-sprite?
+                                        (not-toast-sprite? e)
+                                        (not-particle-sprite? e)))
             (add-components _ new-sprites)
             
             ;this will break any non power up after-time component
             (update-entity _ (and/c after-time?
-                                    not-after-time-die?) (update-revert d)))
+                                    not-after-time-die?
+                                    (not-particle-remove? e)
+                                    (not-toast-remove? e)) (update-revert d)))
         (~> e
-            (remove-components _ animated-sprite?)
+            (remove-components _ (and/c animated-sprite?
+                                        (not-toast-sprite? e)
+                                        (not-particle-sprite? e)))
             (add-components _ new-sprites)
             (add-components _ (if d (after-time d revert-back) '())))
         )
