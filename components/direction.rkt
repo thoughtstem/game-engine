@@ -21,7 +21,7 @@
 
 (define (set-direction d)
  (lambda (g e)
-     (update-entity e direction? (new-direction (modulo d 360)))))
+     (update-entity e direction? (new-direction (modulo (round d) 360)))))
 
 (define (get-direction e)
   (direction-dir (get-component e direction?)))
@@ -29,12 +29,12 @@
 (define (change-direction-by inc)
   (lambda (g e)
     (define d (get-direction e))
-    (update-entity e direction? (new-direction (modulo (+ d inc) 360)))))
+    (update-entity e direction? (new-direction (modulo (round (+ d inc)) 360)))))
 
 (define (change-direction-by-random min max)
   (lambda (g e)
     (define d (get-direction e))
-    (update-entity e direction? (new-direction (modulo (+ d (random min (add1 max))) 360)))))
+    (update-entity e direction? (new-direction (modulo (round (+ d (random min (add1 max)))) 360)))))
 
 (define (random-direction [min 0] [max 360])
   (lambda (g e)
@@ -44,7 +44,7 @@
   (lambda (g e)
     (define dir (get-direction e))
     (define new-dir (+ dir 180))
-    (update-entity e direction? (new-direction (modulo new-dir 360)))))
+    (update-entity e direction? (new-direction (modulo (round new-dir) 360)))))
 
 (new-component direction?
-               update-direction) 
+               update-direction)
