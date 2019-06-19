@@ -56,6 +56,9 @@
 
 ;Not clear either...  Move or simplify with better API
 
+(define (not-after-time-die? c)
+  (not (eq? (after-time-func c) die)))
+
 (define (set-speed-to n #:for [d #f])
   (lambda (g e)
     (define original (get-component e key-movement?))
@@ -67,7 +70,11 @@
                        (struct-copy key-movement k
                                     [speed  n])))
     (define (update-revert dur)
-      (define old-func (after-time-func (get-component e after-time?)))
+      (define old-func (after-time-func (get-component e (and/c after-time?
+                                                                not-after-time-die?
+                                                                (not-particle-remove? e)
+                                                                (not-toast-remove? e)
+                                                                ))))
       (if dur    ;if it has a duration, assume it's a stackable power-up type
           (λ (c)
             (after-time dur (do-many revert-speed
@@ -75,10 +82,18 @@
           #f))
     
     ;if there is an after-time, update it or remove it, else add it or add #f
-    (if (get-component e after-time?)
+    (if (get-component e (and/c after-time?
+                                not-after-time-die?
+                                (not-particle-remove? e)
+                                (not-toast-remove? e)
+                                ))
         (~> e
             (update-entity _ key-movement? increase)
-            (update-entity _ after-time? (update-revert d)))
+            (update-entity _ (and/c after-time?
+                                    not-after-time-die?
+                                    (not-particle-remove? e)
+                                    (not-toast-remove? e)
+                                    ) (update-revert d)))
         (~> e
             (update-entity _ key-movement? increase)
             (add-components _ (if d (after-time d revert-speed) '())))
@@ -94,7 +109,11 @@
                        (struct-copy key-movement k
                                     [speed (+ (key-movement-speed k) n)])))
     (define (update-revert dur)
-      (define old-func (after-time-func (get-component e after-time?)))
+      (define old-func (after-time-func (get-component e (and/c after-time?
+                                                                not-after-time-die?
+                                                                (not-particle-remove? e)
+                                                                (not-toast-remove? e)
+                                                                ))))
       (if dur    ;if it has a duration, assume it's a stackable power-up type
           (λ (c)
             (after-time dur (do-many revert-speed
@@ -102,10 +121,18 @@
           #f))
     
     ;if there is an after-time, update it or remove it, else add it or add #f
-    (if (get-component e after-time?)
+    (if (get-component e (and/c after-time?
+                                not-after-time-die?
+                                (not-particle-remove? e)
+                                (not-toast-remove? e)
+                                ))
         (~> e
             (update-entity _ key-movement? increase)
-            (update-entity _ after-time? (update-revert d)))
+            (update-entity _ (and/c after-time?
+                                    not-after-time-die?
+                                    (not-particle-remove? e)
+                                    (not-toast-remove? e)
+                                    ) (update-revert d)))
         (~> e
             (update-entity _ key-movement? increase)
             (add-components _ (if d (after-time d revert-speed) '())))
@@ -121,7 +148,11 @@
                        (struct-copy key-movement k
                                     [speed (* (key-movement-speed k) n)])))
     (define (update-revert dur)
-      (define old-func (after-time-func (get-component e after-time?)))
+      (define old-func (after-time-func (get-component e (and/c after-time?
+                                                                not-after-time-die?
+                                                                (not-particle-remove? e)
+                                                                (not-toast-remove? e)
+                                                                ))))
       (if dur    ;if it has a duration, assume it's a stackable power-up type
           (λ (c)
             (after-time dur (do-many revert-speed
@@ -129,10 +160,18 @@
           #f))
     
     ;if there is an after-time, update it or remove it, else add it or add #f
-    (if (get-component e after-time?)
+    (if (get-component e (and/c after-time?
+                                not-after-time-die?
+                                (not-particle-remove? e)
+                                (not-toast-remove? e)
+                                ))
         (~> e
             (update-entity _ key-movement? increase)
-            (update-entity _ after-time? (update-revert d)))
+            (update-entity _ (and/c after-time?
+                                    not-after-time-die?
+                                    (not-particle-remove? e)
+                                    (not-toast-remove? e)
+                                    ) (update-revert d)))
         (~> e
             (update-entity _ key-movement? increase)
             (add-components _ (if d (after-time d revert-speed) '())))

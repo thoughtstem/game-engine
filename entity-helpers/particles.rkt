@@ -97,22 +97,16 @@
   (define particle-sprites
     (map (λ(x) (particle-sprite)) (range amount)))
 
+  (define pid-list (map component-id particle-sprites))
+
   (define starting-directions
     (map (λ(x) 0) (range amount)))
 
   (define particle-id (random 1000000))
 
-  (define (set-starting-directions g e)
-    (define p-storage (get-storage-data (~a "particle-" particle-id) e))
-    (define new-random-directions
-      (map (λ(x) (random (first dir) (second dir))) (range amount)))
-    ;(displayln (~a "New Random Directions: " new-random-directions))
-    (set-storage (~a "particle-" particle-id) e (list (first p-storage) (second p-storage) new-random-directions)))
-
   (define (do-particle-fx g e)
-    (define particle-sprites (first (get-storage-data (~a "particle-" particle-id) e)))
-    (define starting-directions (third (get-storage-data (~a "particle-" particle-id) e)))
-    (define current-particle-sprites (get-components e (apply or/c (map (curry component-eq?) particle-sprites))))
+    (define starting-directions (second (get-storage-data (~a "particle-" particle-id) e)))
+    (define current-particle-sprites (get-components e (λ(c) (member (component-id c) pid-list))))
     ;random color, scale sprite, changes direction by -15 to 15, and move
     (define new-particle-sprites (map (λ (s d)
                                         (~> s
@@ -122,22 +116,28 @@
                                             (scale-xy scale-each-tick _)))
                                       current-particle-sprites starting-directions))
     (~> e
-        (remove-components _ (apply or/c (map (curry component-eq?) current-particle-sprites)))
+        (remove-components _ (λ(c) (member (component-id c) pid-list)))
         (add-components _ new-particle-sprites)))
 
   (define particle-fx-component (every-tick do-particle-fx))
   
+  (define (set-starting-directions g e)
+    (define p-storage (get-storage-data (~a "particle-" particle-id) e))
+    (define new-random-directions
+      (map (λ(x) (random (first dir) (second dir))) (range amount)))
+    ;(displayln (~a "New Random Directions: " new-random-directions))
+    (set-storage (~a "particle-" particle-id) e (list particle-sprites new-random-directions)))
+ 
   ;(define (remove-particle-system g e)
-  ;  (define particle-components (get-storage-data (~a "particle-" particle-id) e))
   ;  (~> e
-  ;      (remove-components _ (apply or/c (map (curry component-eq?) (first particle-components))))
-  ;      (remove-components _ (curry component-eq? (second particle-components)))
+  ;      (remove-components _ (λ(c) (member (component-id c) pid-list)))
+  ;      (remove-components _ (curry component-eq? particle-fx-component))
   ;      (remove-storage (~a "particle-" particle-id) _)))
     
   (sprite->entity particle-sprites
                   #:position (posn 0 0)
                   #:name "particle-system"
-                  #:components (storage (~a "particle-" particle-id) (list particle-sprites particle-fx-component starting-directions))
+                  #:components (storage (~a "particle-" particle-id) (list particle-sprites starting-directions))
                                (on-start set-starting-directions)
                                particle-fx-component
                                ;(after-time ttl remove-particle-system) ;No need to remove system for now, just kill the entity
@@ -169,14 +169,11 @@
           (particle-sprite)
           (particle-sprite)))
   
-  ;(define random-x (random -5 6))
-  ;(define random-y (random -5 6))
-  
   (define particle-id (random 1000000))
+  (define pid-list (map component-id particle-sprites))
 
   (define (do-particle-fx g e)
-    (define particle-sprites (first (get-storage-data (~a "particle-" particle-id) e)))
-    (define current-particle-sprites (get-components e (apply or/c (map (curry component-eq?) particle-sprites))))
+    (define current-particle-sprites (get-components e (λ(c) (member (component-id c) pid-list))))
     ;change x, y, and scale
     (define new-particle-sprites (map (λ (s)
                                         (~> s
@@ -185,19 +182,23 @@
                                             (scale-xy scale-each-tick _)))
                                       current-particle-sprites))
     (~> e
-        (remove-components _ (apply or/c (map (curry component-eq?) current-particle-sprites)))
+        (remove-components _ (λ(c) (member (component-id c) pid-list)))
         (add-components _ new-particle-sprites)))
 
   (define particle-fx-component (every-tick do-particle-fx))
   
   (define (remove-particle-system g e)
-    (define particle-components (get-storage-data (~a "particle-" particle-id) e))
     (~> e
-        (remove-components _ (apply or/c (map (curry component-eq?) (first particle-components))))
-        (remove-components _ (curry component-eq? (second particle-components)))
+        (remove-components _ (λ(c) (member (component-id c) pid-list)))
+        (remove-components _ (curry component-eq? particle-fx-component))
         (remove-storage (~a "particle-" particle-id) _)))
+
+  (define particle-remove-component (after-time ttl remove-particle-system))
     
   (flatten (list particle-sprites
-                 (storage (~a "particle-" particle-id) (list particle-sprites particle-fx-component))
+                 (storage (~a "particle-" particle-id) (list particle-sprites particle-remove-component))
                  particle-fx-component
-                 (after-time ttl remove-particle-system))))
+                 particle-remove-component)))
+
+
+
