@@ -13,6 +13,8 @@
          force-recompile!
          cleanup-renderer!
          MONOSPACE-FONT-FACE
+         error-out-port
+         ml-scale-info
          )
 
 (require racket/match
@@ -67,6 +69,20 @@
 
 
 
+(define error-out-port (open-output-bytes))
+
+(define ml-scale-info #f)
+
+(define (extract-scale-info str)
+  (map (compose (curry map string->number)
+                string-split
+                string-trim
+                (curryr string-replace "'" "")
+                (curryr string-replace "(" "")
+                (curryr string-replace "#" "")
+                (curryr string-replace ")" ""))
+       (string-split str ") #")))
+
 (define (get-mode-lambda-render-tick original-entities)
   ;Assume the last entity is the background entity
   (define bg-entity (last original-entities))
@@ -112,7 +128,8 @@
   ;Set up our open gl render function with the current sprite database
   (define ml:render (gl:stage-draw/dc csd W H 8))
 
-
+  (current-error-port error-out-port)
+  
   (define (ticky-tick current-entities)
     
     ;Find uncompiled entities...
@@ -132,13 +149,26 @@
 
     (define static-sprites (list))
 
+    (define e-string (bytes->string/utf-8 (get-output-bytes error-out-port #t)))
 
     ;Actually render them
-    (ml:render layers
+    (if (equal? e-string "")
+        (ml:render layers
                static-sprites
-               dynamic-sprites))
+               dynamic-sprites)
+        (begin (displayln e-string)
+               (if (string-prefix? e-string "'#(#(")
+                   (begin (set! ml-scale-info (extract-scale-info e-string))
+                          (ml:render layers
+                                     static-sprites
+                                     dynamic-sprites))
+                   (ml:render layers
+                              static-sprites
+                              dynamic-sprites))))
+    )
 
   ticky-tick)
+
 
 (define lux:key-event?     #f)
 (define lux:mouse-event-xy #f)
@@ -206,6 +236,7 @@
   (demo-state d))
 
 
+;(gl:gl-filter-mode 'crt)
 
 (define (get-gui #:width [w 480] #:height [h 360])
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
