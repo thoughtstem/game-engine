@@ -70,7 +70,7 @@
 
 
 (define default-error-port (current-error-port))
-(define error-out-port (open-output-bytes))
+(define error-out-port #f)
 
 (define ml-scale-info #f)
 
@@ -129,6 +129,12 @@
   ;Set up our open gl render function with the current sprite database
   (define ml:render (gl:stage-draw/dc csd W H 8))
 
+  ;Clean up old port if it exists and open a new one
+  (if (and error-out-port
+           (port-closed? error-out-port))
+      (begin (close-output-port error-out-port)
+             (set! error-out-port (open-output-bytes)))
+      (set! error-out-port (open-output-bytes)))
   (current-error-port error-out-port)
   
   (define (ticky-tick current-entities)
@@ -143,32 +149,35 @@
                                    (lambda(e) #f)])
                     (recompile!))
                   (set! ml:render (gl:stage-draw/dc csd W H 8)))))
-    
 
     ;Create our sprites
     (define dynamic-sprites (game->mode-lambda-sprite-list current-entities))
 
     (define static-sprites (list))
 
+    ; This should capture and flush out mode lambda errors from the previous tick
     (define e-string (bytes->string/utf-8 (get-output-bytes error-out-port #t)))
 
     ;Actually render them
-    (if (equal? e-string "")
-        (ml:render layers
-               static-sprites
-               dynamic-sprites)
-        (begin (displayln e-string)
-               (if (string-prefix? e-string "'#(#(")
-                   (begin (set! ml-scale-info (extract-scale-info e-string))
-                          (ml:render layers
-                                     static-sprites
-                                     dynamic-sprites))
-                   (ml:render layers
-                              static-sprites
-                              dynamic-sprites))))
+    ;(parameterize ([current-error-port error-out-port]) ;This isn't working for some reason
+      (if (equal? e-string "")
+          (ml:render layers
+                     static-sprites
+                     dynamic-sprites)
+          (begin (displayln e-string)
+                 (if (string-prefix? e-string "'#(#(")
+                     (begin (set! ml-scale-info (extract-scale-info e-string))
+                            (ml:render layers
+                                       static-sprites
+                                       dynamic-sprites))
+                     (ml:render layers
+                                static-sprites
+                                dynamic-sprites))))
+      ;)
     )
 
-  ticky-tick)
+  ticky-tick
+  )
 
 
 (define lux:key-event?     #f)
