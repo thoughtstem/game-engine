@@ -13,6 +13,7 @@
          force-recompile!
          cleanup-renderer!
          MONOSPACE-FONT-FACE
+         default-error-port
          error-out-port
          ml-scale-info
          )
@@ -68,7 +69,7 @@
 
 
 
-
+(define default-error-port (current-error-port))
 (define error-out-port (open-output-bytes))
 
 (define ml-scale-info #f)
@@ -242,8 +243,8 @@
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
   (make-gui #:start-fullscreen? #f
               #:frame-style (if (eq? (system-type 'os) 'windows)
-                                (list 'no-resize-border
-                                      'no-caption
+                                (list ;'no-resize-border
+                                      ;'no-caption
                                       )
                                 (list 'no-resize-border) ;DON'T CHANGE THIS
                                 )
