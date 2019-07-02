@@ -4,11 +4,16 @@
          point-to-mouse
          mouse-in-game?
          mouse-button-is-down?
-         get-mouse-pos)
+         get-mouse-pos
+         CROSSHAIR-IMG
+         POINTER-IMG
+         go-to-mouse
+         touching-pointer?)
 
 (require "../game-entities.rkt"
          "./movement-util.rkt"
-         posn)
+         posn
+         2htdp/image)
 
 (define (mouse-in-game? g e)
   (define m-pos (get-mouse-pos g))
@@ -46,3 +51,29 @@
 (define (mouse-button-is-down? button)
   (lambda (g e)
     (mouse-button-down? button g)))
+
+(define CROSSHAIR-IMG (overlay (line 0 26 'red)
+                               (line 26 0 'red)
+                               (circle 10 'outline 'red)))
+
+(define POINTER-IMG (overlay (circle 2 'solid 'blue)
+                             (circle 8 'outline 'yellow)
+                             (circle 10 'outline 'red)
+                             (square 24 'solid 'transparent)))
+
+(define (go-to-mouse g e)
+  (update-entity e posn? (get-mouse-pos g)))
+
+(define (touching-pointer? g e)
+  (define pos (get-posn e))
+  (define m-pos (get-mouse-pos g))
+  (define x (posn-x pos))
+  (define y (posn-y pos))
+  (define w (bb-w (get-component e bb?)))
+  (define h (bb-h (get-component e bb?)))
+  (define mx (posn-x m-pos))
+  (define my (posn-y m-pos))
+  (and (> mx (- x (/ w 2)))
+       (< mx (+ x (/ w 2)))
+       (> my (- y (/ h 2)))
+       (< my (+ y (/ h 2)))))
