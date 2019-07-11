@@ -36,7 +36,8 @@
          store-item
          store-nearby-item
          (struct-out item)
-         (struct-out storable)
+         (except-out (struct-out storable) storable)
+         (rename-out (new-storable storable))
          stored?
          storable-items-nearby?
          backpack-not-open?
@@ -76,7 +77,7 @@
 ;(new-component backpack?
 ;               update-backpack)
 
-(struct storable ())
+(component storable ())
 
 (define (stored? g e)
   (define items (map item-entity (get-items (get-entity "player" g))))
