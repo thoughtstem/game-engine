@@ -136,7 +136,6 @@
       #:transition avatar-wrap-around)
     (world bg-sprite)))
 
-(require "../../hotswap.rkt")
 
 (play!
     (game

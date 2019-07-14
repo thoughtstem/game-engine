@@ -1,5 +1,7 @@
 #lang racket
 
+(provide g)
+
 (require game-engine
          2htdp/image)
 
@@ -51,15 +53,19 @@
 
 (define-component bullet-data-update void?)
 
-(play!
-  (game
-    (entity
-      (bullet-data-update (void) (update-bullet-data))) 
+(define g
+ (game
+  (entity
+   (bullet-data-update (void) (update-bullet-data))) 
 
-    (entity
-      (also-render
-        (game
-          (map bullet (range num-bullets)))))))
+  (entity
+   (also-render
+    (game
+     (map bullet (range num-bullets)))))))
+
+
+(module+ main
+ (play! g))
 
 
 

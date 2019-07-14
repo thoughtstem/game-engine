@@ -46,7 +46,6 @@
   (define the-chipmunk-hook
     (chipmunk
       #f
-      #;
       (init-or-update-chipmunk w h mass static sensor type)))
 
   (define shadow-entity
@@ -54,12 +53,10 @@
         (name #f)
         (physics-world #f) 
 
-        (desired-force #f    
-                       #;
+        (desired-force #f 
                        (forces))
 
         (desired-velocity #f 
-                          #;
                           (velocities))
 
         ;What is slowing things down in here?
@@ -68,7 +65,6 @@
 
         (colliding-with '() 
 
-                        #;
                         (map second
                              (filter 
                                (lambda (c)
@@ -77,20 +73,16 @@
                                (get 'physics-manager 'collisions))))
 
 
-	(force #f    
-               #;
+	(force #f
                (chipmunk-force)) 
 
 	(velocity #f 
-                  #;
                   (chipmunk-velocity)) 
 
 	(position #f 
-                  #;
                   (chipmunk-posn)) 
 
 	(rotation #f 
-                  #;
                   (chipmunk-rotation))))
 
   (list
@@ -182,7 +174,6 @@
 
   
 (define (init-chipmunk w h m static? sensor? type)
-  (displayln "Making a chipmunk")
 
   (define p (get-position))
   (match-define (posn x y) p)
@@ -362,7 +353,6 @@
   (define space (chip:cpSpaceNew))
 
   (define (begin-callback arbiter space data)
-    (displayln "Begin")
 
     (let-values ([(s1 s2)  (chip:cpArbiterGetShapes arbiter)])
 
@@ -382,7 +372,6 @@
     1)
 
   (define (separate-callback arbiter space data)
-    (displayln "Separate")
 
     (let-values ([(s1 s2)  (chip:cpArbiterGetShapes arbiter)])
 
@@ -407,12 +396,9 @@
     1)
 
   (define (presolve-callback arbiter space data)
-    (displayln "Pre solve")
     1)
 
   (define (postsolve-callback arbiter space data)
-    (displayln "Post solve")
-    (displayln (chip:cpArbiterIsFirstContact arbiter))
     
     1)
 
@@ -422,12 +408,10 @@
     handler 
     begin-callback)
 
-  #;
   (chip:set-cpCollisionHandler-cpCollisionPreSolveFunc! 
     handler 
     presolve-callback)
 
-  #;
   (chip:set-cpCollisionHandler-cpCollisionPostSolveFunc! 
     handler 
     postsolve-callback)

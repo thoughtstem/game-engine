@@ -3,14 +3,15 @@
 (require game-engine
          2htdp/image)
 
-;TODO:  Make it not leave trash files while we're at it...
+;Just open this in an editor, then run it from the commandline.
+;  Edit the code and get live changes.
 
 (no-hotswap me
   (game 
     (entity
       (position (posn 200 200))
       (sprite (register-sprite 
-                (circle 40 'solid 'green))))))
+                (circle 40 'solid 'red))))))
 
 
 

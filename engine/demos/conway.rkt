@@ -1,5 +1,7 @@
 #lang racket
 
+(provide g)
+
 (require game-engine)
 (require game-engine/engine/core/test/conway-impl)
 
@@ -44,23 +46,26 @@
     live-sprite
     dead-sprite))
 
-(play! 
-  (game
-    (entity 
-      (counter 0 (^ add1))
-      (conway-manager (void)
-                      (when (= 0 (remainder (get-counter) 10))
-                        (set! quilted-donut2
-                          (conway-tick quilted-donut2))))
+(define g
+ (game
+  (entity 
+   (counter 0 (^ add1))
+   (conway-manager (void)
+    (when (= 0 (remainder (get-counter) 10))
+     (set! quilted-donut2
+      (conway-tick quilted-donut2))))
 
-      (also-render
-        (game
-          (entity-grid 400 400 12
-                       (lambda (r c)
-                         (list 
-                           (sprite (thunk* (pick-sprite r c)))
-                           )))))
-      )))  
+   (also-render
+    (game
+     (entity-grid 400 400 12
+      (lambda (r c)
+       (list 
+        (sprite (thunk* (pick-sprite r c)))
+       ))))))))
+
+(module+ main
+ (play! 
+  g))
 
 
 

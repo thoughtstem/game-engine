@@ -1,5 +1,7 @@
 #lang racket
 
+(provide (rename-out [e elf-avatar]))
+
 (require game-engine)
 
 (require 2htdp/image)   
@@ -26,9 +28,10 @@
       #:direction-update direction-from-input 
       elves-up elves-right elves-down elves-left )))
 
+(module+ main
 (play! 
     (game 
       (input-manager) 
-      e))
+      e)))
 
 
