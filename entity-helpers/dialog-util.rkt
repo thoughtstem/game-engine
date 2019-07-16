@@ -250,14 +250,15 @@
           (bordered-box-sprite (+ main-box-width 10)
                                (+ main-box-height 10))))
 
-(define (draw-avatar-box e)
+(define (draw-avatar-box e #:scale [scl 2])
   (define avatar-img (pick-frame-original (get-component e animated-sprite?) 0))
   (freeze (overlay (rectangle 56 56 "outline" (pen "white" 2 "solid" "butt" "bevel"))
                        (rectangle 58 58 "outline" (pen "black" 2 "solid" "butt" "bevel"))
                        (place-image
-                        (freeze (scale 2 avatar-img))
+                        (freeze (scale scl avatar-img))
                         30 30
                         (rectangle 60 60 "solid" (make-color 255 255 255 100))))))
+
 
 (define (next-dialog dialog-list #:sound [rsound #f])
   (lambda (g e)
@@ -268,7 +269,9 @@
     ;(displayln (~a "CURRENT DIALOG: " dialog-index))
     (define dialog-length (length dialog-list))
     (define name (get-name e))
-    (define avatar-box (draw-avatar-box e))
+    (define avatar-box (if (get-storage "avatar-box" e)
+                           (get-storage-data "avatar-box" e)
+                           (draw-avatar-box e)))
     (define message-entity (create-dialog dialog-list
                                           name
                                           (posn (+ (- WIDTH TEXT-WIDTH) (/ TEXT-WIDTH 2) -6) ;(/ (* WIDTH 2.3) 4)
@@ -288,7 +291,9 @@
     (define npc-dialog-index (get-counter e))
     (define response-length (length (list-ref response-list player-dialog-index)))
     (define name (get-name e))
-    (define avatar-box (draw-avatar-box e))
+    (define avatar-box (if (get-storage "avatar-box" e)
+                           (get-storage-data "avatar-box" e)
+                           (draw-avatar-box e)))
     (define message-entity (create-dialog response-list name (posn (+ (- WIDTH TEXT-WIDTH) (/ TEXT-WIDTH 2) -6) ;(/ (* WIDTH 2.5) 4)
                                                                    (- HEIGHT 40))
                                           #:sound rsound))
@@ -389,10 +394,14 @@
                                        #:color 'yellow
                                        #:x-offset (- (/ name-box-width 2) (/ game-width 2))
                                        #:y-offset (- (+ 40 (/ name-box-height 2)))))
-  (define avatar-sprite (new-sprite avatar
-                                    #:animate #f
-                                    #:x-offset (- (* game-width 0.1) ;(+ 16 (/ (image-width avatar) 2))
-                                                  (/ game-width 2))))
+  (define avatar-sprite (cond [((listof sprite?) avatar) (map (curry set-x-offset (- (* game-width 0.1)
+                                                                                    (/ game-width 2))) avatar)]
+                              [(animated-sprite? avatar)         (set-x-offset (- (* game-width 0.1)
+                                                                                  (/ game-width 2)) avatar)]
+                              [(image? avatar)          (new-sprite avatar
+                                                                    #:animate #f
+                                                                    #:x-offset (- (* game-width 0.1) ;(+ 16 (/ (image-width avatar) 2))
+                                                                                  (/ game-width 2)))]))
   (flatten (list name-text-sprite
                  name-bordered-box
                  avatar-sprite
