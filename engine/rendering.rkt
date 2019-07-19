@@ -13,6 +13,9 @@
          force-recompile!
          cleanup-renderer!
          MONOSPACE-FONT-FACE
+         default-error-port
+         error-out-port
+         ml-scale-info
          )
 
 (require racket/match
@@ -66,6 +69,20 @@
 
 
 
+(define default-error-port (current-error-port))
+(define error-out-port #f)
+
+(define ml-scale-info #f)
+
+(define (extract-scale-info str)
+  (map (compose (curry map string->number)
+                string-split
+                string-trim
+                (curryr string-replace "'" "")
+                (curryr string-replace "(" "")
+                (curryr string-replace "#" "")
+                (curryr string-replace ")" ""))
+       (string-split str ") #")))
 
 (define (get-mode-lambda-render-tick original-entities)
   ;Assume the last entity is the background entity
@@ -112,7 +129,14 @@
   ;Set up our open gl render function with the current sprite database
   (define ml:render (gl:stage-draw/dc csd W H 8))
 
-
+  ;Clean up old port if it exists and open a new one
+  (if (and error-out-port
+           (port-closed? error-out-port))
+      (begin (close-output-port error-out-port)
+             (set! error-out-port (open-output-bytes)))
+      (set! error-out-port (open-output-bytes)))
+  (current-error-port error-out-port)
+  
   (define (ticky-tick current-entities)
     
     ;Find uncompiled entities...
@@ -125,20 +149,36 @@
                                    (lambda(e) #f)])
                     (recompile!))
                   (set! ml:render (gl:stage-draw/dc csd W H 8)))))
-    
 
     ;Create our sprites
     (define dynamic-sprites (game->mode-lambda-sprite-list current-entities))
 
     (define static-sprites (list))
 
+    ; This should capture and flush out mode lambda errors from the previous tick
+    (define e-string (bytes->string/utf-8 (get-output-bytes error-out-port #t)))
 
     ;Actually render them
-    (ml:render layers
-               static-sprites
-               dynamic-sprites))
+    ;(parameterize ([current-error-port error-out-port]) ;This isn't working for some reason
+      (if (equal? e-string "")
+          (ml:render layers
+                     static-sprites
+                     dynamic-sprites)
+          (begin (displayln e-string)
+                 (if (string-prefix? e-string "'#(#(")
+                     (begin (set! ml-scale-info (extract-scale-info e-string))
+                            (ml:render layers
+                                       static-sprites
+                                       dynamic-sprites))
+                     (ml:render layers
+                                static-sprites
+                                dynamic-sprites))))
+      ;)
+    )
 
-  ticky-tick)
+  ticky-tick
+  )
+
 
 (define lux:key-event?     #f)
 (define lux:mouse-event-xy #f)
@@ -206,13 +246,14 @@
   (demo-state d))
 
 
+;(gl:gl-filter-mode 'crt)
 
 (define (get-gui #:width [w 480] #:height [h 360])
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
   (make-gui #:start-fullscreen? #f
               #:frame-style (if (eq? (system-type 'os) 'windows)
-                                (list 'no-resize-border
-                                      'no-caption
+                                (list ;'no-resize-border
+                                      ;'no-caption
                                       )
                                 (list 'no-resize-border) ;DON'T CHANGE THIS
                                 )

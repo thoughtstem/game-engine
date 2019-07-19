@@ -144,7 +144,7 @@
 
 
 
-(struct carriable ())
+(component carriable ())
 
 (define (display-entity e)
   (define i (draw-entity e))
@@ -215,7 +215,7 @@
                  #:drop-sound     [drop-sound    #f]
                  #:show-info?     [show-info? #f]
                  #:on-drop        [on-drop display-entity])
-  (list (carriable)
+  (list (new-carriable)
         (on-key pickup-key #:rule (and/r (nearest-to-player? #:filter (has-component? on-key?))
                                          near-player?
                                          (not/r carried?)

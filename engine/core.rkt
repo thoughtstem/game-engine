@@ -26,7 +26,7 @@
          mouse-button-up?
 
          handle-mouse-xy
-         get-mouse-pos
+         get-raw-mouse-pos
          
          tick
 
@@ -865,8 +865,10 @@
                          )
   larger-state)
 
-(define (get-mouse-pos g)
-  (mouse-state-pos (game-mouse-input g)))
+(define (get-raw-mouse-pos g)
+  ;(define x-factor
+  (define raw-posn (mouse-state-pos (game-mouse-input g)))
+  raw-posn)
 
 (define (mouse-button-down? button g)
   (define ms (game-mouse-input g))

@@ -18,7 +18,8 @@
          stop-animation
          stop-all-animations
          start-first-animation
-         stop-first-animation)
+         stop-first-animation
+         simple-scale-sprite)
 
 (provide (all-from-out "./rgb-hsb.rkt"))
 
@@ -64,6 +65,12 @@
 (define (not-after-time-die? c)
   (not (eq? (after-time-func c) die)))
   
+
+; ONLY USE IF THE ENTITY HAS A SINGLE SPRITE
+(define (simple-scale-sprite amount)
+  (lambda (g e)
+    (define as (get-component e animated-sprite?))
+    (update-entity e animated-sprite? (scale-xy amount as))))
 
 ;if there is a duration, assume it's a power-up and filter out TOASTS AND PARTICLES!
 ;DON'T USE THIS TO SCALE TOASTS OR PARTCILES! Use scale-xy instead
