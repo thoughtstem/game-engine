@@ -1,0 +1,9 @@
+Clean up demos:
+  math-functions.rkt
+  interpreter.rkt
+  visualize-game.rkt
+
+(could we do something with video?)
+  Interactive educational videos 
+  Parameterized educational (meta) videos (that teach you how to make videos)
+    The input are the example videos used in the video.

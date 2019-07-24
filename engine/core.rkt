@@ -1,5 +1,6 @@
 #lang racket
 
+<<<<<<< HEAD
 ;Stuff for start-game
 (provide physics-start
          uniqify-ids
@@ -1545,4 +1546,8 @@
 
 
 
+=======
+(provide (all-from-out "./core/main.rkt"))
+>>>>>>> 99aa755710c677d85c7767af30f3bf8f97623f60
 
+(require "./core/main.rkt")
