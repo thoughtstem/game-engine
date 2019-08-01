@@ -70,9 +70,13 @@
   (stop-sound-streams) ;need to add a try-catch to handle improper shutdowns.
   (kill-all-chipmunks (demo-state lux-game))
   (cleanup-renderer!)
-  (displayln "=== RESETTING ERROR PORT ===")
+
+  ;(displayln "=== RESETTING ERROR PORT ===")
   (close-output-port error-out-port)
-  (current-error-port default-error-port)
+  ;(current-error-port default-error-port)
+  ;(error-display-handler default-error-handler)
+  ;(port-print-handler (current-error-port) default-error-print-handler)
+  
   (final-state lux-game))
 
 
