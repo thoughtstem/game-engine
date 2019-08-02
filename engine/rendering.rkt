@@ -70,19 +70,23 @@
 
 
 (define default-error-port (current-error-port))
+(define default-error-handler (error-display-handler))
+(define default-error-print-handler (port-print-handler (current-error-port)))
 (define error-out-port #f)
 
 (define ml-scale-info #f)
 
 (define (extract-scale-info str)
-  (map (compose (curry map string->number)
-                string-split
-                string-trim
-                (curryr string-replace "'" "")
-                (curryr string-replace "(" "")
-                (curryr string-replace "#" "")
-                (curryr string-replace ")" ""))
-       (string-split str ") #")))
+  (define scale-list (map (compose (curry map string->number)
+                                   string-split
+                                   string-trim
+                                   (curryr string-replace "'" "")
+                                   (curryr string-replace "(" "")
+                                   (curryr string-replace "#" "")
+                                   (curryr string-replace ")" ""))
+                          (string-split (string-replace str ")#(" ") #(") ") #(")))
+  (drop scale-list (- (length scale-list) 5))
+  )
 
 (define (get-mode-lambda-render-tick original-entities)
   ;Assume the last entity is the background entity
@@ -129,13 +133,47 @@
   ;Set up our open gl render function with the current sprite database
   (define ml:render (gl:stage-draw/dc csd W H 8))
 
+  ; ==== START OF ERROR PORT HACK ====
+  
   ;Clean up old port if it exists and open a new one
   (if (and error-out-port
            (port-closed? error-out-port))
       (begin (close-output-port error-out-port)
              (set! error-out-port (open-output-bytes)))
       (set! error-out-port (open-output-bytes)))
-  (current-error-port error-out-port)
+  
+  ;(current-error-port error-out-port)
+  (define (new-error-handler msg trace)
+    (displayln (first (shuffle (list "==== ERROR! YOUR CODE IS NOT PERFECT ===="
+                                     "==== IT'S OK, WE ALL MAKE MISTAKES ===="
+                                     "==== ARE YOU SURE THAT'S RIGHT? ===="
+                                     "==== IF AT FIRST YOU DON'T SUCCEED, TRY, TRY AGAIN ===="
+                                     "==== NEVER GIVE UP, NEVER SURRENDER ===="
+                                     "==== OOPS! SOMETHING WENT WRONG ===="))))
+    ;(displayln msg)
+    (if (port-closed? error-out-port)
+        (begin ;(displayln "==== ERROR PORT IS CLOSED ====")
+               (default-error-handler msg trace))
+        (begin (write msg error-out-port)
+               (default-error-handler msg trace)))
+    )
+
+  (error-display-handler new-error-handler)
+
+  (define (new-port-print-handler msg out)  ;used when (eprintf "~v" ...) is called
+    (displayln "=== WINDOW SIZE CHANGED ===")
+    (displayln msg)
+    (if (port-closed? error-out-port)
+        (begin ;(displayln "==== ERROR PORT IS CLOSED ====")
+               (default-error-print-handler msg out))
+        (begin (write msg error-out-port)
+               (default-error-print-handler msg out)))
+    )
+  
+  (port-print-handler (current-error-port) new-port-print-handler)
+
+  ; ==== END OF ERROR PORT HACK ====
+
   
   (define (ticky-tick current-entities)
     
@@ -165,7 +203,7 @@
                      static-sprites
                      dynamic-sprites)
           (begin (displayln e-string)
-                 (if (string-prefix? e-string "'#(#(")
+                 (if (string-prefix? e-string "#(#(")
                      (begin (set! ml-scale-info (extract-scale-info e-string))
                             (ml:render layers
                                        static-sprites
