@@ -70,7 +70,7 @@
 
 
 (define default-error-port (current-error-port))
-(define default-error-handler (error-display-handler))
+;(define default-error-handler (error-display-handler))
 (define default-error-print-handler (port-print-handler (current-error-port)))
 (define error-out-port #f)
 
@@ -143,7 +143,7 @@
       (set! error-out-port (open-output-bytes)))
   
   ;(current-error-port error-out-port)
-  (define (new-error-handler msg trace)
+  #|(define (new-error-handler msg trace)
     (displayln (first (shuffle (list "==== ERROR! YOUR CODE IS NOT PERFECT ===="
                                      "==== IT'S OK, WE ALL MAKE MISTAKES ===="
                                      "==== ARE YOU SURE THAT'S RIGHT? ===="
@@ -158,7 +158,7 @@
                (default-error-handler msg trace)))
     )
 
-  (error-display-handler new-error-handler)
+  (error-display-handler new-error-handler)|#
 
   (define (new-port-print-handler msg out)  ;used when (eprintf "~v" ...) is called
     (displayln "=== WINDOW SIZE CHANGED ===")
