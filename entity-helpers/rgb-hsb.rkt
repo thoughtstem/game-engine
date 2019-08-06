@@ -288,7 +288,10 @@
 
 (define/contract (scale-to-fit i w)
   (-> image? number? image?)
-  (scale (/ w (image-width i)) i))
+  (define longer-side (if (> (image-width i) (image-height i))
+                          (image-width i)
+                          (image-height i)))
+  (scale (/ w longer-side) i))
 
 ;useful function! provide out or put elsewhere
 ;creates silhouettes of an image -- turning every pixel
