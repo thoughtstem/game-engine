@@ -293,7 +293,8 @@
                                 (list ;'no-resize-border
                                       ;'no-caption
                                       )
-                                (list 'no-resize-border) ;DON'T CHANGE THIS
+                                (list ;'no-resize-border
+                                      )
                                 )
               #:mode gl:gui-mode
               #:width w
@@ -548,6 +549,7 @@
                   (struct-copy font f
                                [ml:font
                                 (ml:load-font! sd2
+                                               #:scaling 1.0
                                                #:size (font-size f)
                                                #:face   (font-face f)
                                                #:family (font-family f)
