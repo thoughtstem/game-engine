@@ -287,6 +287,7 @@
     (backdrop (random 1000000)
               (sheet->costume-list bg columns rows (* rows columns))
               columns #f current '()))
+  ;(displayln (~a "NEW BACKDROP ID: " (backdrop-id backdrop-component))) 
   (list
    backdrop-component
    (precompiler
@@ -556,7 +557,7 @@
                  current-tile
                  ))
     (~> e
-        ;(update-entity _ backdrop? b)
+        (update-entity _ backdrop? (first b))
         (update-entity _ animated-sprite? backdrop-animated-sprite))
     ))
 

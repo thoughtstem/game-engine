@@ -7,7 +7,7 @@
 
 (define deps '("threading"
                "memoize"
-               "mode-lambda"
+               "https://github.com/jeapostrophe/mode-lambda.git#0858b6d"
                "drracket"
                "htdp-lib"
                "https://github.com/jeapostrophe/lux.git" ;was frozen at #f6edd2e  
