@@ -21,6 +21,7 @@
 (require racket/match
          racket/fixnum
          racket/flonum
+         (only-in racket/gui/base get-display-backing-scale)
          lux
          
          lux/chaos/gui/val
@@ -93,8 +94,8 @@
   (define bg-entity (last original-entities))
 
   ;Use the background to setup some helpful constants
-  (define W (w bg-entity))
-  (define H (h bg-entity))
+  (define W (exact-round (* (w bg-entity) (get-display-backing-scale))))
+  (define H (exact-round (* (h bg-entity) (get-display-backing-scale))))
   (define W/2 (/ W 2))
   (define H/2 (/ H 2))
 
@@ -111,8 +112,6 @@
                   ; LAYER 0 - MOST ENTITIES
                   (ml:layer (real->double-flonum W/2)
                             (real->double-flonum H/2)
-                            ;#:mx 0.1
-                            ;#:my 0.1
                             ;#:mode7 2.0
                             ;#:horizon 50.0
                             )
@@ -131,7 +130,7 @@
                   ))
 
   ;Set up our open gl render function with the current sprite database
-  (define ml:render (gl:stage-draw/dc csd W H 8))
+  (define ml:render (gl:stage-draw/dc csd W H (vector-length layers)))
 
   ; ==== START OF ERROR PORT HACK ====
   
@@ -286,19 +285,21 @@
 
 ;(gl:gl-filter-mode 'crt)
 
-(define (get-gui #:width [w 480] #:height [h 360])
+(define (get-gui #:width  [w 480]
+                 #:height [h 360])
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
   (make-gui #:start-fullscreen? #f
-              #:frame-style (if (eq? (system-type 'os) 'windows)
-                                (list ;'no-resize-border
-                                      ;'no-caption
-                                      )
-                                (list ;'no-resize-border
-                                      )
-                                )
-              #:mode gl:gui-mode
-              #:width w
-              #:height h))
+            #:opengl-hires? #t
+            #:frame-style (if (eq? (system-type 'os) 'windows)
+                              (list ;'no-resize-border
+                                    ;'no-caption
+                               )
+                              (list ;'no-resize-border
+                               )
+                              )
+            #:mode gl:gui-mode  ; 'gl-core
+            #:width w
+            #:height h))
 
 (define (get-render render-tick)
   (if last-game-snapshot
@@ -453,9 +454,9 @@
     (remember-image! image))
 
   (and (not (empty? uncompiled-images))
-       #;
+       ;#;
        (displayln "Recompile! Because:")
-       #;
+       ;#;
        (displayln (map fast-image-data uncompiled-images))
        (set! compiled-images (append compiled-images uncompiled-images))
        (set! should-recompile? #t)))
@@ -489,9 +490,9 @@
                 fonts))
 
   (and (not (empty? uncompiled-fonts))
-       #;
+       ;#;
        (displayln "Registering New Fonts:")
-       #;
+       ;#;
        (displayln (~a (remove-duplicates (map object->font uncompiled-fonts))))
        (set! game-fonts (append game-fonts (remove-duplicates (map object->font uncompiled-fonts))))
        (set! should-recompile? #t)
@@ -549,13 +550,13 @@
                   (struct-copy font f
                                [ml:font
                                 (ml:load-font! sd2
-                                               #:scaling 1.0
+                                               #:scaling (get-display-backing-scale)
                                                #:size (font-size f)
                                                #:face   (font-face f)
                                                #:family (font-family f)
                                                #:style  (font-style f)
                                                #:weight (font-weight f)
-                                               ;#:smoothing 'unsmoothed
+                                               #:smoothing 'unsmoothed
                                                )]))
             game-fonts))
 
@@ -678,14 +679,16 @@
                               #:r (first c) #:g (second c) #:b (third c)
                               #:layer layer
                               (real->double-flonum
-                               (+ (x e)
-                                  (animated-sprite-x-offset as)))
+                               (* (get-display-backing-scale)
+                                  (+ (x e)
+                                     (animated-sprite-x-offset as))))
                               (real->double-flonum
-                               (+ (y e)
-                                  (- (* tf-font-size .75)) ;-10
-                                  (animated-sprite-y-offset as)))
-                              #:mx (real->double-flonum (* (animated-sprite-x-scale as) tf-scale))
-                              #:my (real->double-flonum (* (animated-sprite-y-scale as) tf-scale)))))
+                               (* (get-display-backing-scale)
+                                  (+ (y e)
+                                     (- (* tf-font-size .75)) ;-10
+                                     (animated-sprite-y-offset as))))
+                              #:mx (real->double-flonum (* (animated-sprite-x-scale as) tf-scale (get-display-backing-scale)))
+                              #:my (real->double-flonum (* (animated-sprite-y-scale as) tf-scale (get-display-backing-scale))))))
   
   )
 
@@ -702,14 +705,16 @@
        (ml:sprite #:layer layer
                   #:r (first c) #:g (second c) #:b (third c)
                   (real->double-flonum
-                   (+ (x e)
-                      (animated-sprite-x-offset as)))
+                   (* (get-display-backing-scale)
+                      (+ (x e)
+                         (animated-sprite-x-offset as))))
                   (real->double-flonum
-                   (+ (y e)
-                      (animated-sprite-y-offset as)))
+                   (* (get-display-backing-scale)
+                      (+ (y e)
+                         (animated-sprite-y-offset as))))
                   sprite-id
-                  #:mx (real->double-flonum (animated-sprite-x-scale as))
-                  #:my (real->double-flonum (animated-sprite-y-scale as))
+                  #:mx (real->double-flonum (* (get-display-backing-scale) (animated-sprite-x-scale as)))
+                  #:my (real->double-flonum (* (get-display-backing-scale) (animated-sprite-y-scale as)))
                   #:theta (real->double-flonum (animated-sprite-rotation as))	 	 
                   ))
 
