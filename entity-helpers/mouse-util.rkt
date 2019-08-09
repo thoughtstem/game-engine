@@ -14,8 +14,7 @@
          "./movement-util.rkt"
          posn
          2htdp/image
-         (only-in racket/gui/base
-                  get-display-backing-scale))
+         )
 
 (define (mouse-in-game? g e)
   (define m-pos (get-mouse-pos g))
@@ -23,10 +22,13 @@
   )
 
 (define (get-mouse-pos g)
+  (define get-backing-scale (dynamic-require 'racket/gui/base 'get-display-backing-scale))
+  (define display-scale (get-backing-scale))
+  
   (define raw-posn (get-raw-mouse-pos g))
   (define raw-x (posn-x raw-posn))
   (define raw-y (posn-y raw-posn))
-  (define display-scale (get-display-backing-scale))
+  
   (if ml-scale-info
       (let ([scale-x  (first  (second ml-scale-info))]
             [scale-y  (second (second ml-scale-info))]

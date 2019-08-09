@@ -21,7 +21,6 @@
 (require racket/match
          racket/fixnum
          racket/flonum
-         (only-in racket/gui/base get-display-backing-scale)
          lux
          
          lux/chaos/gui/val
@@ -90,12 +89,13 @@
   )
 
 (define (get-mode-lambda-render-tick original-entities)
+  (define get-backing-scale (dynamic-require 'racket/gui/base 'get-display-backing-scale))
   ;Assume the last entity is the background entity
   (define bg-entity (last original-entities))
 
   ;Use the background to setup some helpful constants
-  (define W (exact-round (* (w bg-entity) (get-display-backing-scale))))
-  (define H (exact-round (* (h bg-entity) (get-display-backing-scale))))
+  (define W (exact-round (* (w bg-entity) (get-backing-scale))))
+  (define H (exact-round (* (h bg-entity) (get-backing-scale))))
   (define W/2 (/ W 2))
   (define H/2 (/ H 2))
 
@@ -524,7 +524,7 @@
   (recompile!))
 
 (define (recompile!)
-  
+  (define get-backing-scale (dynamic-require 'racket/gui/base 'get-display-backing-scale))
   (and should-recompile?
        (set! should-recompile? #f)
        (let ([sd2 (ml:make-sprite-db)])
@@ -550,7 +550,7 @@
                   (struct-copy font f
                                [ml:font
                                 (ml:load-font! sd2
-                                               #:scaling (get-display-backing-scale)
+                                               #:scaling (get-backing-scale)
                                                #:size (font-size f)
                                                #:face   (font-face f)
                                                #:family (font-family f)
@@ -662,6 +662,7 @@
          ))
 
 (define (string-animated-sprite->ml:sprite e as layer)
+  (define get-backing-scale (dynamic-require 'racket/gui/base 'get-display-backing-scale))
   (define tf-scale (text-frame-scale (render-text-frame as)))
   (define tf-font (text-frame-font (render-text-frame as)))
   (define tf-font-size (get-font-size (render-text-frame as)))
@@ -679,20 +680,21 @@
                               #:r (first c) #:g (second c) #:b (third c)
                               #:layer layer
                               (real->double-flonum
-                               (* (get-display-backing-scale)
+                               (* (get-backing-scale)
                                   (+ (x e)
                                      (animated-sprite-x-offset as))))
                               (real->double-flonum
-                               (* (get-display-backing-scale)
+                               (* (get-backing-scale)
                                   (+ (y e)
                                      (- (* tf-font-size .75)) ;-10
                                      (animated-sprite-y-offset as))))
-                              #:mx (real->double-flonum (* (animated-sprite-x-scale as) tf-scale (get-display-backing-scale)))
-                              #:my (real->double-flonum (* (animated-sprite-y-scale as) tf-scale (get-display-backing-scale))))))
+                              #:mx (real->double-flonum (* (animated-sprite-x-scale as) tf-scale (get-backing-scale)))
+                              #:my (real->double-flonum (* (animated-sprite-y-scale as) tf-scale (get-backing-scale))))))
   
   )
 
 (define (image-animated-sprite->ml:sprite e as layer)
+  (define get-backing-scale (dynamic-require 'racket/gui/base 'get-display-backing-scale))
   (define c (animated-sprite-rgb as))
   (define f   (current-fast-frame as))
 
@@ -705,16 +707,16 @@
        (ml:sprite #:layer layer
                   #:r (first c) #:g (second c) #:b (third c)
                   (real->double-flonum
-                   (* (get-display-backing-scale)
+                   (* (get-backing-scale)
                       (+ (x e)
                          (animated-sprite-x-offset as))))
                   (real->double-flonum
-                   (* (get-display-backing-scale)
+                   (* (get-backing-scale)
                       (+ (y e)
                          (animated-sprite-y-offset as))))
                   sprite-id
-                  #:mx (real->double-flonum (* (get-display-backing-scale) (animated-sprite-x-scale as)))
-                  #:my (real->double-flonum (* (get-display-backing-scale) (animated-sprite-y-scale as)))
+                  #:mx (real->double-flonum (* (get-backing-scale) (animated-sprite-x-scale as)))
+                  #:my (real->double-flonum (* (get-backing-scale) (animated-sprite-y-scale as)))
                   #:theta (real->double-flonum (animated-sprite-rotation as))	 	 
                   ))
 
