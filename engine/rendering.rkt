@@ -109,23 +109,37 @@
   ;Define that we'll have one layer of sprites (for now).
   ;Fix its position at the center of the screen
   (define layers (vector
-                  ; LAYER 0 - MOST ENTITIES
+                  ; LAYER 0 - MODE7-FLOOR
+                  (ml:layer (real->double-flonum W/2)
+                            (real->double-flonum H/2)
+                            #:horizon -20.0   ; What does this do???
+                            #:mode7   2.0
+                            #:fov     30.0 ;(* W 0.15)
+                            )
+                  ; LAYER 1 - MOST ENTITIES
                   (ml:layer (real->double-flonum W/2)
                             (real->double-flonum H/2)
                             ;#:mode7 2.0
                             ;#:horizon 50.0
                             )
-                  ; LAYER 1 - TREE TOPS AND ROOF TOPS
+                  ; LAYER 2 - TREE TOPS AND ROOF TOPS
                   (ml:layer (real->double-flonum W/2)
                             (real->double-flonum H/2)
                             )
-                  ; LAYER 2 - SKY
+                  ; LAYER 3 - SKY
                   (ml:layer (real->double-flonum W/2)
                             (real->double-flonum H/2)
                             )
-                  ; LAYER 3 - UI
+                  ; LAYER 4 - UI
                   (ml:layer (real->double-flonum W/2)
                             (real->double-flonum H/2)
+                            )
+                  ; LAYER 5 - STAR WARS EFFECT LAYER
+                  (ml:layer (real->double-flonum W/2)
+                            (real->double-flonum H/2)
+                            #:horizon 20.0   ; What does this do???
+                            #:mode7   2.0
+                            #:fov     240.0 ;(* W 0.5) / 240.0
                             )
                   ))
 
@@ -628,11 +642,23 @@
   ;(define (tops? e)  ; for treetops and rooftops
   ;  (and (get-component e layer?)
   ;       (eq? (get-layer e) "tops")))
+  (define (mode7-floor? e)
+    (and (get-component e layer?)
+         (eq? (get-layer e) "mode7-floor")))
 
-  (define layer (cond [(ui? e)   3]
-                      [(sky-layer? e)  2]
-                      [(tops? e) 1]
-                      [else      0]))
+  (define layer (if (get-sprite-layer as)
+                    (cond [(eq? (get-sprite-layer as) "star-wars") 5]
+                          [(eq? (get-sprite-layer as) "ui")   4]
+                          [(eq? (get-sprite-layer as) "sky")  3]
+                          [(eq? (get-sprite-layer as) "tops") 2]
+                          [(eq? (get-sprite-layer as) "mode7-floor") 0]
+                          [else      1])
+                    (cond [(star-wars-layer? e) 5]
+                          [(ui? e)   4]
+                          [(sky-layer? e)  3]
+                          [(tops? e) 2]
+                          [(mode7-floor? e) 0]
+                          [else      1])))
 
   
   (cond [(image-animated-sprite? as) (image-animated-sprite->ml:sprite e as layer)]

@@ -328,7 +328,8 @@
          set-sprite-color
          set-sprite-angle
          set-sprite-x-offset
-         set-sprite-y-offset)
+         set-sprite-y-offset
+         set-sprite-layer)
 
 ;Convenience methods for going from sheets to sprites
 
@@ -410,5 +411,14 @@
   (if (animated-sprite? as)
       (set-y-offset v as)
       (new-sprite as #:y-offset v))
+  )
+
+(define/contract (set-sprite-layer l as)
+  (-> string? (or/c animated-sprite? image?) animated-sprite?)
+
+  (if (animated-sprite? as)
+      (struct-copy animated-sprite as
+                   [layer l])
+      (new-sprite as #:layer l))
   )
 
