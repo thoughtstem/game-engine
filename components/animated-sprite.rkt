@@ -122,6 +122,7 @@
 
          get-rotation
          get-color
+         get-sprite-layer
 
          sprite-width    ; matches syntax of image-width
          sprite-height   ; matches syntax of image-height
@@ -146,6 +147,8 @@
          
          change-x-offset
          change-y-offset
+         multiply-x-offset
+         multiply-y-offset
 
          string-animated-sprite?
          image-animated-sprite?
@@ -237,6 +240,7 @@
          x-offset
          y-offset
          color
+         layer
          )
   #:transparent
   ;#:mutable
@@ -325,6 +329,9 @@
 
 (define (get-color as)
   (animated-sprite-color as))
+
+(define (get-sprite-layer as)
+  (animated-sprite-layer as))
  
 ;
 (define/contract (set-x-offset v as)
@@ -686,5 +693,23 @@
   ;as
   (struct-copy animated-sprite as
                [y-offset (+ (get-y-offset as) v)])
+  )
+
+(define/contract (multiply-x-offset v as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  ;(set-animated-sprite-x-offset! as v)
+  ;as
+  (struct-copy animated-sprite as
+               [x-offset (* (get-x-offset as) v)])
+  )
+
+(define/contract (multiply-y-offset v as)
+  (-> number? animated-sprite? animated-sprite?)
+  
+  ;(set-animated-sprite-y-offset! as v)
+  ;as
+  (struct-copy animated-sprite as
+               [y-offset (* (get-y-offset as) v)])
   )
 

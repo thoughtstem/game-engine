@@ -30,6 +30,7 @@
          
          tick
 
+         star-wars-layer?
          ui?
          not-ui?
          tops?
@@ -403,6 +404,7 @@
 
 ; ======= NEW SPRITE ==========
 (define/contract (new-sprite costumes (rate 1)
+                             #:layer   [layer #f]
                              #:animate [animate? #t]
                              #:x-offset (x-offset 0)
                              #:y-offset (y-offset 0)
@@ -414,7 +416,8 @@
   (->* ((or/c image? (listof image?)
               string?     (listof string?)
               text-frame? (listof text-frame?)))
-       (number? #:animate boolean?
+       (number? #:layer  (or/c string? #f)
+                #:animate boolean?
                 #:x-offset number?
                 #:y-offset number?
                 #:color    (or/c symbol? string?) ;TODO: also take color object
@@ -448,6 +451,7 @@
    x-offset ;x offset
    y-offset ;y offset
    color
+   layer
    ))
 
 ;Animated sprites are components, but we'll handle them specially
@@ -898,9 +902,15 @@
      [(eq? button 'right) (mouse-state-right prev-ms)]
      [else #f])))
 
+
+(define (star-wars-layer? e)
+  (and ((has-component? layer?) e)
+       (eq? (get-layer e) "star-wars")))
+
 (define (ui? e)
     (and ((has-component? layer?) e)
-         (eq? (get-layer e) "ui")))
+         (or (eq? (get-layer e) "ui")
+             (eq? (get-layer e) "star-wars"))))
 
 (define (not-ui? e)
   (not (ui? e)))
