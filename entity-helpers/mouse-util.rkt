@@ -8,10 +8,13 @@
          CROSSHAIR-IMG
          POINTER-IMG
          go-to-mouse
-         touching-pointer?)
+         touching-pointer?
+         on-sprite-click
+         )
 
 (require "../game-entities.rkt"
          "./movement-util.rkt"
+         "../components/on-mouse.rkt"
          posn
          2htdp/image
          )
@@ -83,3 +86,6 @@
        (< mx (+ x (/ w 2)))
        (> my (- y (/ h 2)))
        (< my (+ y (/ h 2)))))
+
+(define (on-sprite-click #:key [key 'left] func)
+  (on-mouse key #:rule touching-pointer? func))

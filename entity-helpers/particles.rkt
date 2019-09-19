@@ -82,6 +82,7 @@
 ; Todo: add option to create sprites over time.
 (define (custom-particle-system
          #:sprite [sprite green-star]
+         #:color  [col 'rainbow]
          #:amount-of-particles [amount 10]
          #:speed  [spd 5]
          #:scale-each-tick [scale-each-tick 1.01]
@@ -92,7 +93,10 @@
   (precompile! sprite)
   
   (define (particle-sprite)
-    (set-sprite-color (first (shuffle (list 'red 'orange 'yellow 'green 'blue 'indigo 'violet))) sprite))
+    (set-sprite-color (cond [(eq? col 'rainbow) (first (shuffle (list 'red 'orange 'yellow 'green 'blue 'indigo 'violet)))]
+                            [(eq? col 'none) 'black]
+                            [(eq? col #f) 'black]
+                            [else col]) sprite))
 
   (define particle-sprites
     (map (λ(x) (particle-sprite)) (range amount)))
@@ -108,13 +112,17 @@
     (define starting-directions (second (get-storage-data (~a "particle-" particle-id) e)))
     (define current-particle-sprites (get-components e (λ(c) (member (component-id c) pid-list))))
     ;random color, scale sprite, changes direction by -15 to 15, and move
-    (define new-particle-sprites (map (λ (s d)
-                                        (~> s
-                                            (move-sprite #:direction (+ d (random -45 46)) #:speed spd)
-                                            (set-sprite-color (first (shuffle (list 'red 'orange 'yellow 'green 'blue 'indigo 'violet)))
-                                                              _)
-                                            (scale-xy scale-each-tick _)))
-                                      current-particle-sprites starting-directions))
+    (define new-particle-sprites
+      (map (λ (s d)
+             (~> s
+                 (move-sprite #:direction (+ d (random -45 46)) #:speed spd)
+                 (ml-set-color (cond [(eq? col 'rainbow) (first (shuffle (list 'red 'orange 'yellow 'green 'blue 'indigo 'violet)))]
+                                     [(eq? col 'none) 'black]
+                                     [(eq? col #f) 'black]
+                                     [else col])
+                               _)
+                 (scale-xy scale-each-tick _)))
+           current-particle-sprites starting-directions))
     (~> e
         (remove-components _ (λ(c) (member (component-id c) pid-list)))
         (add-components _ new-particle-sprites)))

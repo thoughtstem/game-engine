@@ -20,6 +20,7 @@
          start-first-animation
          stop-first-animation
          simple-scale-sprite)
+(provide ml-set-color)
 
 (provide (all-from-out "./rgb-hsb.rkt"))
 
@@ -33,6 +34,7 @@
 (require "./rgb-hsb.rkt")
 (require "../components/after-time.rkt")
 (require "../component-util.rkt")
+(require "../engine/component-struct.rkt")
 ;(require "../ai.rkt")
 
 (require posn
@@ -239,6 +241,11 @@
     (update-entity e animated-sprite?
                    (struct-copy animated-sprite s [frames (list->vector new-list)]))))
 
+(define/contract (ml-set-color c as)
+  (-> symbol? animated-sprite? animated-sprite?)
+  (struct-copy animated-sprite as
+               [color c]))
+
 (define (random-color min max)
   (lambda (g e)
     (define s (get-component e animated-sprite?))
@@ -366,6 +373,11 @@
 ; either an image or an animated sprite. These also perform
 ; a struct copy on the sprite. For internal usage, use the
 ; previous functions for faster performance.
+; TODO: force new cid to ensure uniqueness?
+
+(define (uniqify-sprite as)
+  (struct-copy animated-sprite as
+               [cid #:parent component-struct (next-component-id)]))
 
 (define/contract (set-sprite-scale s as)
   (-> number? (or/c animated-sprite? image?) animated-sprite?)
@@ -377,15 +389,15 @@
                         (get-y-scale as)
                         1))|#
   (if (animated-sprite? as)
-      (scale-xy s as)
+      (uniqify-sprite (scale-xy s as))
       (new-sprite as #:scale s)))
 
 (define/contract (set-sprite-color c as)
   (-> symbol? (or/c animated-sprite? image?) animated-sprite?)
 
   (if (animated-sprite? as)
-      (struct-copy animated-sprite as
-                   [color c])
+      (uniqify-sprite (struct-copy animated-sprite as
+                                [color c]))
       (new-sprite as #:color c))
   )
 
@@ -393,7 +405,7 @@
   (-> number? (or/c animated-sprite? image?) animated-sprite?)
 
   (if (animated-sprite? as)
-      (set-angle v as)
+      (uniqify-sprite (set-angle v as))
       (new-sprite as #:rotation v))
   )
 
@@ -401,7 +413,7 @@
   (-> number? (or/c animated-sprite? image?) animated-sprite?)
 
   (if (animated-sprite? as)
-      (set-x-offset v as)
+      (uniqify-sprite (set-x-offset v as))
       (new-sprite as #:x-offset v))
   )
 
@@ -409,7 +421,7 @@
   (-> number? (or/c animated-sprite? image?) animated-sprite?)
 
   (if (animated-sprite? as)
-      (set-y-offset v as)
+      (uniqify-sprite (set-y-offset v as))
       (new-sprite as #:y-offset v))
   )
 
@@ -417,8 +429,8 @@
   (-> string? (or/c animated-sprite? image?) animated-sprite?)
 
   (if (animated-sprite? as)
-      (struct-copy animated-sprite as
-                   [layer l])
+      (uniqify-sprite (struct-copy animated-sprite as
+                   [layer l]))
       (new-sprite as #:layer l))
   )
 
