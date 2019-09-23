@@ -156,13 +156,20 @@
          animated-sprite-rgb
          
          freeze-image
-         prep-costumes)
+         prep-costumes
+
+         MONOSPACE-FONT-FACE)
 
 (require 2htdp/image)
 (require threading)
 (require (only-in racket/draw
                   the-color-database))
 (require "../engine/component-struct.rkt")
+
+(define MONOSPACE-FONT-FACE
+  (cond [(eq? (system-type 'os) 'windows) "Consolas" ]
+        [(eq? (system-type 'os) 'macosx)  "Menlo"]
+        [(eq? (system-type 'os) 'unix)    "DejaVu Sans Mono"]))
 
 ;Convenience methods for going from sheets to sprites
 
@@ -582,11 +589,30 @@
         [else (error "What is this?")]))
 
 (define (text-frame->image thing)
-  (text (text-frame-string thing)
-        (exact-round (* (get-font-size thing) (text-frame-scale thing)))
-        (if (text-frame-color thing)
-            (text-frame-color thing)
-            'white)))
+  (define tf-font (text-frame-font thing))
+  (scale (text-frame-scale thing)
+         (if tf-font
+             (text/font (text-frame-string thing)
+                        (send tf-font get-size)
+                        (if (text-frame-color thing)
+                            (text-frame-color thing)
+                            'white)
+                        (send tf-font get-face)
+                        (send tf-font get-family)
+                        (send tf-font get-style)
+                        (send tf-font get-weight)
+                        (send tf-font get-underlined))
+             (text/font (text-frame-string thing)
+                        13
+                        (if (text-frame-color thing)
+                            (text-frame-color thing)
+                            'white)
+                        MONOSPACE-FONT-FACE
+                        'modern
+                        'normal
+                        'normal
+                        #f
+                        ))))
 
 (define/contract (reset-animation s)
   (-> animated-sprite? animated-sprite?)

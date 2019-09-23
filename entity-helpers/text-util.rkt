@@ -11,7 +11,7 @@
 (define (text-sprite str-or-list
                      #:scale       [scale 1]
                      #:font-size   [f-size 13]
-                     #:font-face   [f-face "DejaVu Sans Mono"]
+                     #:font-face   [f-face MONOSPACE-FONT-FACE]
                      #:font-family [f-family 'modern]
                      #:font-style  [f-style  'normal]
                      #:font-weight [f-weight 'normal]

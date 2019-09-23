@@ -12,7 +12,7 @@
          recompile!
          force-recompile!
          cleanup-renderer!
-         MONOSPACE-FONT-FACE
+         ;MONOSPACE-FONT-FACE
          default-error-port
          error-out-port
          ml-scale-info
@@ -515,10 +515,10 @@
 
 (struct font (size face family style weight ml:font renderer) #:transparent)
 
-(define MONOSPACE-FONT-FACE
-  (cond [(eq? (system-type 'os) 'windows) "Consolas" ]
-        [(eq? (system-type 'os) 'macosx)  "Menlo"]
-        [(eq? (system-type 'os) 'unix)    "DejaVu Sans Mono"]))
+;(define MONOSPACE-FONT-FACE
+;  (cond [(eq? (system-type 'os) 'windows) "Consolas" ]
+;        [(eq? (system-type 'os) 'macosx)  "Menlo"]
+;        [(eq? (system-type 'os) 'unix)    "DejaVu Sans Mono"]))
   
 (define game-fonts
   (list (font 13.0 MONOSPACE-FONT-FACE
