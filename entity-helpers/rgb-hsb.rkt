@@ -3,10 +3,12 @@
 (provide change-img-hue     ; 0 to 360
          change-img-sat     ; 0 to 100
          change-img-bright  ; 0 to 100
+         change-img-alpha   ; 0 255
 
          set-img-hue        ; 0 to 360
          set-img-sat        ; 0 to 100
          set-img-bright     ; 0 to 100
+         set-img-alpha      ; 0 to 255
          
          tint-img
          mask
@@ -241,6 +243,12 @@
         (hsb->color (struct-copy color-hsb hsb-c
                                  [bright (max 0 (min 100  (+ (color-hsb-bright hsb-c) amount)))])))))
 
+(define (change-alpha amount c)
+  (if (= (color-alpha c) 0)
+      c
+      (struct-copy color c
+                   [alpha (max 0 (min 255  (+ (color-alpha c) amount)))])))
+
 (define (set-hue amount c)
   (if (= (color-alpha c) 0)
       c
@@ -262,6 +270,12 @@
         (hsb->color (struct-copy color-hsb hsb-c
                                  [bright (max 0 (min 100 amount))])))))
 
+(define (set-alpha amount c)
+  (if (= (color-alpha c) 0)
+      c
+      (struct-copy color c
+                   [alpha (max 0 (min 255 amount))])))
+
 (define (change-img-hue amount image)
   (define image-list (image->color-list image))
   (color-list->bitmap (map (curry change-hue amount) image-list) (image-width image) (image-height image)))
@@ -274,6 +288,10 @@
   (define image-list (image->color-list image))
   (color-list->bitmap (map (curry change-bright amount) image-list) (image-width image) (image-height image)))
 
+(define (change-img-alpha amount image)
+  (define image-list (image->color-list image))
+  (color-list->bitmap (map (curry change-alpha amount) image-list) (image-width image) (image-height image)))
+
 (define (set-img-hue amount image)
   (define image-list (image->color-list image))
   (color-list->bitmap (map (curry set-hue amount) image-list) (image-width image) (image-height image)))
@@ -285,6 +303,10 @@
 (define (set-img-bright amount image)
   (define image-list (image->color-list image))
   (color-list->bitmap (map (curry set-bright amount) image-list) (image-width image) (image-height image)))
+
+(define (set-img-alpha amount image)
+  (define image-list (image->color-list image))
+  (color-list->bitmap (map (curry set-alpha amount) image-list) (image-width image) (image-height image)))
 
 (define/contract (scale-to-fit i w)
   (-> image? number? image?)

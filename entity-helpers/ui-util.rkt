@@ -4,7 +4,8 @@
          toast-entity
          toast-system
          ;player-toast-entity ;must remove provides from base langauges first
-         game-toast-entity)
+         game-toast-entity
+         make-rounded-icon)
 
 (require "../game-entities.rkt"
          "../component-util.rkt"
@@ -20,6 +21,10 @@
          "./movement-util.rkt")
 
 (require 2htdp/image
+         (only-in pict
+                  filled-rounded-rectangle
+                  inset
+                  pict->bitmap)
          posn
          threading)
 
@@ -171,4 +176,10 @@
                                (every-tick (do-many (move)
                                                     (random-direction)))
                                (after-time dur die)))
+
+(define (make-rounded-icon i [fill-color "yellow"] [border-color "black"])
+  (overlay i
+           (pict->bitmap (inset (filled-rounded-rectangle 32 32 #:color (~a fill-color)
+                                                          #:border-color (~a border-color)
+                                                          #:border-width 2) 2))))
 
