@@ -124,6 +124,8 @@
          get-color
          get-sprite-layer
 
+         set-as-layer
+
          sprite-width    ; matches syntax of image-width
          sprite-height   ; matches syntax of image-height
 
@@ -339,7 +341,14 @@
 
 (define (get-sprite-layer as)
   (animated-sprite-layer as))
- 
+
+(define/contract (set-as-layer v as)
+  (-> string? animated-sprite? animated-sprite?)
+  
+  (struct-copy animated-sprite as
+               [layer v])
+  )
+
 ;
 (define/contract (set-x-offset v as)
   (-> number? animated-sprite? animated-sprite?)
