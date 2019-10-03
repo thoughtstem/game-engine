@@ -3,6 +3,7 @@
 ;Stuff for start-game
 (provide physics-start
          uniqify-ids
+         ;component-struct
          initialize-game
          (rename-out (requested-width GAME-WIDTH)
                      (requested-height GAME-HEIGHT)
@@ -93,6 +94,7 @@
          (struct-out dead)
          die
          get-entity
+         get-entities
 
          colliding-with
          is-colliding-with?
@@ -654,6 +656,11 @@
   (define (has-name n e)
     (string=? n (get-name e)))
   (findf (curry has-name name) (game-entities g)))
+
+(define (get-entities name g)
+  (define (has-name n e)
+    (string=? n (get-name e)))
+  (filter (curry has-name name) (game-entities g)))
 
 
 (define (ensure-sprite sprite-or-image)

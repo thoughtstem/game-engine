@@ -41,7 +41,7 @@ before_script:
 # `raco pkg install --deps search-auto` to install any required
 # packages without it getting stuck on a confirmation prompt.
 script:
- - cd travis-build-process && bash build.sh
+ - cd travis-build-process/GE && bash build.sh
 
 
 after_success:

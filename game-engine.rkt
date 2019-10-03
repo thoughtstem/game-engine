@@ -52,6 +52,7 @@
  (all-from-out "entity-helpers/ui-util.rkt")
  (all-from-out "entity-helpers/render-util.rkt")
  (all-from-out "entity-helpers/text-util.rkt")
+ (all-from-out "entity-helpers/cutscene-util.rkt")
  #%module-begin)
 
 
@@ -107,4 +108,5 @@
 (require "entity-helpers/ui-util.rkt")
 (require "entity-helpers/render-util.rkt")
 (require "entity-helpers/text-util.rkt")
+(require "entity-helpers/cutscene-util.rkt")
 

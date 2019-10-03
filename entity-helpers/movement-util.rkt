@@ -29,6 +29,7 @@
          "../components/direction.rkt"
          "../components/every-tick.rkt"
          "../components/animated-sprite.rkt"
+         "../components/storage.rkt"
          "../component-util.rkt"
          "../ai.rkt"
          2htdp/image
@@ -191,18 +192,29 @@
     (define p (get-component e posn?))
     (update-entity e posn? (posn (posn-x p) (+ (posn-y p) (random min (add1 max)))))))
 
-; Warning: This may not work with other every-tick components
+; UPDATE: This now stores any existing every-tick component
 (define (freeze-entity)
   (lambda (g e)
     (define p (get-component e posn?))
-    (add-component (remove-component e every-tick?)
-                   (every-tick (do-many (go-to (posn-x p) (posn-y p))
-                                        #;(set-direction 0))))))
+    (define old-components (get-components e every-tick?))
+    (~> e
+        (remove-components _ every-tick?)
+        (add-components _ (storage "stored-components" old-components)
+                          (every-tick (do-many (go-to (posn-x p) (posn-y p))
+                                               #;(set-direction 0)))))))
 
-;;Warning: This will also remove any existing every-tick components
+;UPDATE: This now restores any existing every-tick component
 (define (un-freeze-entity)
   (lambda (g e)
-    (remove-component e every-tick?)))
+    (define old-components (and (get-storage "stored-components" e)
+                                (get-storage-data "stored-components" e)))
+    (if (and old-components
+             (not (empty? old-components)))
+        (~> e
+            (remove-components _ every-tick?)
+            (remove-storage "stored-components" _)
+            (add-components _ old-components))
+        (remove-components e every-tick?))))
 
 (define (distance-between pos1 pos2)
   (define p (posn-subtract pos2 pos1))
