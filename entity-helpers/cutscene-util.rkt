@@ -4,7 +4,7 @@
          page
          move-a-sprite
          scale-a-sprite
-         ;motion-item
+         motion-item
          ;images-or-images?
          ;string-or-text-frame?
          
@@ -182,10 +182,12 @@
                (let ([last-height (apply + (map get-largest-sprite-height (take items-list i)))]
                      [half-height-item (/ (get-largest-sprite-height item) 2)])
                  (map (λ (s)
-                        (set-y-offset (+ last-height
+                        (if (member s list-of-floating-motion-sprites component-eq?)
+                            s
+                            (set-y-offset (+ last-height
                                          half-height-item
                                          (- half-of-total)
-                                         (get-y-offset s)) s))
+                                         (get-y-offset s)) s)))
                       item)
                  ))))
 
