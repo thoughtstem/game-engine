@@ -1,6 +1,8 @@
 #lang racket
 
 (provide cutscene
+         change-cutscene
+         change-cutscene-by
          page
          move-a-sprite
          scale-a-sprite
@@ -285,6 +287,28 @@
     (define cut-scenes (get-storage-data "cut-scenes" e))
     (define current-scene-index (get-counter e))
     (define next-scene-index (min (add1 current-scene-index) (sub1 (length cut-scenes)))) ;capping at length - 1 just in case.
+    (if (= current-scene-index (sub1 (length cut-scenes)))
+        (die g e)
+        (~> e
+            (remove-components _ (or/c animated-sprite?
+                                       after-time?
+                                       every-tick?))
+            (add-components _ (get-components (list-ref cut-scenes next-scene-index) (or/c animated-sprite?
+                                                                                           every-tick?
+                                                                                           on-start?
+                                                                                           (and/c after-time?
+                                                                                                  (λ (c)
+                                                                                                    (not (eq? (after-time-func c) die))))))
+                            (unless (not (get-storage-data "duration" (list-ref cut-scenes next-scene-index)))
+                              (after-time (get-storage-data "duration" (list-ref cut-scenes next-scene-index)) (change-cutscene))))
+            (update-entity _ counter? (counter next-scene-index))))))
+
+(define (change-cutscene-by num)
+  (lambda (g e)
+    ;change all sprites and change counter
+    (define cut-scenes (get-storage-data "cut-scenes" e))
+    (define current-scene-index (get-counter e))
+    (define next-scene-index (max 0 (min (+ num current-scene-index) (sub1 (length cut-scenes))))) ;capping at length - 1 just in case.
     (if (= current-scene-index (sub1 (length cut-scenes)))
         (die g e)
         (~> e

@@ -71,6 +71,7 @@
   )|#
 
 (provide ;new-sprite
+         set-frames
          
          render
          render-string
@@ -747,4 +748,14 @@
   (struct-copy animated-sprite as
                [y-offset (* (get-y-offset as) v)])
   )
+
+(define (set-frames v as)
+  (define list-costumes (if (list? v)
+                            (map freeze-image v)
+                            (list (freeze-image v))))
+  (define new-frames (list->vector (map prep-costumes list-costumes)))
+  (struct-copy animated-sprite as
+               [frames new-frames]
+               [o-frames new-frames]
+               [current-frame 0]))
 
