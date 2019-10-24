@@ -20,7 +20,7 @@
 
 (define headless? (make-parameter #f))
 
-(define (start-game . entities)
+(define (start-game  #:x [x 'center] #:y [y 'center] . entities)
   (if (headless?)
       (~> (filter identity entities)
           ;Filter identity to Remove any #f's.
@@ -41,7 +41,7 @@
           ;Step 2: Initialize physics
           game->game:start-physics
           ;Step 3: Begin rendering.  Player plays the game.  Game is returned afterward
-          game->__->game++:start-game
+          (game->__->game++:start-game _ #:x x #:y y)
           ;Step 4: (Game is over), post-process the state before returning it to the caller of start-game
           game++->game:postprocess)))
 
@@ -62,8 +62,8 @@
   (physics-start (uniqify-ids game)))
 
 
-(define (game->__->game++:start-game game)
-  (lux-start game))
+(define (game->__->game++:start-game game #:x [x 'center] #:y [y 'center])
+  (lux-start game #:x x #:y y))
 
 (define (game++->game:postprocess lux-game)
   (displayln "=== CLEANING UP SOUND THREADS ===")
