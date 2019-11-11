@@ -90,8 +90,9 @@
        (> my (- y (/ h 2)))
        (< my (+ y (/ h 2)))))
 
-(define (on-sprite-click #:key [key 'left] func)
-  (on-mouse key #:rule touching-pointer? func))
+(define (on-sprite-click #:rule [rule (λ (g e) #t)] #:key [key 'left] func)
+  (on-mouse key #:rule (and/r rule
+                              touching-pointer?) func))
 
 (define (sprite->cursor-sprite s [hot-spot-x 0] [hot-spot-y 0])
   (define sprite (ensure-sprite s))
