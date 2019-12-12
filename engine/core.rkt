@@ -1451,9 +1451,11 @@
      (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
      (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
 
+     #|
      (displayln "*************")
      (displayln (~a "********* Colliding " (get-name e1) " " (get-name e2)))
      (displayln "*************")
+     |#
 
      (set-game-collisions! last-game-snapshot
       (cons (list e1 e2)
@@ -1471,9 +1473,11 @@
         (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
         (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
 
+        #|
         (displayln "*************")
         (displayln (~a "********* Separating " (get-name e1) " " (get-name e2)))
         (displayln "*************")
+        |#
 
         (set-game-separations! last-game-snapshot
          (cons (list e1 e2)
