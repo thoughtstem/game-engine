@@ -169,7 +169,7 @@
 (require threading)
 
 (require (for-syntax racket/syntax))
-(require (prefix-in phys: racket-chipmunk))
+
 
 
 
@@ -544,12 +544,6 @@
   (set-components e (update-component components component-pred f)))
 
 
-(define (update-chipmunk-posn! e p)
-  (define c (entity->chipmunk e))
-  (and (not (phys:destroyed-chipmunk? c))
-       (phys:set-chipmunk-posn! c
-                                (posn-x p)
-                                (posn-y p))))
 
 ;You can pass in a predicate or an actual component
 (define/contract (get-component e maybe-pred)
@@ -620,12 +614,6 @@
           in-b-not-a))
 
 
-(define (maybe-clean-up-physical-collider! e c?)
-  (and (or (physical-collider? c?)
-           (eq? physical-collider? c?))
-       (get-component e physical-collider?)
-       (already-chipmunkified? (get-component e physical-collider?))
-       (phys:destroy-chipmunk (physical-collider-chipmunk (get-component e physical-collider?)))))
 
 (define (add-components e . cs)
   (define flattened (filter identity (flatten cs)))
@@ -950,7 +938,10 @@
   (draw-entities entities))|#
  
 (define (is-colliding? e g)
-  (findf (curry member e entity-eq?) (game-collisions g)))
+  (define ret
+    (findf (curry member e entity-eq?) (game-collisions g)))
+   
+  ret)
 
 (define (is-colliding-with? name g me)
 
@@ -1178,35 +1169,6 @@
       (add-component e (dead))
       e))
 
-(define (handle-dead g self-killed?)
-  (define is-alive? (lambda (e) (not (get-component e dead?))))
-
-  (define doomed (filter (not/c is-alive?) (game-entities g)))
-
-  (define doomed-chipmunks (filter identity
-                                   (map entity->chipmunk doomed)))
-
-  (for ([d doomed-chipmunks])
-    (or (phys:destroyed-chipmunk? d)
-        (phys:destroy-chipmunk d)))
-  
-  (set-game-entities! g (filter is-alive? (game-entities g)))
-  
-  (and self-killed?
-       (set-game-self-killed-entities! g doomed))
-  g)
-
-(define (kill-all-chipmunks g)
-  (displayln "=== DESTROYING ALL CHIPMUNKS ===")
-  (define doomed-chipmunks (filter identity
-                                   (map entity->chipmunk (game-entities g))))
-
-  (for ([d doomed-chipmunks])
-    (or (phys:destroyed-chipmunk? d)
-        (phys:destroy-chipmunk d)))
-  g)
-
-
 
 (define (game-replace-entity g e)
   (define (replace-entity e1)
@@ -1397,41 +1359,6 @@
 
 (define *tick-rate* (/ 1 120.0))
 
-
-(define (physics-tick g)  
-  (phys:step-chipmunk *tick-rate*)
-
-
-  
-
-  (define (physics-tick-entity e)
-    (define pc (get-component e physical-collider?))
-    
-    (if (or (not pc)
-            (not (already-chipmunkified? pc)))
-        e
-        (let ([f (physical-collider-force pc)]
-              [c (physical-collider-chipmunk pc)])
-
-          (define new-pos (posn (phys:x c)
-                                (phys:y c)))
-
-          
-          (update-entity e
-                         ;This looks weird.  it's there to trick update-entity into not
-                         ;  propagating position data into chipmunk world,
-                         ;  since this posn information just came from there
-                         (and/c posn? posn?)
-                         new-pos))))
-
-  (define new-es (map physics-tick-entity (game-entities g)))
-  
-  (struct-copy game g
-               [entities new-es]))
-
-
-
-
 (define (already-chipmunkified? pc)
   (and (physical-collider-chipmunk pc)
        (not (phys:destroyed-chipmunk? (physical-collider-chipmunk pc)))))
@@ -1449,9 +1376,7 @@
                        (w e)
                        (h e)
                        #:group (if (get-component e static?) 2 1) ;Is this what we want???
-                       #:meta (get-id e)
-                       )])
-
+                       #:meta (get-id e) )])
 
         (chipmunkify-step2
          (update-entity e physical-collider?
@@ -1498,34 +1423,92 @@
   e)
 
 
+
+
+
+
+
+;PHYSICS
+
+
+
+(require (prefix-in phys: racket-chipmunk))
+(require (only-in ffi/unsafe ptr-ref _uint))
+
+(define space (phys:current-space))
+
 (define (physics-start g)
   (displayln "Physics start")
 
-  (phys:set-presolve!
-   (λ(c1 c2)
+  
+  (define (begin-callback arbiter space data)
+
+   (let-values ([(s1 s2)  (phys:cpArbiterGetShapes arbiter)])
+    (define c1 (findf (curry phys:has-shape? s1) phys:all-chipmunks))
+    (define c2 (findf (curry phys:has-shape? s2) phys:all-chipmunks))
+
+    (when (and c1 c2)
      (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
      (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
 
-     ;(displayln (~a "Colliding " (get-name e1) " " (get-name e2)))
+     #|
+     (displayln "*************")
+     (displayln (~a "********* Colliding " (get-name e1) " " (get-name e2)))
+     (displayln "*************")
+     |#
 
      (set-game-collisions! last-game-snapshot
-                           (cons (list e1 e2)
-                                 (game-collisions last-game-snapshot)))))
+      (cons (list e1 e2)
+       (game-collisions last-game-snapshot)))))
+                                 
+     1)
 
-  (phys:set-separate!
-   (λ(c1 c2)
-     (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
-     (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
+  
+   (define (separate-callback arbiter space data)
+     (let-values ([(s1 s2)  (phys:cpArbiterGetShapes arbiter)])
+       (define c1 (findf (curry phys:has-shape? s1) phys:all-chipmunks))
+       (define c2 (findf (curry phys:has-shape? s2) phys:all-chipmunks))
 
-     ;(displayln (~a "Separating " (get-name e1) " " (get-name e2)))
+       (when (and c1 c2)
+        (define e1 (find-entity-by-id (phys:chipmunk-meta c1) last-game-snapshot))
+        (define e2 (find-entity-by-id (phys:chipmunk-meta c2) last-game-snapshot))
 
-     (set-game-separations! last-game-snapshot
-                           (cons (list e1 e2)
-                                 (game-separations last-game-snapshot)))))
+        #|
+        (displayln "*************")
+        (displayln (~a "********* Separating " (get-name e1) " " (get-name e2)))
+        (displayln "*************")
+        |#
+
+        (set-game-separations! last-game-snapshot
+         (cons (list e1 e2)
+          (game-separations last-game-snapshot)))))
+                                 
+     1)
+
+  (define (presolve-callback arbiter space data)
+    1)
+
+  (define (postsolve-callback arbiter space data)
+    1)
+
+  (phys:set-cpCollisionHandler-cpCollisionPreSolveFunc! 
+    (phys:current-handler)
+    presolve-callback)
+
+  (phys:set-cpCollisionHandler-cpCollisionPostSolveFunc! 
+    (phys:current-handler)
+    postsolve-callback)
+
+  (phys:set-cpCollisionHandler-cpCollisionBeginFunc! 
+    (phys:current-handler)
+    begin-callback)
+
+  (phys:set-cpCollisionHandler-cpCollisionSeparateFunc! 
+    (phys:current-handler)
+    separate-callback)
 
   (define new-es (map chipmunkify (game-entities g)))
 
-  
   (struct-copy game g
 
                ;Filtering here is weird.  It assumes that physical, static, disabled components
@@ -1559,7 +1542,75 @@
 
 
 
+(define (update-chipmunk-posn! e p)
+  (define c (entity->chipmunk e))
+  (and (not (phys:destroyed-chipmunk? c))
+       (phys:set-chipmunk-posn! c
+                                (posn-x p)
+                                (posn-y p))))
+
+
+(define (maybe-clean-up-physical-collider! e c?)
+  (and (or (physical-collider? c?)
+           (eq? physical-collider? c?))
+       (get-component e physical-collider?)
+       (already-chipmunkified? (get-component e physical-collider?))
+       (phys:destroy-chipmunk (physical-collider-chipmunk (get-component e physical-collider?)))))
+
+(define (handle-dead g self-killed?)
+  (define is-alive? (lambda (e) (not (get-component e dead?))))
+
+  (define doomed (filter (not/c is-alive?) (game-entities g)))
+
+  (define doomed-chipmunks (filter identity
+                                   (map entity->chipmunk doomed)))
+
+  (for ([d doomed-chipmunks])
+    (or (phys:destroyed-chipmunk? d)
+        (phys:destroy-chipmunk d)))
+  
+  (set-game-entities! g (filter is-alive? (game-entities g)))
+  
+  (and self-killed?
+       (set-game-self-killed-entities! g doomed))
+  g)
+
+(define (kill-all-chipmunks g)
+  (displayln "=== DESTROYING ALL CHIPMUNKS ===")
+  (define doomed-chipmunks (filter identity
+                                   (map entity->chipmunk (game-entities g))))
+
+  (for ([d doomed-chipmunks])
+    (or (phys:destroyed-chipmunk? d)
+        (phys:destroy-chipmunk d)))
+  g)
 
 
 
+(define (physics-tick g)  
+  (phys:step-chipmunk *tick-rate*)
 
+  (define (physics-tick-entity e)
+    (define pc (get-component e physical-collider?))
+    
+    (if (or (not pc)
+            (not (already-chipmunkified? pc)))
+        e
+        (let ([f (physical-collider-force pc)]
+              [c (physical-collider-chipmunk pc)])
+
+          (define new-pos (posn (phys:x c)
+                                (phys:y c)))
+
+          
+          (update-entity e
+                         ;This looks weird.  it's there to trick update-entity into not
+                         ;  propagating position data into chipmunk world,
+                         ;  since this posn information just came from there
+                         (and/c posn? posn?)
+                         new-pos))))
+
+  (define new-es (map physics-tick-entity (game-entities g)))
+  
+  (struct-copy game g
+               [entities new-es]))

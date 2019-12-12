@@ -13,7 +13,7 @@
                "https://github.com/jeapostrophe/lux.git" ;was frozen at #f6edd2e  
                "jack-posn"
           ;     "rsound"
-               "https://github.com/thoughtstem/racket-chipmunk.git#4a0198a"
+               "https://github.com/thoughtstem/racket-chipmunk.git"
                "base"))
 
 (define compile-omit-paths '(
