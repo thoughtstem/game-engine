@@ -1,10 +1,12 @@
 #lang racket
 
 (provide cutscene
+         change-cutscene
+         change-cutscene-by
          page
          move-a-sprite
          scale-a-sprite
-         ;motion-item
+         motion-item
          ;images-or-images?
          ;string-or-text-frame?
          
@@ -182,10 +184,12 @@
                (let ([last-height (apply + (map get-largest-sprite-height (take items-list i)))]
                      [half-height-item (/ (get-largest-sprite-height item) 2)])
                  (map (λ (s)
-                        (set-y-offset (+ last-height
+                        (if (member s list-of-floating-motion-sprites component-eq?)
+                            s
+                            (set-y-offset (+ last-height
                                          half-height-item
                                          (- half-of-total)
-                                         (get-y-offset s)) s))
+                                         (get-y-offset s)) s)))
                       item)
                  ))))
 
@@ -283,6 +287,28 @@
     (define cut-scenes (get-storage-data "cut-scenes" e))
     (define current-scene-index (get-counter e))
     (define next-scene-index (min (add1 current-scene-index) (sub1 (length cut-scenes)))) ;capping at length - 1 just in case.
+    (if (= current-scene-index (sub1 (length cut-scenes)))
+        (die g e)
+        (~> e
+            (remove-components _ (or/c animated-sprite?
+                                       after-time?
+                                       every-tick?))
+            (add-components _ (get-components (list-ref cut-scenes next-scene-index) (or/c animated-sprite?
+                                                                                           every-tick?
+                                                                                           on-start?
+                                                                                           (and/c after-time?
+                                                                                                  (λ (c)
+                                                                                                    (not (eq? (after-time-func c) die))))))
+                            (unless (not (get-storage-data "duration" (list-ref cut-scenes next-scene-index)))
+                              (after-time (get-storage-data "duration" (list-ref cut-scenes next-scene-index)) (change-cutscene))))
+            (update-entity _ counter? (counter next-scene-index))))))
+
+(define (change-cutscene-by num)
+  (lambda (g e)
+    ;change all sprites and change counter
+    (define cut-scenes (get-storage-data "cut-scenes" e))
+    (define current-scene-index (get-counter e))
+    (define next-scene-index (max 0 (min (+ num current-scene-index) (sub1 (length cut-scenes))))) ;capping at length - 1 just in case.
     (if (= current-scene-index (sub1 (length cut-scenes)))
         (die g e)
         (~> e

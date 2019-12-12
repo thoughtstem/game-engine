@@ -57,13 +57,12 @@
                         (map vector->list (map animated-sprite-frames (flatten animated-sprites)))))))
 
 
-(define (lux-start larger-state)
+(define (lux-start larger-state #:x [x 'center] #:y [y 'center])
   (define render-tick (get-mode-lambda-render-tick (game-entities larger-state)))
   (define g-width  (game-width larger-state))
   (define g-height (game-height larger-state))
-
   (call-with-chaos
-   (get-gui #:width g-width #:height g-height)
+   (get-gui #:width g-width #:height g-height #:x x #:y y)
    (λ () (fiat-lux (demo larger-state render-tick)))))
 
 
@@ -300,20 +299,30 @@
 ;(gl:gl-filter-mode 'crt)
 
 (define (get-gui #:width  [w 480]
-                 #:height [h 360])
+                 #:height [h 360]
+                 #:x [start-x 'center]
+                 #:y [start-y 'center]
+                 )
   (define make-gui (dynamic-require 'lux/chaos/gui 'make-gui))
   (make-gui #:start-fullscreen? #f
             #:opengl-hires? #t
-            #:frame-style (if (eq? (system-type 'os) 'windows)
-                              (list ;'no-resize-border
-                                    ;'no-caption
-                               )
-                              (list ;'no-resize-border
-                               )
-                              )
+            #:frame-style (cond
+                            [(eq? (system-type 'os) 'windows) (list 'no-resize-border
+                                                                    'no-caption
+                                                                    )]
+                            [(eq? (system-type 'os) 'macosx) (list 'no-resize-border
+                                                                   'no-caption
+                                                                   )]
+                            [(eq? (system-type 'os) 'unix) (list ;'no-resize-border
+                                                                 ;'no-caption
+                                                            )]
+                            [else '()])
             #:mode gl:gui-mode  ; 'gl-core
             #:width w
-            #:height h))
+            #:height h
+            #:x start-x
+            #:y start-y
+            ))
 
 (define (get-render render-tick)
   (if last-game-snapshot

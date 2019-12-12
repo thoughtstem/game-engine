@@ -1,17 +1,17 @@
 #lang racket
 
-(provide change-sprite)
-(provide set-size)
-(provide scale-sprite)
-(provide rotate-sprite)
-(provide random-dec)
-(provide random-size)
-(provide set-color)
-(provide change-color-by)
-(provide random-color)
-(provide random-tint)
-(provide spawn)
-(provide ;open-dialog
+(provide change-sprite
+         set-size
+         scale-sprite
+         rotate-sprite
+         random-dec
+         random-size
+         set-color
+         change-color-by
+         random-color
+         random-tint
+         spawn
+         ;open-dialog
          hide
          show
          start-animation
@@ -19,8 +19,9 @@
          stop-all-animations
          start-first-animation
          stop-first-animation
-         simple-scale-sprite)
-(provide ml-set-color)
+         simple-scale-sprite
+         ml-set-color
+         scale-and-crop-to)
 
 (provide (all-from-out "./rgb-hsb.rkt"))
 
@@ -434,3 +435,10 @@
       (new-sprite as #:layer l))
   )
 
+(define (scale-and-crop-to w h image [x-align "center"] [y-align "center"])
+  (define iw (image-width image))
+  (define ih (image-height image))
+  (define scale-val (if (> (/ iw ih) (/ w h))
+                        (/ h ih)
+                        (/ w iw)))
+  (crop/align x-align y-align w h (scale scale-val image)))
