@@ -19,3 +19,6 @@
 (define compile-omit-paths '(
   "test"
 ))
+
+(define pre-install-collection 
+  "./pre-install.rkt")
