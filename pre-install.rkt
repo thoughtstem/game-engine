@@ -11,5 +11,4 @@
     #:deps 'search-auto #:no-setup #t)))
 
 (define (installed? s)
- (define name (package-source->name s)) 
- (pkg-directory name))
+ (pkg-directory s))
