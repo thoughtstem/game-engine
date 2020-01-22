@@ -26,7 +26,11 @@
          (struct-out color-hsb)
          make-color-hsb
 
-         hsb->color)
+         hsb->color
+
+         has-color?
+         set-img-color
+         )
 
 (require 2htdp/image)
 
@@ -314,6 +318,24 @@
                           (image-width i)
                           (image-height i)))
   (scale (/ w longer-side) i))
+
+(define (has-color? image [threshold 0.2])
+  (define (transparent-pixel? c)
+    (= (color-alpha c) 0))
+  (define (color-pixel? hsb-color)
+    (and (> (color-hsb-sat hsb-color)    50)
+         (> (color-hsb-bright hsb-color) 50)))
+  
+  (define hsb-image-list (map color->color-hsb (filter-not transparent-pixel? (image->color-list image))))
+  
+  (define color-list (filter color-pixel? hsb-image-list))
+  (>= (length color-list) (* (length hsb-image-list) threshold)))
+
+(define (set-img-color color-name image)
+  (if (has-color? image)
+      (let ([hue (color-hsb-hue (name->color-hsb color-name))])
+        (set-img-hue hue image))
+      (tint-img color-name image)))
 
 ;useful function! provide out or put elsewhere
 ;creates silhouettes of an image -- turning every pixel
